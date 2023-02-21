@@ -1,0 +1,13 @@
+orchestration.yaml
+my-archives
+*.pyc
+.DS_Store
+secrets
+*.log
+__pycache
+.pytest_cach
+logs
+#temp
+static
+templates
+tests

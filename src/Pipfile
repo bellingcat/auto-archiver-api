@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+aiofiles = "==0.6.0"
+celery = "==4.4.7"
+fastapi = "==0.64.0"
+flower = "==0.9.7"
+jinja2 = "==3.0.3"
+pytest = "==6.2.4"
+redis = "==3.5.3"
+requests = "==2.25.1"
+uvicorn = "==0.13.4"
+auto-archiver = {editable = true, path = "./../../auto-archiver"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
