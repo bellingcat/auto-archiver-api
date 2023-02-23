@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   web:
-    build: ./project
+    build: ./src
     ports:
       - 8004:8000
     command: uvicorn main:app --host 0.0.0.0 --reload
@@ -16,10 +16,10 @@ services:
       - redis
 
   worker:
-    build: ./project
+    build: ./src
     command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
     volumes:
-      - ./project:/usr/src/app
+      - ./src:/usr/src/app
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -34,7 +34,7 @@ services:
       - 6379:6379
 
   dashboard:
-    build: ./project
+    build: ./src
     command:  flower --app=worker.celery --port=5555 --broker=redis://redis:6379/0
     ports:
       - 5556:5555
