@@ -6,10 +6,8 @@ secrets
 *.log
 __pycache
 .pytest_cach
-logs
 .env
 *.db
 #temp
 static
-templates
 tests
