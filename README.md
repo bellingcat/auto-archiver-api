@@ -1,6 +1,8 @@
 ## development
 http://localhost:8004
 
+requires `src/.env`
+
 cd /src
 * `pipenv install --editable ../../auto-archiver`
 * console 1 - `docker compose up  web redis dashboard `

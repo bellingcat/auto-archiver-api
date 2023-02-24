@@ -8,16 +8,16 @@ aiofiles = "==0.6.0"
 celery = "==4.4.7"
 fastapi = "*"
 flower = "==0.9.7"
-jinja2 = "==3.0.3"
+jinja2 = ">=3.0.3"
 pytest = "==6.2.4"
 redis = "==3.5.3"
-requests = "==2.25.1"
-uvicorn = "==0.13.4"
+requests = ">=2.25.1"
+uvicorn = ">=0.13.4"
 aiosqlite = "*"
 python-dotenv = "*"
-auto-archiver = {editable = true, path = "./../../auto-archiver"}
 loguru = "*"
 sqlalchemy = "*"
+auto-archiver = "*"
 
 [dev-packages]
 

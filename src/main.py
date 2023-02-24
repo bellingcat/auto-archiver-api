@@ -80,7 +80,7 @@ def home():
 @app.on_event("startup")
 async def on_startup():
 #     # Not needed if you setup a migration system like Alembic
-#     await create_db_and_tables()
+#     await create_db_and_tables()https://github.com/bellingcat/auto-archiver/tree/dockerize
     models.Base.metadata.create_all(bind=engine)
 
 #### helper methods

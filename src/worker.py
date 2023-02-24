@@ -32,7 +32,6 @@ def create_archive_task(self, url: str , user_email:str=""):
     global orchestrator
     if not orchestrator: orchestrator = ArchivingOrchestrator(config)
     result = orchestrator.feed_item(Metadata().set_url(url)).to_json()
-    # result = orchestrator.feed_item(Metadata().set_url(url))
     with get_db() as session:
         db_task = crud.create_task(session, task=schemas.TaskCreate(id=self.request.id, url=url, author=user_email, result=json.loads(result)))
         logger.debug(f"Added {db_task.id=} to database on {db_task.created_at}")
