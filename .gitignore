@@ -9,5 +9,4 @@ __pycache
 .env
 *.db
 #temp
-static
 tests
