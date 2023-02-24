@@ -8,7 +8,7 @@ __pycache
 .pytest_cach
 logs
 .env
-.db
+*.db
 #temp
 static
 templates

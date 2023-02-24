@@ -13,12 +13,11 @@ pytest = "==6.2.4"
 redis = "==3.5.3"
 requests = "==2.25.1"
 uvicorn = "==0.13.4"
-fastapi-users = {extras = ["sqlalchemy"], version = "*"}
 aiosqlite = "*"
-httpx-oauth = "*"
 python-dotenv = "*"
 auto-archiver = {editable = true, path = "./../../auto-archiver"}
 loguru = "*"
+sqlalchemy = "*"
 
 [dev-packages]
 
