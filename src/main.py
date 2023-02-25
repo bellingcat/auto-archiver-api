@@ -25,7 +25,7 @@ GOOGLE_CHROME_APP_ID = os.environ.get("GOOGLE_CHROME_APP_ID")
 assert len(GOOGLE_CHROME_APP_ID)>10, "GOOGLE_CHROME_APP_ID env variable not set"
 ALLOWED_EMAILS = set(os.environ.get("ALLOWED_EMAILS", "").split(","))
 assert len(GOOGLE_CHROME_APP_ID)>=1, "at least one ALLOWED_EMAILS is required from the env variable"
-ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb").split(",")
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
 VERSION = "0.1.1"
 
 app = FastAPI() 
