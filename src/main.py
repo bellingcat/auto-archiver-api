@@ -3,7 +3,8 @@ from fastapi import Body, FastAPI, Request, HTTPException, status, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.templating import Jinja2Templates
 # from pydantic.json import pydantic_encoder
 from dotenv import load_dotenv
 import traceback, os, requests
@@ -24,9 +25,17 @@ GOOGLE_CHROME_APP_ID = os.environ.get("GOOGLE_CHROME_APP_ID")
 assert len(GOOGLE_CHROME_APP_ID)>10, "GOOGLE_CHROME_APP_ID env variable not set"
 ALLOWED_EMAILS = set(os.environ.get("ALLOWED_EMAILS", "").split(","))
 assert len(GOOGLE_CHROME_APP_ID)>=1, "at least one ALLOWED_EMAILS is required from the env variable"
-
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb").split(",")
+VERSION = "0.1.1"
 
 app = FastAPI() 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 def get_db():
@@ -70,12 +79,9 @@ def get_status(task_id, access_token:str):
         })
 
 
-
-
-
 @app.get("/")
 def home():
-    return JSONResponse({"status": "good", "version": "0.1.0"})
+    return JSONResponse({"status": "good", "version": VERSION})
 
 @app.on_event("startup")
 async def on_startup():
