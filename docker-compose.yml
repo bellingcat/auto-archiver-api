@@ -31,6 +31,10 @@ services:
 
   redis:
     image: redis:6-alpine
+    command: redis-server /conf/redis.conf
+    volumes:
+      - "./redis/data:/data"
+      - "./redis/config:/conf"
     restart: always
     # DEV ONLY
     ports:
@@ -39,7 +43,7 @@ services:
   dashboard:
     build: ./src
     restart: always
-    command:  flower --app=worker.celery --port=5555 --broker=redis://redis:6379/0
+    command:  flower --app=worker.celery --port=5555 --broker=redis://redis:6379/0 --basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}
     ports:
       - 5556:5555
     environment:

@@ -8,5 +8,6 @@ __pycache
 .pytest_cach
 .env
 *.db
+redis/data/*
 #temp
 tests

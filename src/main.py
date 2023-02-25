@@ -58,8 +58,8 @@ def get_status(task_id, access_token:str):
         "task_result": task_result.result
     }
     try:
-        json_result = jsonable_encoder(result)
-        # json_result = jsonable_encoder(result, custom_encoder=pydantic_encoder) # causes error
+        json_result = jsonable_encoder(result, exclude_unset=True)
+        # json_result = jsonable_encoder(result, custom_encoder={"pydantic_encoder": pydantic_encoder}) # causes error
         return JSONResponse(json_result)
     except Exception as e:
         logger.error(e)
@@ -75,7 +75,7 @@ def get_status(task_id, access_token:str):
 
 @app.get("/")
 def home():
-    return JSONResponse({"message": "Hello"})
+    return JSONResponse({"status": "good", "version": "0.1.0"})
 
 @app.on_event("startup")
 async def on_startup():
