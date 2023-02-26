@@ -4,6 +4,7 @@ import os
 from celery import Celery
 from dataclasses import asdict
 from auto_archiver import Config, ArchivingOrchestrator, Metadata
+from auto_archiver.enrichers import ScreenshotEnricher
 from loguru import logger
 
 from db import crud, models, schemas
@@ -28,11 +29,12 @@ config.parse(use_cli=False, yaml_config_filename="secrets/orchestration.yaml")
 orchestrator = None
 
 @celery.task(name="create_archive_task", bind=True)
-def create_archive_task(self, url: str , user_email:str=""):
+def create_archive_task(self, url: str, email:str=""):
+    assert type(url)==str and len(url)>5, f"Invalid URL received: {url}"
     global orchestrator
     if not orchestrator: orchestrator = ArchivingOrchestrator(config)
     result = orchestrator.feed_item(Metadata().set_url(url)).to_json()
     with get_db() as session:
-        db_task = crud.create_task(session, task=schemas.TaskCreate(id=self.request.id, url=url, author=user_email, result=json.loads(result)))
+        db_task = crud.create_task(session, task=schemas.TaskCreate(id=self.request.id, url=url, author=email, result=json.loads(result)))
         logger.debug(f"Added {db_task.id=} to database on {db_task.created_at}")
     return result

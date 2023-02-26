@@ -26,7 +26,7 @@ assert len(GOOGLE_CHROME_APP_ID)>10, "GOOGLE_CHROME_APP_ID env variable not set"
 ALLOWED_EMAILS = set(os.environ.get("ALLOWED_EMAILS", "").split(","))
 assert len(GOOGLE_CHROME_APP_ID)>=1, "at least one ALLOWED_EMAILS is required from the env variable"
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.1.1"
+VERSION = "0.1.3"
 
 app = FastAPI() 
 app.add_middleware(
@@ -44,17 +44,27 @@ def get_db():
     finally: session.close()
 
     
+@app.get("/tasks/search-url", response_model=list[schemas.Task])
+def search(access_token:str, url:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    validate_user_get_email(access_token)
+    return crud.search_tasks_by_url(db, url, skip=skip, limit=limit)
+    
 @app.get("/tasks/search", response_model=list[schemas.Task])
 def search(access_token:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     validate_user_get_email(access_token)
     return crud.get_tasks(db, skip=skip, limit=limit)
+    
+@app.get("/tasks/sync", response_model=list[schemas.Task])
+def search(access_token:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    email = validate_user_get_email(access_token)
+    return crud.search_tasks_by_email(db, email, skip=skip, limit=limit)
 
 @app.post("/tasks", status_code=201)
 def run_task(payload = Body(...)):
-    email = validate_user_get_email(payload["access_token"])
-    logger.info(f"new task for user {email}: {payload['url']}")
-    task = create_archive_task.delay(payload["url"])
-    return JSONResponse({"task_id": task.id})
+    email = validate_user_get_email(payload.get("access_token"))
+    logger.info(f"new task for user {email}: {payload.get('url')}")
+    task = create_archive_task.delay(url=payload.get('url'), email=email)
+    return JSONResponse({"id": task.id})
 
 @app.get("/tasks/{task_id}")
 def get_status(task_id, access_token:str):
@@ -62,9 +72,9 @@ def get_status(task_id, access_token:str):
     logger.info(f"status check for user {email}")
     task_result = AsyncResult(task_id, app=celery)
     result = {
-        "task_id": task_id,
-        "task_status": task_result.status,
-        "task_result": task_result.result
+        "id": task_id,
+        "status": task_result.status,
+        "result": task_result.result
     }
     try:
         json_result = jsonable_encoder(result, exclude_unset=True)
@@ -74,8 +84,8 @@ def get_status(task_id, access_token:str):
         logger.error(e)
         logger.error(traceback.format_exc())
         return JSONResponse({
-            "task_id": task_id,
-            "task_status": "FAILURE",
+            "id": task_id,
+            "status": "FAILURE",
         })
 
 
