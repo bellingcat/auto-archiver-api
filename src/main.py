@@ -89,6 +89,16 @@ def get_status(task_id, access_token:str):
         })
 
 
+@app.delete("/tasks/{task_id}")
+def get_status(task_id, access_token:str, db: Session = Depends(get_db)):
+    email = validate_user_get_email(access_token)
+    logger.info(f"deleting task {task_id} request by {email}")
+    return JSONResponse({
+        "id": task_id,
+        "deleted": crud.delete_task(db, task_id, email)
+    })
+
+
 @app.get("/")
 def home():
     return JSONResponse({"status": "good", "version": VERSION})
