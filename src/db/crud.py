@@ -26,7 +26,7 @@ def create_task(db: Session, task: schemas.TaskCreate):
     db.refresh(db_task)
     return db_task
 
-
+# TODO: implement soft delete so that S3 content can be found ant not dangling
 def delete_task(db: Session, task_id: str, email:str)->bool:
     db_task = db.query(models.Task).filter(models.Task.id == task_id, models.Task.author==email).first()
     if db_task:

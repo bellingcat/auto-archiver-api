@@ -10,6 +10,7 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --reload
     volumes:
       - ./src:/usr/src/app
+    env_file: src/.env
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -22,6 +23,7 @@ services:
     command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
     volumes:
       - ./src:/usr/src/app
+    env_file: src/.env
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
