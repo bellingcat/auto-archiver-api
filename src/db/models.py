@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, JSON, DateTime
+from sqlalchemy import Column, String, JSON, DateTime, Boolean
 from sqlalchemy.sql import func
 from .database import Base
 
@@ -12,5 +12,7 @@ class Task(Base):
     result = Column(JSON, default=None)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     # updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    deleted = Column(Boolean, default=False)
+
 
     # items = relationship("Item", back_populates="owner")

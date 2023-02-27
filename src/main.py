@@ -26,7 +26,7 @@ assert len(GOOGLE_CHROME_APP_ID)>10, "GOOGLE_CHROME_APP_ID env variable not set"
 ALLOWED_EMAILS = set(os.environ.get("ALLOWED_EMAILS", "").split(","))
 assert len(GOOGLE_CHROME_APP_ID)>=1, "at least one ALLOWED_EMAILS is required from the env variable"
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.1.5"
+VERSION = "0.1.6"
 
 app = FastAPI() 
 app.add_middleware(
@@ -95,7 +95,7 @@ def get_status(task_id, access_token:str, db: Session = Depends(get_db)):
     logger.info(f"deleting task {task_id} request by {email}")
     return JSONResponse({
         "id": task_id,
-        "deleted": crud.delete_task(db, task_id, email)
+        "deleted": crud.soft_delete_task(db, task_id, email)
     })
 
 
@@ -103,11 +103,14 @@ def get_status(task_id, access_token:str, db: Session = Depends(get_db)):
 def home():
     return JSONResponse({"status": "good", "version": VERSION})
 
+
+import alembic.config
 @app.on_event("startup")
 async def on_startup():
 #     # Not needed if you setup a migration system like Alembic
 #     await create_db_and_tables()https://github.com/bellingcat/auto-archiver/tree/dockerize
     models.Base.metadata.create_all(bind=engine)
+    alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
 
 #### helper methods
 def authenticate_user(access_token):

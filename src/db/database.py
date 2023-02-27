@@ -1,9 +1,12 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./auto-archiver.db"
+SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_PATH")#"sqlite:///./auto-archiver.db"
 # SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
+print("-"*50)
+print(SQLALCHEMY_DATABASE_URL)
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}

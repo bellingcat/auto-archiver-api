@@ -18,6 +18,7 @@ python-dotenv = "*"
 loguru = "*"
 sqlalchemy = "*"
 auto-archiver = "*"
+alembic = "*"
 
 [dev-packages]
 

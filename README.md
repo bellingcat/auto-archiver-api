@@ -17,6 +17,12 @@ cd /src
 orchestration must be from the console(?)
 * turn off VPNs if connection to docker is not working
 
+## Database migrations
+check https://alembic.sqlalchemy.org/en/latest/tutorial.html#the-migration-environment
+
+* create migrations with `alembic revision -m "create account table"`
+* migrate to most recent with `alembic upgrade head`
+* downgrade with `alembic downgrade -1`
 
 ## Release
 Copy `.env` and `src/.env` to deployment, along with the contents of `secrets/` including `secrets/orchestration.yaml`.
@@ -27,3 +33,4 @@ Then `docker compose up -d`.
 If pipenv packages are updated: `pipenv lock --requirements -r  > requirements.txt` (manually comment line `-i https://pypi.org/simple`) and then `docker compose down` + `docker compose up --build -d` to build images with new packages.
 
 New users should be added to the `src/.env` file `ALLOWED_EMAILS` prop
+

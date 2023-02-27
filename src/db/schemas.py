@@ -10,6 +10,7 @@ class TaskCreate(BaseModel):
 
 class Task(TaskCreate):
     created_at: datetime
+    deleted: bool
 
     class Config:
         orm_mode = True
