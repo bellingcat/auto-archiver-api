@@ -1,7 +1,7 @@
 from celery.result import AsyncResult
 from fastapi import Body, FastAPI, Request, HTTPException, status, Depends
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 # from fastapi.templating import Jinja2Templates
@@ -16,8 +16,6 @@ from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
 
-# models.Base.metadata.create_all(bind=engine)
-
 load_dotenv()
 
 # Configuration
@@ -26,7 +24,7 @@ assert len(GOOGLE_CHROME_APP_ID)>10, "GOOGLE_CHROME_APP_ID env variable not set"
 ALLOWED_EMAILS = set(os.environ.get("ALLOWED_EMAILS", "").split(","))
 assert len(GOOGLE_CHROME_APP_ID)>=1, "at least one ALLOWED_EMAILS is required from the env variable"
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.1.6"
+VERSION = "0.1.7"
 
 app = FastAPI() 
 app.add_middleware(
@@ -98,6 +96,18 @@ def get_status(task_id, access_token:str, db: Session = Depends(get_db)):
         "deleted": crud.soft_delete_task(db, task_id, email)
     })
 
+# logic to allow access to 1 static file
+SF = os.environ.get("STATIC_FILE", "")
+SFP = os.environ.get("STATIC_FILE_PASSWORD", "") # min length is 20 chars
+if len(SF) > 1 and len(SFP) >= 20 and os.path.isfile(SF):
+    @app.get("/static-file")
+    def static_file(static_file_password:str):
+        if type(static_file_password) ==str and len(static_file_password)>=20 and static_file_password==SFP:
+            return FileResponse(SF, filename=os.path.basename(SF))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Wrong static file access credentials"
+        )
 
 @app.get("/")
 def home():

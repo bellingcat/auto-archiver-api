@@ -9,5 +9,6 @@ __pycache
 .env
 *.db
 redis/data/*
+.ipynb_checkpoints*
 #temp
 tests

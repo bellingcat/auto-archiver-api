@@ -1,6 +1,6 @@
 # Auto Archiver API
 
-An api that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](), it allows authentication via Google OAuth Apps an d enables CORS, everything runs on docker but development can be done without docker (except for redis).
+An api that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps an d enables CORS, everything runs on docker but development can be done without docker (except for redis).
 
 
 ## Development
@@ -25,6 +25,8 @@ check https://alembic.sqlalchemy.org/en/latest/tutorial.html#the-migration-envir
 * downgrade with `alembic downgrade -1`
 
 ## Release
+Update `main.py:VERSION`.
+
 Copy `.env` and `src/.env` to deployment, along with the contents of `secrets/` including `secrets/orchestration.yaml`.
 
 Then `docker compose up -d`.
