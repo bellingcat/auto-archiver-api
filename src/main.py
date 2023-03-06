@@ -22,7 +22,7 @@ load_dotenv()
 # Configuration
 GOOGLE_CHROME_APP_ID = os.environ.get("GOOGLE_CHROME_APP_ID")
 assert len(GOOGLE_CHROME_APP_ID)>10, "GOOGLE_CHROME_APP_ID env variable not set"
-ALLOWED_EMAILS = set(os.environ.get("ALLOWED_EMAILS", "").split(","))
+ALLOWED_EMAILS = set([e.strip().lower() for e in os.environ.get("ALLOWED_EMAILS", "").split(",")])
 assert len(GOOGLE_CHROME_APP_ID)>=1, "at least one ALLOWED_EMAILS is required from the env variable"
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
 VERSION = "0.1.8"
@@ -150,7 +150,7 @@ def authenticate_user(access_token):
         return False, f"EXCEPTION occurred"
 
 def custom_is_email_allowed(email, any_bellingcat_email=False):
-    return email in ALLOWED_EMAILS or (any_bellingcat_email and re.match(r'^[\w.]+@bellingcat\.com$', email))
+    return email.lower() in ALLOWED_EMAILS or (any_bellingcat_email and re.match(r'^[\w.]+@bellingcat\.com$', email))
 
 def validate_user_get_email(access_token):
     valid_user, info = authenticate_user(access_token)
