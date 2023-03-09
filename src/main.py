@@ -1,12 +1,12 @@
 from celery.result import AsyncResult
-from fastapi import Body, FastAPI, Depends
+from fastapi import Body, FastAPI, Depends, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import alembic.config
 from dotenv import load_dotenv
-import traceback, os
+import traceback, os, logging
 from loguru import logger
 
 from worker import create_archive_task, celery
@@ -21,6 +21,7 @@ load_dotenv()
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
 VERSION = "0.2.0"
+
 
 app = FastAPI() 
 app.add_middleware(
@@ -40,6 +41,16 @@ def get_db():
 
 @app.get("/")
 def home(): return JSONResponse({"version": VERSION})
+
+
+# logging configurations
+logger.add("logs/api_logs.log", retention="30 days", rotation="3 days")
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    response = await call_next(request)
+    logger.info(f"{request.client.host}:{request.client.port} {request.method} {request.url._url} - HTTP {response.status_code}")
+    return response
+
 
 # Bearer protected below
 
@@ -105,3 +116,5 @@ async def on_startup():
 #     await create_db_and_tables()https://github.com/bellingcat/auto-archiver/tree/dockerize
     models.Base.metadata.create_all(bind=engine)
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
+    # disabling uvicorn logger since we use loguru in logging_middleware
+    logging.getLogger("uvicorn.access").disabled = True
