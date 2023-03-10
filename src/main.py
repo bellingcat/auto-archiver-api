@@ -1,5 +1,5 @@
 from celery.result import AsyncResult
-from fastapi import Body, FastAPI, Depends, Request
+from fastapi import Body, FastAPI, Depends, Request, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -68,7 +68,10 @@ def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email
 
 @app.post("/tasks", status_code=201)
 def run_task(payload = Body(...), email = Depends(get_bearer_auth)):
-    logger.info(f"new task for user {email}: {payload.get('url')}")
+    url = payload.get('url')
+    logger.info(f"new task for user {email}: {url}")
+    if type(url)!=str or len(url)<=5:
+        raise HTTPException(status_code=422, detail=f"Invalid URL received: {url}")
     task = create_archive_task.delay(url=payload.get('url'), email=email)
     return JSONResponse({"id": task.id})
 

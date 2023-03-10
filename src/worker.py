@@ -31,9 +31,8 @@ if (config_bcat_file := os.environ.get("ORCHESTRATION_CONFIG_BELLINGCAT")):
 
 orchestrators = {"bellingcat": None, "default": None}
 
-@celery.task(name="create_archive_task", bind=True)
+@celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 5})
 def create_archive_task(self, url: str, email:str=""):
-    assert type(url)==str and len(url)>5, f"Invalid URL received: {url}"
     orchestrator = choose_orchestrator(email)
     result = orchestrator.feed_item(Metadata().set_url(url)).to_json()
     with get_db() as session:
