@@ -12,3 +12,4 @@ redis/data/*
 .ipynb_checkpoints*
 #temp
 tests
+src/user-groups.yaml

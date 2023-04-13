@@ -19,6 +19,7 @@ loguru = "*"
 sqlalchemy = "*"
 auto-archiver = "*"
 alembic = "*"
+fastapi-utils = "*"
 
 [dev-packages]
 

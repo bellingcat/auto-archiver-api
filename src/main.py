@@ -4,6 +4,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_utils.tasks import repeat_every
 import alembic.config
 from dotenv import load_dotenv
 import traceback, os, logging
@@ -111,13 +112,19 @@ if len(SF) > 1 and os.path.isfile(SF):
     def static_file(basic_auth = Depends(get_basic_auth)):
         return FileResponse(SF, filename=os.path.basename(SF))
 
-# on startup
 
+# on startup
 @app.on_event("startup")
 async def on_startup():
 #     # Not needed if you setup a migration system like Alembic
-#     await create_db_and_tables()https://github.com/bellingcat/auto-archiver/tree/dockerize
+#     await create_db_and_tables()
     models.Base.metadata.create_all(bind=engine)
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
     # disabling uvicorn logger since we use loguru in logging_middleware
     logging.getLogger("uvicorn.access").disabled = True
+
+@app.on_event("startup")
+@repeat_every(seconds=60 * 60)  # 1 hour
+async def on_startup():
+    db: Session = next(get_db())
+    crud.upsert_user_groups(db, "user-groups.yaml")
