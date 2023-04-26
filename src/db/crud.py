@@ -1,9 +1,11 @@
 from functools import cache
 from sqlalchemy.orm import Session, load_only
+from sqlalchemy import Column
 from loguru import logger
 from . import models, schemas
 import yaml
 
+## --------------- TASK = Archive
 
 def get_task(db: Session, task_id: str):
     return base_query(db).filter(models.Archive.id == task_id).first()
@@ -17,22 +19,19 @@ def search_tasks_by_url(db: Session, url:str, skip: int = 0, limit: int = 100):
 def search_tasks_by_email(db: Session, email:str, skip: int = 0, limit: int = 100):
     return base_query(db).filter(models.Archive.author.has(email=email)).offset(skip).limit(limit).all()
 
-def create_task(db: Session, task: schemas.TaskCreate):
-    db_task = models.Archive(id=task.id, url=task.url, author=task.author, result=task.result)
+def create_task(db: Session, task: schemas.ArchiveCreate, tags:list[models.Tag],urls:list[models.ArchiveUrl]):
+    db_task = models.Archive(id=task.id, url=task.url, author_id=task.author_id, result=task.result, group_id=task.group_id)
+    logger.debug(tags)
+    db_task.tags = tags # will this work? TODO: test if I don't call create tag before
+    db_task.urls = urls # will this work to create ArchiveUrl? TODO: test
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
     return db_task
 
-# def delete_task(db: Session, task_id: str, email:str)->bool:
-#     db_task = db.query(models.Task).filter(models.Task.id == task_id, models.Task.author==email).first()
-#     if db_task:
-#         db.delete(db_task)
-#         db.commit()
-#     return db_task is not None
-
 def soft_delete_task(db: Session, task_id: str, email:str)->bool:
-    db_task = db.query(models.Archive).filter(models.Archive.id == task_id, models.Archive.author==email, models.Archive.deleted==False).first()
+    # TODO: implement hard-delete with cronjob that deletes from S3
+    db_task = db.query(models.Archive).filter(models.Archive.id == task_id, models.Archive.author_id==email, models.Archive.deleted==False).first()
     if db_task:
         db_task.deleted = True
         db.commit()
@@ -43,6 +42,31 @@ def base_query(db:Session):
     return db.query(models.Archive)\
         .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result))\
         .filter(models.Archive.deleted == False)
+
+## --------------- TAG
+
+def create_tag(db: Session, tag: str):
+    db_tag = db.query(models.Tag).filter(models.Tag.id==tag).first()
+    if not db_tag:
+        db_tag = models.Tag(id=tag)
+        db.add(db_tag)
+        db.commit()
+        db.refresh(db_tag)
+    return db_tag
+
+def search_tags(db: Session, tag:str, skip: int = 0, limit: int = 100):
+    return db.query(models.Tag).filter(models.Tag.url.like(f'%{tag}%')).offset(skip).limit(limit).all()
+
+
+def get_group_for_user(db:Session, group_name:str, email:str)->models.Group:
+    return db.query(models.association_table_user_groups).filter_by(user_id=email, group_id=group_name).first()
+
+def get_user_groups(db: Session, email:str):
+    groups = db.query(models.association_table_user_groups).filter_by(user_id=email).with_entities(Column("group_id")).all()
+    return [g[0] for g in groups]
+
+
+## --------------- INIT User-Groups
 
 @cache
 def get_group(db:Session, group_name:str)->models.Group:

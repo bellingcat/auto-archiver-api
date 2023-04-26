@@ -22,6 +22,7 @@ alembic = "*"
 fastapi-utils = "*"
 
 [dev-packages]
+watchdog = "*"
 
 [requires]
 python_version = "3.10"

@@ -1,16 +1,31 @@
 from pydantic import BaseModel
 from datetime import datetime
 
-class TaskCreate(BaseModel):
-    id: str
+class ArchiveCreate(BaseModel):
+    id: str | None = None
     url: str
-    author: str
-    result: dict
+    result: dict | None = None
+    public: bool = True
+    author_id: str | None = None
+    group_id: str | None = None
+    tags: list = []
+    # urls: list = []
 
 
-class Task(TaskCreate):
+
+class Archive(ArchiveCreate):
     created_at: datetime
+    updated_at: datetime | None
     deleted: bool
 
     class Config:
         orm_mode = True
+
+
+# class TagCreate(BaseModel):
+#     id: str
+    
+# class Tag(TagCreate):
+#     created_at: datetime
+#     # class Config:
+#     #     orm_mode = True

@@ -13,6 +13,7 @@ cd /src
 * console 1 - `docker compose up redis` optionally add `dashboard` for flower dashboard and `web` if not running uvicorn locally
 * console 2 - `pipenv shell` + `celery worker --app=worker.celery --loglevel=info --logfile=logs/celery_dev.log`
   * `celery --app=worker.celery worker --loglevel=info --logfile=logs/celery_dev.log` celery 5
+  * or with watchdog for dev auto-reload `watchmedo auto-restart -d ./  -- celery --app=worker.celery worker --loglevel=info --logfile=logs/celery_dev.log`
 * console 3 - `pipenv shell` + `uvicorn main:app --host 0.0.0.0 --reload`
 orchestration must be from the console(?)
 * turn off VPNs if connection to docker is not working

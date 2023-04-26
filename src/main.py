@@ -15,14 +15,15 @@ from worker import create_archive_task, celery
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from security import get_bearer_auth, get_basic_auth
+from security import get_bearer_auth, get_basic_auth, bearer_security
 
 load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.2.0"
-
+VERSION = "0.3.1"
+# min-version refers to the version of auto-archiver-extension on the webstore
+BREAKING_CHANGES = {"minVersion": "0.3.0", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
 
 app = FastAPI() 
 app.add_middleware(
@@ -41,8 +42,16 @@ def get_db():
     
 
 @app.get("/")
-def home(): return JSONResponse({"version": VERSION})
-
+async def home(request: Request): 
+    status = {"version": VERSION, "breakingChanges": BREAKING_CHANGES}
+    try:
+        # if authenticated will load available groups
+        email = await get_bearer_auth(await bearer_security(request))
+        db: Session = next(get_db())
+        status["groups"] = crud.get_user_groups(db, email)
+    except HTTPException: pass
+    except Exception as e: logger.error(e)
+    return JSONResponse(status)
 
 # logging configurations
 logger.add("logs/api_logs.log", retention="30 days", rotation="3 days")
@@ -55,36 +64,59 @@ async def logging_middleware(request: Request, call_next):
 
 # Bearer protected below
 
-@app.get("/tasks/search-url", response_model=list[schemas.Task])
-def search(url:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+@app.get("/groups", response_model=list[str])
+def get_user_groups(db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+    return crud.get_user_groups(db, email)
+
+@app.get("/tasks/search-url", response_model=list[schemas.Archive])
+def search(url:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _email = Depends(get_bearer_auth)):
     return crud.search_tasks_by_url(db, url, skip=skip, limit=limit)
 
 # @app.get("/tasks/search", response_model=list[schemas.Task])
 # def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
 #     return crud.get_tasks(db, skip=skip, limit=limit)
     
-@app.get("/tasks/sync", response_model=list[schemas.Task])
+@app.get("/tasks/sync", response_model=list[schemas.Archive])
 def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
     return crud.search_tasks_by_email(db, email, skip=skip, limit=limit)
 
 @app.post("/tasks", status_code=201)
-def run_task(payload = Body(...), email = Depends(get_bearer_auth)):
-    url = payload.get('url')
-    logger.info(f"new task for user {email}: {url}")
+def run_task(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth)):
+    archive.author_id = email
+    url = archive.url
+    logger.warning(archive)
+    logger.info(f"new {archive.public=} task for {email=} and {archive.group_id=}: {url}")
     if type(url)!=str or len(url)<=5:
         raise HTTPException(status_code=422, detail=f"Invalid URL received: {url}")
-    task = create_archive_task.delay(url=payload.get('url'), email=email)
+    logger.info("creating task")
+    task = create_archive_task.delay(archive.json())
     return JSONResponse({"id": task.id})
+
+# @app.post("/tasks", status_code=201)
+# def run_task(payload = Body(...), email = Depends(get_bearer_auth)):
+#     url = payload.get('url')
+#     public = payload.get('public', True)
+#     group = payload.get('group', None)
+#     logger.info(f"new {public=} task for {email=} and {group=}: {url}")
+#     if type(url)!=str or len(url)<=5:
+#         raise HTTPException(status_code=422, detail=f"Invalid URL received: {url}")
+#     task = create_archive_task.delay(url=payload.get('url'), email=email, public=public, group=group)
+#     return JSONResponse({"id": task.id})
 
 @app.get("/tasks/{task_id}")
 def get_status(task_id, email = Depends(get_bearer_auth)):
     logger.info(f"status check for user {email}")
     task_result = AsyncResult(task_id, app=celery)
+    logger.info(task_result)
     result = {
         "id": task_id,
         "status": task_result.status,
         "result": task_result.result
     }
+    try:
+        if task_result.result and "error" in task_result.result:
+            result["status"] = "FAILURE"
+    except Exception as e: logger.error(traceback.format_exc())
     try:
         json_result = jsonable_encoder(result, exclude_unset=True)
         return JSONResponse(json_result)
@@ -94,6 +126,7 @@ def get_status(task_id, email = Depends(get_bearer_auth)):
         return JSONResponse({
             "id": task_id,
             "status": "FAILURE",
+            "result": {"error": e}
         })
 
 

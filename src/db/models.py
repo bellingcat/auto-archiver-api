@@ -4,25 +4,8 @@ from sqlalchemy.orm import relationship
 import uuid
 from .database import Base
 
-
-# class Task(Base):
-#     __tablename__ = "tasks"
-
-#     id = Column(String, primary_key=True, index=True)
-#     url = Column(String, index=True)
-#     author = Column(String, index=True)
-#     result = Column(JSON, default=None)
-#     created_at = Column(DateTime(timezone=True), server_default=func.now())
-#     # updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-#     deleted = Column(Boolean, default=False)
-
-
-#     # items = relationship("Item", back_populates="owner")
-#     # tags = relationship("Tag", back_populates="owner")
-
 def generate_uuid():
     return str(uuid.uuid4())
-### new data model below
 
 # many to many association tables
 association_table_archive_tags = Table(
@@ -45,23 +28,33 @@ class Archive(Base):
     id = Column(String, primary_key=True, index=True)
     url = Column(String, index=True)
     result = Column(JSON, default=None)
+    public = Column(Boolean, default=True) # if public=false, access to group and author
+    deleted = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    deleted = Column(Boolean, default=False)
-    public = Column(Boolean, default=True) # if public=false, access to group and author
 
     group_id = Column(String, ForeignKey("groups.id"), default=None)
     author_id = Column(String, ForeignKey("users.email"))
 
-    group = relationship("Group", back_populates="archives")
     tags = relationship("Tag", back_populates="archives", secondary=association_table_archive_tags)
+    group = relationship("Group", back_populates="archives")
     author = relationship("User", back_populates="archives")
+    urls = relationship("ArchiveUrl", back_populates="archive")
+
+class ArchiveUrl(Base):
+    __tablename__ = "archive_urls"
+
+    url = Column(String, primary_key=True, index=True)
+    key = Column(String, default=None)
+    archive_id = Column(String, ForeignKey("archives.id"))
+
+    archive = relationship("Archive", back_populates="urls")
+
 
 class Tag(Base):
     __tablename__ = "tags"
 
-    id = Column(String, primary_key=True, index=True, default=generate_uuid)
-    name = Column(String, unique=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     archives = relationship("Archive", back_populates="tags", secondary=association_table_archive_tags)
