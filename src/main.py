@@ -21,7 +21,7 @@ load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.3.1"
+VERSION = "0.4.0"
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.0", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
 
@@ -160,4 +160,5 @@ async def on_startup():
 @repeat_every(seconds=60 * 60)  # 1 hour
 async def on_startup():
     db: Session = next(get_db())
-    crud.upsert_user_groups(db, "user-groups.yaml")
+    USER_GROUPS_FILENAME=os.environ.get("USER_GROUPS_FILENAME", "user-groups.yaml")
+    crud.upsert_user_groups(db, USER_GROUPS_FILENAME)

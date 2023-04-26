@@ -18,6 +18,28 @@ cd /src
 orchestration must be from the console(?)
 * turn off VPNs if connection to docker is not working
 
+## User management
+Copy [example.user-groups.yaml](src/example.user-groups.yaml) into a new file and set the environment variable `USER_GROUPS_FILENAME` to that filename (defaults to `user-groups.yaml`).
+
+This file contains 2 parts user-groups specifications. Each user can archive URLs publicly, privately, or privately for a group so long as they are declared as part of that group. In the example bellow `email1` has 2 groups while `email3` has none. 
+```yaml
+users:
+  email1@example.com:
+    - group1
+    - group2
+  email2@example.com:
+    - group2
+  email3@example-no-group.com:
+```
+
+Auto-archiver orchestrator files configurations. For each archiving task an orchestrator is chosen, either from a specified group (if group-level visibility) or the first group the user is assigned to in the above file or the `default` orchestration file which is a required config.
+```yaml
+orchestrators:
+  group1: secrets/orchestration-group1.yaml
+  group2: secrets/orchestration-group2.yaml
+  default: secrets/orchestration-default:.yaml
+```
+
 ## Database migrations
 check https://alembic.sqlalchemy.org/en/latest/tutorial.html#the-migration-environment
 

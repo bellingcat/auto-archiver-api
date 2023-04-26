@@ -5,3 +5,9 @@ users:
   email2@example.com:
     - group2
   email3@example-no-group.com:
+
+
+orchestrators:
+  group1: secrets/orchestration-group1.yaml
+  group2: secrets/orchestration-group2.yaml
+  default: secrets/orchestration-default:.yaml
