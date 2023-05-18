@@ -6,6 +6,7 @@ from celery.exceptions import Ignore
 from celery.signals import task_failure
 from auto_archiver import Config, ArchivingOrchestrator, Metadata
 # from auto_archiver.enrichers import ScreenshotEnricher
+from auto_archiver.feeders import GsheetsFeeder
 from loguru import logger
 
 from db import crud, schemas, models
@@ -56,6 +57,24 @@ def create_archive_task(self, archive_json: str):
         db_task = crud.create_task(session, task=schemas.ArchiveCreate(id=self.request.id, url=url, result=json.loads(result_json), public=archive.public, author_id=archive.author_id, group_id=archive.group_id), tags=db_tags, urls=db_urls)
         logger.debug(f"Added {db_task.id=} to database on {db_task.created_at}")
     return result_json
+
+
+@celery.task(name="create_sheet_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 0}) 
+def create_sheet_task(self, sheet_json: str):
+    logger.info(f"STARTING {sheet_json}")
+    sheet = schemas.SubmitSheet.parse_raw(sheet_json)
+    orchestrator = choose_orchestrator("bellingcat", "")
+    #TODO: modify archiver to accept sheetId too
+    config = Config()
+    config.parse(use_cli=False, yaml_config_filename="secrets/orchestration-sheet.yaml")
+    config.feeder.sheet = sheet.sheet_name
+    config.feeder.header = sheet.header
+    orchestrator = ArchivingOrchestrator(config)
+    #TODO: make auto-archiver config.parse receive an overriding dict
+    result = orchestrator.feed()
+    # TODO: save into local DB
+
+    return result.to_json()
 
 @task_failure.connect(sender=create_archive_task)
 def task_failure_notifier(sender=None, **kwargs):

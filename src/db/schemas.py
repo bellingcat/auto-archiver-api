@@ -29,3 +29,8 @@ class Archive(ArchiveCreate):
 #     created_at: datetime
 #     # class Config:
 #     #     orm_mode = True
+
+class SubmitSheet(BaseModel):
+    sheet_name: str
+    header: int = 1
+    

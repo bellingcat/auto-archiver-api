@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import traceback, os, logging
 from loguru import logger
 
-from worker import create_archive_task, celery
+from worker import create_archive_task, create_sheet_task, celery
 
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
@@ -137,6 +137,12 @@ def get_status(task_id, db: Session = Depends(get_db), email = Depends(get_beare
         "id": task_id,
         "deleted": crud.soft_delete_task(db, task_id, email)
     })
+
+@app.post("/sheet", status_code=201)
+def run_task(sheet:schemas.SubmitSheet, basic_auth = Depends(get_basic_auth)):
+    logger.info("LAUNCHING SHEET TASK")
+    task = create_sheet_task.delay(sheet.json())
+    return JSONResponse({"id": task.id})
 
 # Basic protected logic to allow access to 1 static file
 SF = os.environ.get("STATIC_FILE", "")
