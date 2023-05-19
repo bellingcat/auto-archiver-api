@@ -131,7 +131,7 @@ def get_status(task_id, email = Depends(get_bearer_auth)):
 
 
 @app.delete("/tasks/{task_id}")
-def get_status(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth_public)):
+def get_status(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
     logger.info(f"deleting task {task_id} request by {email}")
     return JSONResponse({
         "id": task_id,
@@ -139,7 +139,7 @@ def get_status(task_id, db: Session = Depends(get_db), email = Depends(get_beare
     })
 
 @app.post("/sheet", status_code=201)
-def run_task(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
+def run_task(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth_public)):
     logger.info(f"LAUNCHING SHEET TASK for {email=}")
     if not sheet.sheet_name and not sheet.sheet_id:
         raise HTTPException(status_code=422, detail=f"sheet name or id is required")

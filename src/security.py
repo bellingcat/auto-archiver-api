@@ -10,6 +10,7 @@ GOOGLE_CHROME_APP_ID = os.environ.get("GOOGLE_CHROME_APP_ID")
 assert len(GOOGLE_CHROME_APP_ID)>10, "GOOGLE_CHROME_APP_ID env variable not set"
 GOOGLE_CHROME_APP_ID_PUBLIC = os.environ.get("GOOGLE_CHROME_APP_ID_PUBLIC")
 assert len(GOOGLE_CHROME_APP_ID_PUBLIC)>10, "GOOGLE_CHROME_APP_ID_PUBLIC env variable not set"
+logger.info(f"{GOOGLE_CHROME_APP_ID_PUBLIC=}")
 ALLOWED_EMAILS = set([e.strip().lower() for e in os.environ.get("ALLOWED_EMAILS", "").split(",")])
 assert len(ALLOWED_EMAILS)>=1, "at least one ALLOWED_EMAILS is required from the env variable"
 logger.info(f"{len(ALLOWED_EMAILS)=}")
