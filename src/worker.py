@@ -1,12 +1,11 @@
 
-import os, re, traceback, yaml
+import os, re, traceback, yaml, datetime
 
 from celery import Celery, states
 from celery.exceptions import Ignore
 from celery.signals import task_failure
 from auto_archiver import Config, ArchivingOrchestrator, Metadata
 # from auto_archiver.enrichers import ScreenshotEnricher
-from auto_archiver.feeders import GsheetsFeeder
 from loguru import logger
 
 from db import crud, schemas, models
@@ -63,18 +62,13 @@ def create_archive_task(self, archive_json: str):
 def create_sheet_task(self, sheet_json: str):
     logger.info(f"STARTING {sheet_json}")
     sheet = schemas.SubmitSheet.parse_raw(sheet_json)
-    orchestrator = choose_orchestrator("bellingcat", "")
-    #TODO: modify archiver to accept sheetId too
     config = Config()
-    config.parse(use_cli=False, yaml_config_filename="secrets/orchestration-sheet.yaml")
-    config.feeder.sheet = sheet.sheet_name
-    config.feeder.header = sheet.header
+    config.parse(use_cli=False, yaml_config_filename="secrets/orchestration-sheet.yaml", overwrite_configs={"configurations": {"gsheet_feeder": {"sheet": sheet.sheet_name, "sheet_id": sheet.sheet_id, "header": sheet.header}}})
     orchestrator = ArchivingOrchestrator(config)
-    #TODO: make auto-archiver config.parse receive an overriding dict
-    result = orchestrator.feed()
     # TODO: save into local DB
+    orchestrator.feed()
 
-    return result.to_json()
+    return {"success": True, "sheet": sheet.sheet_name, "sheet_id": sheet.sheet_id, "time": datetime.datetime.now().isoformat()}
 
 @task_failure.connect(sender=create_archive_task)
 def task_failure_notifier(sender=None, **kwargs):

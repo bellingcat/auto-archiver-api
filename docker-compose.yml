@@ -33,13 +33,13 @@ services:
 
   redis:
     image: redis:6-alpine
-    # command: redis-server /conf/redis.conf # local dev
+    # command: redis-server /conf/redis.conf # DEV ONLY
     command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
     volumes:
       - "./redis/data:/data"
       - "./redis/config:/conf"
     restart: always
-    # TODO: DEV ONLY
+    # DEV ONLY
     # ports:
     #   - 6379:6379
 

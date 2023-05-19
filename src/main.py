@@ -15,7 +15,7 @@ from worker import create_archive_task, create_sheet_task, celery
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from security import get_bearer_auth, get_basic_auth, bearer_security
+from security import get_bearer_auth, get_basic_auth, bearer_security, get_bearer_auth_public
 
 load_dotenv()
 
@@ -131,7 +131,7 @@ def get_status(task_id, email = Depends(get_bearer_auth)):
 
 
 @app.delete("/tasks/{task_id}")
-def get_status(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+def get_status(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth_public)):
     logger.info(f"deleting task {task_id} request by {email}")
     return JSONResponse({
         "id": task_id,
@@ -139,8 +139,10 @@ def get_status(task_id, db: Session = Depends(get_db), email = Depends(get_beare
     })
 
 @app.post("/sheet", status_code=201)
-def run_task(sheet:schemas.SubmitSheet, basic_auth = Depends(get_basic_auth)):
-    logger.info("LAUNCHING SHEET TASK")
+def run_task(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
+    logger.info(f"LAUNCHING SHEET TASK for {email=}")
+    if not sheet.sheet_name and not sheet.sheet_id:
+        raise HTTPException(status_code=422, detail=f"sheet name or id is required")
     task = create_sheet_task.delay(sheet.json())
     return JSONResponse({"id": task.id})
 

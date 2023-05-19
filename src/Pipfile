@@ -17,7 +17,7 @@ aiosqlite = "*"
 python-dotenv = "*"
 loguru = "*"
 sqlalchemy = "*"
-auto-archiver = ">=0.5.12"
+auto-archiver = "*"
 alembic = "*"
 fastapi-utils = "*"
 

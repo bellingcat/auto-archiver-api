@@ -31,6 +31,7 @@ class Archive(ArchiveCreate):
 #     #     orm_mode = True
 
 class SubmitSheet(BaseModel):
-    sheet_name: str
+    sheet_name: str | None= None
+    sheet_id: str | None = None
     header: int = 1
     
