@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class ArchiveCreate(BaseModel):
     id: str | None = None
     url: str
@@ -8,9 +9,8 @@ class ArchiveCreate(BaseModel):
     public: bool = True
     author_id: str | None = None
     group_id: str | None = None
-    tags: list = []
+    tags: set = set()
     # urls: list = []
-
 
 
 class Archive(ArchiveCreate):
@@ -22,10 +22,12 @@ class Archive(ArchiveCreate):
         orm_mode = True
 
 
-# class TagCreate(BaseModel):
-#     id: str
-    
-# class Tag(TagCreate):
-#     created_at: datetime
-#     # class Config:
-#     #     orm_mode = True
+class SubmitSheet(BaseModel):
+    sheet_name: str | None = None
+    sheet_id: str | None = None
+    header: int = 1
+    public: bool = False
+    author_id: str | None = None
+    group_id: str | None = None
+    tags: set | None = set()
+    columns: dict | None = {} # TODO: implement

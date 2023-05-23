@@ -1,6 +1,6 @@
 from functools import cache
 from sqlalchemy.orm import Session, load_only
-from sqlalchemy import Column
+from sqlalchemy import Column, or_
 from loguru import logger
 from . import models, schemas
 import yaml
@@ -13,17 +13,17 @@ def get_task(db: Session, task_id: str):
 def get_tasks(db: Session, skip: int = 0, limit: int = 100):
     return base_query(db).offset(skip).limit(limit).all()
 
-def search_tasks_by_url(db: Session, url:str, skip: int = 0, limit: int = 100):
-    return base_query(db).filter(models.Archive.url.like(f'%{url}%')).offset(skip).limit(limit).all()
+def search_tasks_by_url(db: Session, url:str, email:str, skip: int = 0, limit: int = 100):
+    groups = get_user_groups(db, email)
+    return base_query(db).filter(or_(models.Archive.public==True, models.Archive.author_id==email, models.Archive.group_id.in_(groups))).filter(models.Archive.url.like(f'%{url}%')).offset(skip).limit(limit).all()
 
 def search_tasks_by_email(db: Session, email:str, skip: int = 0, limit: int = 100):
     return base_query(db).filter(models.Archive.author.has(email=email)).offset(skip).limit(limit).all()
 
 def create_task(db: Session, task: schemas.ArchiveCreate, tags:list[models.Tag],urls:list[models.ArchiveUrl]):
-    db_task = models.Archive(id=task.id, url=task.url, author_id=task.author_id, result=task.result, group_id=task.group_id)
-    logger.debug(tags)
-    db_task.tags = tags # will this work? TODO: test if I don't call create tag before
-    db_task.urls = urls # will this work to create ArchiveUrl? TODO: test
+    db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id)
+    db_task.tags = tags
+    db_task.urls = urls
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
