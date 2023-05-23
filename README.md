@@ -55,7 +55,13 @@ Copy `.env` and `src/.env` to deployment, along with the contents of `secrets/` 
 Then `docker compose up -d`.
 
 #### updating packages/app/access
-If pipenv packages are updated: `pipenv lock --requirements -r  > requirements.txt` (manually comment line `-i https://pypi.org/simple`) and then `docker compose down` + `docker compose up --build -d` to build images with new packages.
+If pipenv packages are updated: `pipenv lock --requirements -r  > requirements.txt` (or ` pipenv requirements > requirements.txt` depending on pipenv version) (manually comment line `-i https://pypi.org/simple`) and then `docker compose down` + `docker compose up --build -d` to build images with new packages.
 
 New users should be added to the `src/.env` file `ALLOWED_EMAILS` prop
 
+
+```bash
+# CALL /sheet POST endpoint
+curl -XPOST -H "Authorization: Bearer GOOGLE_OAUTH_TOKEN" -H "Content-type: application/json" -d '{"sheet_id": "SHEET_ID", "header": 1}' 'http://localhost:8004/sheet'
+
+```
