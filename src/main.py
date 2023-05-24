@@ -10,12 +10,13 @@ from dotenv import load_dotenv
 import traceback, os, logging
 from loguru import logger
 
-from worker import create_archive_task, create_sheet_task, celery
+from worker import create_archive_task, create_sheet_task, celery, insert_result_into_db
 
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from security import get_bearer_auth, get_basic_auth, bearer_security
+from auto_archiver import Metadata
 
 load_dotenv()
 
@@ -62,7 +63,7 @@ async def home(request: Request):
     return JSONResponse(status)
 
 
-# Bearer protected below
+#-----Submit URL and manipulate tasks. Bearer protected below
 
 @app.get("/groups", response_model=list[str])
 def get_user_groups(db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
@@ -115,7 +116,6 @@ def get_status(task_id, email = Depends(get_bearer_auth)):
             "result": {"error": e}
         })
 
-
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
     logger.info(f"deleting task {task_id} request by {email}")
@@ -124,6 +124,7 @@ def delete_task(task_id, db: Session = Depends(get_db), email = Depends(get_bear
         "deleted": crud.soft_delete_task(db, task_id, email)
     })
 
+#----- Google Sheets Logic
 @app.post("/sheet", status_code=201)
 def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
     logger.info(f"SHEET TASK for {sheet=}")
@@ -132,6 +133,18 @@ def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
         raise HTTPException(status_code=422, detail=f"sheet name or id is required")
     task = create_sheet_task.delay(sheet.json())
     return JSONResponse({"id": task.id})
+
+#----- endpoint to submit data archived elsewhere
+@app.post("/submit-archive", status_code=201)
+def submit_manual_archive(manual:schemas.SubmitManual, basic_auth = Depends(get_basic_auth)):
+    logger.info(f"Submit {manual=}")
+    result = Metadata.from_json(manual.result)
+    logger.info(f"{result=}")
+    manual.tags.add("manual")
+
+    archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
+    return JSONResponse({"id": archive_id})
+
 
 # Basic protected logic to allow access to 1 static file
 SF = os.environ.get("STATIC_FILE", "")

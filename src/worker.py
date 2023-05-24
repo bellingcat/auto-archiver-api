@@ -143,9 +143,9 @@ def is_group_invalid_for_user(public: bool, group_id: str, author_id: str):
     return False
 
 
-def insert_result_into_db(result: Metadata, tags: Set[str], public: bool, group_id: str, author_id: str, task_id:str):
+def insert_result_into_db(result: Metadata, tags: Set[str], public: bool, group_id: str, author_id: str, task_id:str) -> str:
     logger.info(f"INSERTING {public=} {result} into {task_id}")
-    assert result, "UNABLE TO archive: {url}"
+    assert result, f"UNABLE TO archive: {result.get_url()}"
     with get_db() as session:
         # create DB URLs
         db_urls = [models.ArchiveUrl(url=url, key=m.get("id", f"media_{i}")) for i, m in enumerate(result.media) for url in m.urls]
@@ -154,6 +154,7 @@ def insert_result_into_db(result: Metadata, tags: Set[str], public: bool, group_
         # insert archive
         db_task = crud.create_task(session, task=schemas.ArchiveCreate(id=task_id, url=result.get_url(), result=json.loads(result.to_json()), public=public, author_id=author_id, group_id=group_id), tags=db_tags, urls=db_urls)
         logger.debug(f"Added {db_task.id=} to database on {db_task.created_at}")
+        return db_task.id
 
 
 # INIT

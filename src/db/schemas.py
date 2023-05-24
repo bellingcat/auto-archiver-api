@@ -31,3 +31,10 @@ class SubmitSheet(BaseModel):
     group_id: str | None = None
     tags: set | None = set()
     columns: dict | None = {} # TODO: implement
+
+class SubmitManual(BaseModel):
+    result: str # should be a Metadata.to_json()
+    public: bool = False
+    author_id: str | None = None
+    group_id: str | None = None
+    tags: set | None = set()

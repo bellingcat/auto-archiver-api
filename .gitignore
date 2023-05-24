@@ -13,3 +13,4 @@ redis/data/*
 #temp
 tests
 src/user-groups.yaml
+wit*
