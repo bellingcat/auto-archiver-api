@@ -44,7 +44,6 @@ def base_query(db:Session):
         .filter(models.Archive.deleted == False)
 
 ## --------------- TAG
-
 def create_tag(db: Session, tag: str):
     db_tag = db.query(models.Tag).filter(models.Tag.id==tag).first()
     if not db_tag:
@@ -67,6 +66,16 @@ def get_user_groups(db: Session, email:str):
 
 
 ## --------------- INIT User-Groups
+
+
+def get_user(db: Session, author_id: str):
+    db_user = db.query(models.User).filter(models.User.email==author_id).first()
+    if not db_user:
+        db_user = models.User(email=author_id)
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+    return db_user
 
 @cache
 def get_group(db:Session, group_name:str)->models.Group:

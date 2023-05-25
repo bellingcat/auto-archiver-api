@@ -9,6 +9,7 @@ import alembic.config
 from dotenv import load_dotenv
 import traceback, os, logging
 from loguru import logger
+import sqlalchemy
 
 from worker import create_archive_task, create_sheet_task, celery, insert_result_into_db
 
@@ -137,12 +138,14 @@ def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
 #----- endpoint to submit data archived elsewhere
 @app.post("/submit-archive", status_code=201)
 def submit_manual_archive(manual:schemas.SubmitManual, basic_auth = Depends(get_basic_auth)):
-    logger.info(f"Submit {manual=}")
     result = Metadata.from_json(manual.result)
-    logger.info(f"{result=}")
+    logger.info(f"MANUAL SUBMIT {result.get_url()} {manual.author_id}")
     manual.tags.add("manual")
-
-    archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
+    try:
+        archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
+    except sqlalchemy.exc.IntegrityError as e:
+        logger.error(e)
+        raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
     return JSONResponse({"id": archive_id})
 
 
