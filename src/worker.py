@@ -150,7 +150,7 @@ def insert_result_into_db(result: Metadata, tags: Set[str], public: bool, group_
     with get_db() as session:
         # urls are created by get_all_urls
         # create author_id if needed
-        db_user = crud.get_user(session, author_id)
+        crud.get_user(session, author_id)
         # create DB TAGs if needed
         db_tags = [crud.create_tag(session, tag) for tag in tags]
         # insert archive
@@ -165,11 +165,12 @@ def get_all_urls(result: Metadata) -> List[models.ArchiveUrl]:
         for i, url in enumerate(m.urls): db_urls.append(models.ArchiveUrl(url=url, key=m.get("id", f"media_{i}")))
         for k, prop in m.properties.items():
             if prop_converted := convert_if_media(prop):
-                for i, url in enumerate(prop_converted.urls): db_urls.append(models.ArchiveUrl(url=url, key=m.get("id", f"{k}_{i}")))
+                for i, url in enumerate(prop_converted.urls): db_urls.append(models.ArchiveUrl(url=url, key=prop_converted.get("id", f"{k}_{i}")))
             if isinstance(prop, list):
                 for i, prop_media in enumerate(prop):
                     if prop_media := convert_if_media(prop_media):
-                        for j, url in enumerate(prop_media.urls): db_urls.append(models.ArchiveUrl(url=url, key=m.get("id", f"{k}{prop_media.key}_{i}.{j}")))
+                        for j, url in enumerate(prop_media.urls): 
+                            db_urls.append(models.ArchiveUrl(url=url, key=prop_media.get("id", f"{k}{prop_media.key}_{i}.{j}")))
     return db_urls
 
 def convert_if_media(media):
