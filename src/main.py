@@ -71,7 +71,7 @@ def get_user_groups(db: Session = Depends(get_db), email = Depends(get_bearer_au
     return crud.get_user_groups(db, email)
 
 @app.get("/tasks/search-url", response_model=list[schemas.Archive])
-def search(url:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+def search_by_url(url:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
     return crud.search_tasks_by_url(db, url, email, skip=skip, limit=limit)
     
 @app.get("/tasks/sync", response_model=list[schemas.Archive])
