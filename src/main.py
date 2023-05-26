@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import traceback, os, logging
 from loguru import logger
 import sqlalchemy
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from worker import create_archive_task, create_sheet_task, celery, insert_result_into_db
 
@@ -36,6 +37,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# prometheus exposed in /metrics with authentication
+Instrumentator().instrument(app).expose(app, dependencies=[Depends(get_basic_auth)])
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 def get_db():

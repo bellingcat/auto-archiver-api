@@ -66,6 +66,6 @@ async def get_basic_auth(credentials: HTTPBasicCredentials = Depends(basic_secur
     if is_correct_password: return True
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Wrong static file access credentials",
+        detail="Wrong auth credentials",
         headers={"WWW-Authenticate": "Basic"}
     )
