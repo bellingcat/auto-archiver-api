@@ -69,3 +69,19 @@ async def get_basic_auth(credentials: HTTPBasicCredentials = Depends(basic_secur
         detail="Wrong auth credentials",
         headers={"WWW-Authenticate": "Basic"}
     )
+
+# --------------------- Server-side Auth
+SERVICE_PASSWORD = os.environ.get("SERVICE_PASSWORD", "")  # min length is 20 chars
+
+
+async def get_server_auth(credentials: HTTPBasicCredentials = Depends(basic_security)):
+    # validates that the Basic token in the case that it requires it
+    assert len(SERVICE_PASSWORD) >= 20, "Invalid SERVICE_PASSWORD, must be at least 20 chars"
+    current_password_bytes = credentials.password.encode("utf8")
+    is_correct_password = secrets.compare_digest(current_password_bytes, SERVICE_PASSWORD.encode("utf8"))
+    if is_correct_password: return True
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Wrong auth credentials",
+        headers={"WWW-Authenticate": "Basic"}
+    )

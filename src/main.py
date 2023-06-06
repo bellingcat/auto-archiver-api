@@ -17,7 +17,7 @@ from worker import create_archive_task, create_sheet_task, celery, insert_result
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from security import get_bearer_auth, get_basic_auth, bearer_security
+from security import get_bearer_auth, get_basic_auth, get_server_auth, bearer_security
 from auto_archiver import Metadata
 
 load_dotenv()
@@ -135,6 +135,14 @@ def delete_task(task_id, db: Session = Depends(get_db), email = Depends(get_bear
 def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
     logger.info(f"SHEET TASK for {sheet=}")
     sheet.author_id = email
+    if not sheet.sheet_name and not sheet.sheet_id:
+        raise HTTPException(status_code=422, detail=f"sheet name or id is required")
+    task = create_sheet_task.delay(sheet.json())
+    return JSONResponse({"id": task.id})
+
+@app.post("/sheet_service", status_code=201)
+def archive_sheet_service(sheet:schemas.SubmitSheet, basic_auth = Depends(get_server_auth)):
+    logger.info(f"SHEET TASK for {sheet=}")
     if not sheet.sheet_name and not sheet.sheet_id:
         raise HTTPException(status_code=422, detail=f"sheet name or id is required")
     task = create_sheet_task.delay(sheet.json())
