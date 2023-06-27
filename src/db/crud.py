@@ -5,22 +5,29 @@ from loguru import logger
 from . import models, schemas
 import yaml
 
-## --------------- TASK = Archive
+DOMAIN_GROUPS = {}
+
+# --------------- TASK = Archive
+
 
 def get_task(db: Session, task_id: str):
     return base_query(db).filter(models.Archive.id == task_id).first()
 
+
 def get_tasks(db: Session, skip: int = 0, limit: int = 100):
     return base_query(db).offset(skip).limit(limit).all()
 
-def search_tasks_by_url(db: Session, url:str, email:str, skip: int = 0, limit: int = 100):
-    groups = get_user_groups(db, email)
-    return base_query(db).filter(or_(models.Archive.public==True, models.Archive.author_id==email, models.Archive.group_id.in_(groups))).filter(models.Archive.url.like(f'%{url}%')).offset(skip).limit(limit).all()
 
-def search_tasks_by_email(db: Session, email:str, skip: int = 0, limit: int = 100):
+def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100):
+    groups = get_user_groups(db, email)
+    return base_query(db).filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups))).filter(models.Archive.url.like(f'%{url}%')).offset(skip).limit(limit).all()
+
+
+def search_tasks_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
     return base_query(db).filter(models.Archive.author.has(email=email)).offset(skip).limit(limit).all()
 
-def create_task(db: Session, task: schemas.ArchiveCreate, tags:list[models.Tag],urls:list[models.ArchiveUrl]):
+
+def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]):
     db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id)
     db_task.tags = tags
     db_task.urls = urls
@@ -29,23 +36,27 @@ def create_task(db: Session, task: schemas.ArchiveCreate, tags:list[models.Tag],
     db.refresh(db_task)
     return db_task
 
-def soft_delete_task(db: Session, task_id: str, email:str)->bool:
+
+def soft_delete_task(db: Session, task_id: str, email: str) -> bool:
     # TODO: implement hard-delete with cronjob that deletes from S3
-    db_task = db.query(models.Archive).filter(models.Archive.id == task_id, models.Archive.author_id==email, models.Archive.deleted==False).first()
+    db_task = db.query(models.Archive).filter(models.Archive.id == task_id, models.Archive.author_id == email, models.Archive.deleted == False).first()
     if db_task:
         db_task.deleted = True
         db.commit()
     return db_task is not None
 
-def base_query(db:Session):
+
+def base_query(db: Session):
     # allow only some fields to be returned, for example author should remain hidden
     return db.query(models.Archive)\
         .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result))\
         .filter(models.Archive.deleted == False)
 
-## --------------- TAG
+# --------------- TAG
+
+
 def create_tag(db: Session, tag: str):
-    db_tag = db.query(models.Tag).filter(models.Tag.id==tag).first()
+    db_tag = db.query(models.Tag).filter(models.Tag.id == tag).first()
     if not db_tag:
         db_tag = models.Tag(id=tag)
         db.add(db_tag)
@@ -53,23 +64,29 @@ def create_tag(db: Session, tag: str):
         db.refresh(db_tag)
     return db_tag
 
-def search_tags(db: Session, tag:str, skip: int = 0, limit: int = 100):
+
+def search_tags(db: Session, tag: str, skip: int = 0, limit: int = 100):
     return db.query(models.Tag).filter(models.Tag.url.like(f'%{tag}%')).offset(skip).limit(limit).all()
 
 
-def get_group_for_user(db:Session, group_name:str, email:str)->models.Group:
+def get_group_for_user(db: Session, group_name: str, email: str) -> models.Group:
     return db.query(models.association_table_user_groups).filter_by(user_id=email, group_id=group_name).first()
 
-def get_user_groups(db: Session, email:str):
+
+def get_user_groups(db: Session, email: str):
+    # given an email retrieves the user groups from the DB and then the email-domain groups from a global variable
     groups = db.query(models.association_table_user_groups).filter_by(user_id=email).with_entities(Column("group_id")).all()
-    return [g[0] for g in groups]
+    user_level_groups = [g[0] for g in groups]
+    domain_level_groups = DOMAIN_GROUPS.get(email.split('@')[1], [])
+    logger.success(f"EMAIL {email} has {user_level_groups=} and {domain_level_groups=}")
+    return list(set(user_level_groups) | set(domain_level_groups))
 
 
-## --------------- INIT User-Groups
+# --------------- INIT User-Groups
 
 
 def get_user(db: Session, author_id: str):
-    db_user = db.query(models.User).filter(models.User.email==author_id).first()
+    db_user = db.query(models.User).filter(models.User.email == author_id).first()
     if not db_user:
         db_user = models.User(email=author_id)
         db.add(db_user)
@@ -77,16 +94,18 @@ def get_user(db: Session, author_id: str):
         db.refresh(db_user)
     return db_user
 
+
 @cache
-def get_group(db:Session, group_name:str)->models.Group:
-    db_group = db.query(models.Group).filter(models.Group.id==group_name).first()
+def get_group(db: Session, group_name: str) -> models.Group:
+    db_group = db.query(models.Group).filter(models.Group.id == group_name).first()
     if db_group is None:
         db_group = models.Group(id=group_name)
         db.add(db_group)
     return db_group
 
 
-def upsert_user_groups(db:Session, filename:str):
+def upsert_user_groups(db: Session, filename: str):
+    global DOMAIN_GROUPS
     """
     reads the user_groups yaml file and inserts any new users, groups, 
     along with new participation of users in groups
@@ -100,6 +119,8 @@ def upsert_user_groups(db:Session, filename:str):
         except yaml.YAMLError as e:
             logger.error(f"could not open user groups filename {filename}: {e}")
             raise e
+    # updating domain->groups access
+    DOMAIN_GROUPS = user_groups_yaml.get("domains", {})
 
     # upserting in DB
     user_groups = user_groups_yaml.get("users", {})
@@ -109,11 +130,11 @@ def upsert_user_groups(db:Session, filename:str):
     for user_email, groups in user_groups.items():
         assert '@' in user_email, f'Invalid user email {user_email}'
         logger.info(f"email='{user_email[0:3]}...{user_email[-8:]}', {groups=}")
-        db_user = db.query(models.User).filter(models.User.email==user_email).first()
-        if db_user is None: 
+        db_user = db.query(models.User).filter(models.User.email == user_email).first()
+        if db_user is None:
             db_user = models.User(email=user_email)
             db.add(db_user)
-        if not groups: continue # avoid hanging in for x in None:
+        if not groups: continue  # avoid hanging in for x in None:
         for group in groups:
             db_group = get_group(db, group)
             db_group.users.append(db_user)

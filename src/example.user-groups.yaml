@@ -1,3 +1,4 @@
+# email-level group access
 users:
   email1@example.com:
     - group1
@@ -6,8 +7,12 @@ users:
     - group2
   email3@example-no-group.com:
 
+# domain-level group access (taken from the emails)
+domains:
+  example.com:
+    - group3
 
 orchestrators:
   group1: secrets/orchestration-group1.yaml
   group2: secrets/orchestration-group2.yaml
-  default: secrets/orchestration-default:.yaml
+  default: secrets/orchestration-default.yaml
