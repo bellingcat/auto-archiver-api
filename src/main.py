@@ -77,7 +77,8 @@ def get_user_groups(db: Session = Depends(get_db), email = Depends(get_bearer_au
 
 @app.get("/tasks/search-url", response_model=list[schemas.Archive])
 def search_by_url(url:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
-    return crud.search_tasks_by_url(db, url, email, skip=skip, limit=limit)
+    #TODO: test strip
+    return crud.search_tasks_by_url(db, url.strip(), email, skip=skip, limit=limit)
     
 @app.get("/tasks/sync", response_model=list[schemas.Archive])
 def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
@@ -184,5 +185,4 @@ async def on_startup():
 @repeat_every(seconds=60 * 60)  # 1 hour
 async def on_startup():
     db: Session = next(get_db())
-    USER_GROUPS_FILENAME=os.environ.get("USER_GROUPS_FILENAME", "user-groups.yaml")
-    crud.upsert_user_groups(db, USER_GROUPS_FILENAME)
+    crud.upsert_user_groups(db)

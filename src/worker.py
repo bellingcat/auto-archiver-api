@@ -137,8 +137,7 @@ def is_group_invalid_for_user(public: bool, group_id: str, author_id: str):
     if not public and group_id and len(group_id) > 0:
         # ensure group is valid for user
         with get_db() as session:
-            db_group = crud.get_group_for_user(session, group_id, author_id)
-            if not db_group:
+            if not crud.is_user_in_group(session, group_id, author_id):
                 logger.error(em := f"User {author_id} is not part of {group_id}, no permission")
                 return em
     return False
