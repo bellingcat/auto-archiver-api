@@ -1,34 +1,35 @@
+# -i https://pypi.org/simple
 aiofiles==0.6.0
 aiohttp==3.8.4 ; python_version >= '3.6'
 aiosignal==1.3.1 ; python_version >= '3.7'
 aiosqlite==0.19.0
 alembic==1.11.1
 amqp==2.6.1 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'
-anyio==3.7.0 ; python_version >= '3.7'
+anyio==3.7.1 ; python_version >= '3.7'
 argparse==1.4.0
 async-generator==1.10 ; python_version >= '3.5'
 async-timeout==4.0.2 ; python_version >= '3.6'
 attrs==23.1.0 ; python_version >= '3.7'
 authlib==0.15.6
-auto-archiver==0.5.26
+auto-archiver==0.5.27
 beautifulsoup4==4.12.2 ; python_full_version >= '3.6.0'
 billiard==3.6.4.0
 blinker==1.6.2 ; python_version >= '3.7'
-boto3==1.26.165 ; python_version >= '3.7'
-botocore==1.29.165 ; python_version >= '3.7'
-brotli==1.0.9 ; platform_python_implementation == 'CPython'
+boto3==1.28.2 ; python_version >= '3.7'
+botocore==1.31.2 ; python_version >= '3.7'
+brotli==1.0.9 ; platform_python_implementation >= 'CPython'
 bs4==0.0.1
 cachetools==5.3.1 ; python_version >= '3.7'
 celery==4.4.7
 certifi==2023.5.7 ; python_version >= '3.6'
 cffi==1.15.1
-charset-normalizer==3.1.0 ; python_full_version >= '3.7.0'
-click==8.1.3 ; python_version >= '3.7'
+charset-normalizer==3.2.0 ; python_full_version >= '3.7.0'
+click==8.1.4 ; python_version >= '3.7'
 cloudscraper==1.2.71
-cryptography==41.0.1 ; python_version >= '3.7'
+cryptography==41.0.2 ; python_version >= '3.7'
 dataclasses-json==0.5.9 ; python_version >= '3.6'
 dateparser==1.1.8 ; python_version >= '3.7'
-exceptiongroup==1.1.1 ; python_version < '3.11'
+exceptiongroup==1.1.2 ; python_version < '3.11'
 fastapi==0.95.2
 fastapi-utils==0.2.1
 ffmpeg-python==0.2.0
@@ -38,7 +39,7 @@ flower==0.9.7
 frozenlist==1.3.3 ; python_version >= '3.7'
 future==0.18.3 ; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'
 google-api-core==2.11.1 ; python_version >= '3.7'
-google-api-python-client==2.91.0 ; python_version >= '3.7'
+google-api-python-client==2.92.0 ; python_version >= '3.7'
 google-auth==2.21.0 ; python_version >= '3.6'
 google-auth-httplib2==0.1.0
 google-auth-oauthlib==1.0.0 ; python_version >= '3.6'
@@ -46,19 +47,19 @@ googleapis-common-protos==1.59.1 ; python_version >= '3.7'
 greenlet==2.0.2 ; python_version >= '3' and platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32')))))
 gspread==5.10.0 ; python_version >= '3.7'
 h11==0.14.0 ; python_version >= '3.7'
-httpcore==0.17.2 ; python_version >= '3.7'
+httpcore==0.17.3 ; python_version >= '3.7'
 httplib2==0.22.0 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
 httpx==0.24.1 ; python_version >= '3.7'
 humanize==4.6.0 ; python_version >= '3.7'
 idna==3.4 ; python_version >= '3.5'
 iniconfig==2.0.0 ; python_version >= '3.7'
-instaloader==4.9.6 ; python_version >= '3.8'
+instaloader==4.10 ; python_version >= '3.8'
 itsdangerous==2.1.2 ; python_version >= '3.7'
 jinja2==3.1.2
 jmespath==1.0.1 ; python_version >= '3.7'
 kombu==4.6.11 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'
 loguru==0.7.0
-lxml==4.9.2 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'
+lxml==4.9.3 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'
 mako==1.2.4 ; python_version >= '3.7'
 markdown-it-py==3.0.0 ; python_version >= '3.8'
 markupsafe==2.1.3 ; python_version >= '3.7'
@@ -68,7 +69,7 @@ mdurl==0.1.2 ; python_version >= '3.7'
 multidict==6.0.4 ; python_version >= '3.7'
 mutagen==1.46.0 ; python_version >= '3.7'
 mypy-extensions==1.0.0 ; python_version >= '3.5'
-numpy==1.25.0 ; python_version >= '3.9'
+numpy==1.25.1 ; python_version >= '3.9'
 oauth2client==4.1.3
 oauthlib==3.2.2 ; python_version >= '3.6'
 outcome==1.2.0 ; python_version >= '3.7'
@@ -78,7 +79,7 @@ pillow==10.0.0 ; python_version >= '3.8'
 pluggy==0.13.1 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
 prometheus-client==0.8.0
 prometheus-fastapi-instrumentator==6.0.0
-protobuf==4.23.3 ; python_version >= '3.7'
+protobuf==4.23.4 ; python_version >= '3.7'
 py==1.11.0 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'
 pyaes==1.6.1
 pyasn1==0.5.0 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'
@@ -134,4 +135,4 @@ websockets==11.0.3 ; python_version >= '3.7'
 werkzeug==2.3.6 ; python_version >= '3.8'
 wsproto==1.2.0 ; python_full_version >= '3.7.0'
 yarl==1.9.2 ; python_version >= '3.7'
-yt-dlp==2023.6.22 ; python_version >= '3.7'
+yt-dlp==2023.7.6 ; python_version >= '3.7'
