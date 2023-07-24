@@ -20,11 +20,13 @@ def get_tasks(db: Session, skip: int = 0, limit: int = 100):
 
 
 def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100):
+    email = email.lower()
     groups = get_user_groups(db, email)
     return base_query(db).filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups))).filter(models.Archive.url.like(f'%{url}%')).offset(skip).limit(limit).all()
 
 
 def search_tasks_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
+    email = email.lower()
     return base_query(db).filter(models.Archive.author.has(email=email)).offset(skip).limit(limit).all()
 
 
@@ -74,6 +76,7 @@ def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
     return len(group_name) and len(email) and group_name in get_user_groups(db, email)
 
 def get_user_groups(db: Session, email: str):
+    email = email.lower()
     global DOMAIN_GROUPS, DOMAIN_GROUPS_LOADED
     if not DOMAIN_GROUPS_LOADED: upsert_user_groups(db)
     # given an email retrieves the user groups from the DB and then the email-domain groups from a global variable
@@ -88,6 +91,7 @@ def get_user_groups(db: Session, email: str):
 
 
 def get_user(db: Session, author_id: str):
+    author_id = author_id.lower()
     db_user = db.query(models.User).filter(models.User.email == author_id).first()
     if not db_user:
         db_user = models.User(email=author_id)
@@ -131,6 +135,7 @@ def upsert_user_groups(db: Session):
     db.query(models.association_table_user_groups).delete()
 
     for user_email, groups in user_groups.items():
+        user_email = user_email.lower()
         assert '@' in user_email, f'Invalid user email {user_email}'
         logger.info(f"email='{user_email[0:3]}...{user_email[-8:]}', {groups=}")
         db_user = db.query(models.User).filter(models.User.email == user_email).first()
