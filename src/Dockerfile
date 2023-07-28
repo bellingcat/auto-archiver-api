@@ -7,7 +7,6 @@ WORKDIR /app
 # set environment variables
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
-ENV RUNNING_IN_DOCKER 1
 
 # install dependencies
 RUN pip install --upgrade pip && \
