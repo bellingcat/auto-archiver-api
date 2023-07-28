@@ -24,7 +24,7 @@ load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.1", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
@@ -85,7 +85,7 @@ def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email
     return crud.search_tasks_by_email(db, email, skip=skip, limit=limit)
 
 @app.post("/tasks", status_code=201)
-def archive_sheet(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth)):
+def archive_tasks(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth)):
     archive.author_id = email
     url = archive.url
     logger.info(f"new {archive.public=} task for {email=} and {archive.group_id=}: {url}")
