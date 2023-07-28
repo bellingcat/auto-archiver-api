@@ -12,7 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 # install dependencies
 RUN pip install --upgrade pip && \
 	apt-get update && \
-	apt-get install -y gcc ffmpeg fonts-noto firefox-esr && \
+	apt-get install -y gcc ffmpeg fonts-noto firefox-esr exiftool && \
 	wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz && \
 	tar -xvzf geckodriver* -C /usr/local/bin && \
 	chmod +x /usr/local/bin/geckodriver && \
