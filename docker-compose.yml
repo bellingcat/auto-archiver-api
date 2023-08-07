@@ -9,7 +9,7 @@ services:
       - 8004:8000
     command: uvicorn main:app --host 0.0.0.0 --reload
     volumes:
-      - ./src:/usr/src/app
+      - ./src:/app
     env_file: src/.env
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -22,7 +22,7 @@ services:
     restart: always
     command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
     volumes:
-      - ./src:/usr/src/app
+      - ./src:/app
     env_file: src/.env
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
