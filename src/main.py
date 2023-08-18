@@ -9,6 +9,7 @@ import alembic.config
 from dotenv import load_dotenv
 import traceback, os, logging
 from loguru import logger
+from datetime import datetime
 import sqlalchemy
 from prometheus_fastapi_instrumentator import Instrumentator
 
@@ -24,7 +25,7 @@ load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.5.2"
+VERSION = "0.5.3"
 
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.1", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
@@ -76,9 +77,9 @@ def get_user_groups(db: Session = Depends(get_db), email = Depends(get_bearer_au
     return crud.get_user_groups(db, email)
 
 @app.get("/tasks/search-url", response_model=list[schemas.Archive])
-def search_by_url(url:str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+def search_by_url(url:str, skip: int = 0, limit: int = 100, archived_after:datetime=None, archived_before:datetime=None, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
     #TODO: test strip
-    return crud.search_tasks_by_url(db, url.strip(), email, skip=skip, limit=limit)
+    return crud.search_tasks_by_url(db, url.strip(), email, skip=skip, limit=limit, archived_after=archived_after, archived_before=archived_before)
     
 @app.get("/tasks/sync", response_model=list[schemas.Archive])
 def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):

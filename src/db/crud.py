@@ -2,6 +2,7 @@ from functools import cache
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy import Column, or_
 from loguru import logger
+from datetime import datetime
 from . import models, schemas
 import yaml, os
 
@@ -19,10 +20,15 @@ def get_tasks(db: Session, skip: int = 0, limit: int = 100):
     return base_query(db).offset(skip).limit(limit).all()
 
 
-def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100):
+def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None):
     email = email.lower()
     groups = get_user_groups(db, email)
-    return base_query(db).filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups))).filter(models.Archive.url.like(f'%{url}%')).offset(skip).limit(limit).all()
+    query = base_query(db).filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups))).filter(models.Archive.url.like(f'%{url}%'))
+    if archived_after:
+        query = query.filter(models.Archive.created_at >= archived_after)
+    if archived_before:
+        query = query.filter(models.Archive.created_at <= archived_before)
+    return query.offset(skip).limit(limit).all()
 
 
 def search_tasks_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
@@ -74,6 +80,7 @@ def search_tags(db: Session, tag: str, skip: int = 0, limit: int = 100):
 
 def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
     return len(group_name) and len(email) and group_name in get_user_groups(db, email)
+
 
 def get_user_groups(db: Session, email: str):
     email = email.lower()
