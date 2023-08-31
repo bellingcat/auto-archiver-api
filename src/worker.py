@@ -104,7 +104,7 @@ def read_user_groups():
 def get_user_first_group(email):
     user_groups_yaml = read_user_groups()
     groups = user_groups_yaml.get("users", {}).get(email, [])
-    if len(groups): return groups[0]
+    if groups != None and len(groups): return groups[0]
     return "default"
 
 
