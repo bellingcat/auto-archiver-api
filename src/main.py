@@ -104,22 +104,21 @@ def archive_tasks(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth
 @app.get("/tasks/{task_id}")
 def get_status(task_id, email = Depends(get_bearer_auth)):
     logger.info(f"status check for user {email}")
-    task_result = AsyncResult(task_id, app=celery)
-    result = {
+    task = AsyncResult(task_id, app=celery)
+    response = {
         "id": task_id,
-        "status": task_result.status,
-        "result": task_result.result
+        "status": task.status,
+        "result": task.result
     }
     try:
-        if task_result.result and "error" in task_result.result:
-            result["status"] = "FAILURE"
+        if task.result and "error" in task.result:
+            response["status"] = "FAILURE"
     except Exception as e: 
         logger.error(e)
         logger.error(traceback.format_exc())
-        result["status"] = "FAILURE"
+        response["status"] = "FAILURE"
     try:
-        json_result = jsonable_encoder(result, exclude_unset=True)
-        return JSONResponse(json_result)
+        return JSONResponse(jsonable_encoder(response, exclude_unset=True))
     except Exception as e:
         logger.error(e)
         logger.error(traceback.format_exc())
