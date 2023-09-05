@@ -44,6 +44,11 @@ Instrumentator().instrument(app).expose(app, dependencies=[Depends(get_basic_aut
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+SERVE_LOCAL_ARCHIVE = os.environ.get("SERVE_LOCAL_ARCHIVE", "")
+if len(SERVE_LOCAL_ARCHIVE) > 1 and os.path.isdir(SERVE_LOCAL_ARCHIVE):
+    logger.info(f"mounting local archive {SERVE_LOCAL_ARCHIVE}")
+    app.mount(SERVE_LOCAL_ARCHIVE, StaticFiles(directory=SERVE_LOCAL_ARCHIVE), name=SERVE_LOCAL_ARCHIVE)
+
 def get_db():
     session = SessionLocal()
     try: yield session
