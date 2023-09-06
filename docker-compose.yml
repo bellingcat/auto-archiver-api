@@ -14,7 +14,6 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - SERVE_LOCAL_ARCHIVE=/app/local_archive # See orchestration.yaml local_storage.save_to
     depends_on:
       - redis
 
@@ -34,15 +33,11 @@ services:
 
   redis:
     image: redis:6-alpine
-    # command: redis-server /conf/redis.conf # DEV ONLY
     command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
     volumes:
       - "./redis/data:/data"
       - "./redis/config:/conf"
     restart: always
-    # DEV ONLY
-    # ports:
-    #   - 6379:6379
 
   dashboard:
     build: ./src
