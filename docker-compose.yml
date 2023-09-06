@@ -33,15 +33,11 @@ services:
 
   redis:
     image: redis:6-alpine
-    # command: redis-server /conf/redis.conf # DEV ONLY
     command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
     volumes:
       - "./redis/data:/data"
       - "./redis/config:/conf"
     restart: always
-    # DEV ONLY
-    # ports:
-    #   - 6379:6379
 
   dashboard:
     build: ./src
