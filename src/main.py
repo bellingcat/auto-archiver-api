@@ -103,29 +103,29 @@ def archive_tasks(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth
 
 @app.get("/tasks/{task_id}")
 def get_status(task_id, email = Depends(get_bearer_auth)):
-    logger.info(f"status check for user {email}")
+    logger.info(f"status check for user {email} task {task_id}")
     task = AsyncResult(task_id, app=celery)
-    response = {
-        "id": task_id,
-        "status": task.status,
-        "result": task.result
-    }
     try:
-        if task.result and "error" in task.result:
-            response["status"] = "FAILURE"
-    except Exception as e: 
-        logger.error(e)
-        logger.error(traceback.format_exc())
-        response["status"] = "FAILURE"
-    try:
+        if task.status == "FAILURE":
+            # *FAILURE* The task raised an exception, or has exceeded the retry limit.
+            # The :attr:`result` attribute then contains the exception raised by the task.
+            # https://docs.celeryq.dev/en/stable/_modules/celery/result.html#AsyncResult
+            raise task.result
+
+        response = {
+            "id": task_id,
+            "status": task.status,
+            "result": task.result
+        }
         return JSONResponse(jsonable_encoder(response, exclude_unset=True))
+
     except Exception as e:
         logger.error(e)
         logger.error(traceback.format_exc())
         return JSONResponse({
             "id": task_id,
             "status": "FAILURE",
-            "result": {"error": e}
+            "result": {"error": str(e)}
         })
 
 @app.delete("/tasks/{task_id}")
