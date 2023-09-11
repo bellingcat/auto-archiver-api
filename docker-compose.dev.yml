@@ -2,10 +2,18 @@ version: '3.8'
 
 services:
   web:
+    restart: "no"
+    command: uvicorn main:app --host 0.0.0.0 --reload
     environment:
       - SERVE_LOCAL_ARCHIVE=/app/local_archive # See orchestration.yaml local_storage.save_to
       - ALLOWED_ORIGINS=http://localhost:8004
+
+  worker:
+    restart: "no"
+    volumes:
+        - ./src:/app
+    
   redis:
-    command: redis-server /conf/redis.conf
+    restart: "no"
     ports:
       - 6379:6379

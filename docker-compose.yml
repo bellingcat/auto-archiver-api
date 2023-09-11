@@ -1,54 +1,60 @@
+x-broker-url: &broker-url "redis://:${REDIS_PASSWORD}@redis:6379/0"
+
+x-base-service: &base-service
+  build: ./src
+  restart: always
+  env_file: src/.env
+  environment:
+    CELERY_BROKER_URL: *broker-url
+    CELERY_RESULT_BACKEND: *broker-url
+  # volumes:
+  #   - /var/run/docker.sock:/var/run/docker.sock
+  #   # the left side of this volume should be the result of '$(which docker)'
+  #   - /usr/bin/docker:/usr/bin/docker
+  #   # - ./src:/app
+
+
 version: '3.8'
 
 services:
-
   web:
-    build: ./src
-    restart: always
+    <<: *base-service
     ports:
       - 8004:8000
-    command: uvicorn main:app --host 0.0.0.0 --reload
-    volumes:
-      - ./src:/app
-    env_file: src/.env
-    environment:
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+    command: uvicorn main:app --host 0.0.0.0
     depends_on:
       - redis
 
   worker:
-    build: ./src
-    restart: always
+    <<: *base-service
     command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
-    volumes:
-      - ./src:/app
-    env_file: src/.env
-    environment:
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+    # volumes:
+      # use the docker/sock and bin for a DooD setup, for Dind you need to run the get-docker.sh script in the Dockerfile
+      # - /var/run/docker.sock:/var/run/docker.sock
+      # # the left side of this volume should be the result of '$(which docker)'
+      # - /usr/bin/docker:/usr/bin/docker
+      # - ./src:/app
     depends_on:
       - web
       - redis
 
   redis:
     image: redis:6-alpine
+    restart: always
     command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
     volumes:
       - "./redis/data:/data"
       - "./redis/config:/conf"
-    restart: always
 
+  # service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up flower" 
   dashboard:
-    build: ./src
-    restart: always
-    command:  flower --app=worker.celery --port=5555 --broker=redis://:${REDIS_PASSWORD}@redis:6379/0 --basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}
-    env_file: src/.env
+    <<: *base-service
+    volumes: []
+    profiles:
+      - flower
+    command: ["flower", "--app=worker.celery", "--port=5555", "--broker", *broker-url, "--basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}"]
     ports:
       - 5556:5555
-    environment:
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - web
       - redis
