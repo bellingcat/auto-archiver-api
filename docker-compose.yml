@@ -1,5 +1,8 @@
 version: '3.8'
 
+volumes:
+  browsertrix:
+
 services:
 
   web:
@@ -23,10 +26,15 @@ services:
     command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
     volumes:
       - ./src:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      - browsertrix:/crawls
+
     env_file: src/.env
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - RUNNING_IN_DOCKER= # Override env from auto-archiver Dockerfile
+
     depends_on:
       - web
       - redis
