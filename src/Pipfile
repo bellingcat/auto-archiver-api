@@ -19,7 +19,6 @@ sqlalchemy = "*"
 alembic = "*"
 fastapi-utils = "*"
 prometheus-fastapi-instrumentator = "*"
-auto-archiver = "*"
 
 [dev-packages]
 watchdog = "*"

@@ -7,14 +7,12 @@ x-base-service: &base-service
   environment:
     CELERY_BROKER_URL: *broker-url
     CELERY_RESULT_BACKEND: *broker-url
-  # volumes:
-  #   - /var/run/docker.sock:/var/run/docker.sock
-  #   # the left side of this volume should be the result of '$(which docker)'
-  #   - /usr/bin/docker:/usr/bin/docker
-  #   # - ./src:/app
-
-
+    
 version: '3.8'
+
+name: auto-archiver-api
+# volumes:
+#   shared-data:
 
 services:
   web:
@@ -22,21 +20,43 @@ services:
     ports:
       - 8004:8000
     command: uvicorn main:app --host 0.0.0.0
+    volumes:
+      - ./src/secrets:/app/secrets
+      - ./src/logs:/app/logs
     depends_on:
       - redis
 
   worker:
     <<: *base-service
     command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
-    # volumes:
+    volumes:
       # use the docker/sock and bin for a DooD setup, for Dind you need to run the get-docker.sh script in the Dockerfile
-      # - /var/run/docker.sock:/var/run/docker.sock
-      # # the left side of this volume should be the result of '$(which docker)'
-      # - /usr/bin/docker:/usr/bin/docker
-      # - ./src:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      # the left side of this volume should be the result of '$(which docker)' on the host
+      - /usr/bin/docker:/usr/bin/docker
+      # same as web:
+      - ./src/secrets:/app/secrets
+      - ./src/logs:/app/logs
+      # to read crawler outputs
+      # - shared-data:/crawls
+      - ./src/crawls:/crawls
     depends_on:
       - web
       - redis
+
+  # crawler:
+  #     image: webrecorder/browsertrix-crawler:latest
+  #     restart: always
+  #     volumes:
+  #       - shared-data:/crawls
+  #     cap_add:
+  #       - NET_ADMIN
+  #       - SYS_ADMIN
+  #     shm_size: 1gb
+  #     # command: 'while [ ! -f "/crawls/*" ]; do sleep 1; done'
+  #     command: ["tail", "-f", "/dev/null"]
+  #     # command: ["echo", "'started'"]
+
 
   redis:
     image: redis:6-alpine

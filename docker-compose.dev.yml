@@ -10,8 +10,8 @@ services:
 
   worker:
     restart: "no"
-    volumes:
-        - ./src:/app
+    # volumes:
+    #     - ./src:/app
     
   redis:
     restart: "no"

@@ -65,4 +65,7 @@ New users should be added to the `src/.env` file `ALLOWED_EMAILS` prop
 # CALL /sheet POST endpoint
 curl -XPOST -H "Authorization: Bearer GOOGLE_OAUTH_TOKEN" -H "Content-type: application/json" -d '{"sheet_id": "SHEET_ID", "header": 1}' 'http://localhost:8004/sheet'
 
+# CALL /tasks
+curl -XPOST -H "Authorization: Bearer GOOGLE_OAUTH_TOKEN" -H "Content-type: application/json" -d '{"url": "https://twitter.com/bellingcat/status/1697236270446006411"}' 'http://localhost:8004/tasks'
+
 ```

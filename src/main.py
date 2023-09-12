@@ -137,6 +137,19 @@ def delete_task(task_id, db: Session = Depends(get_db), email = Depends(get_bear
         "deleted": crud.soft_delete_task(db, task_id, email)
     })
 
+#----- endpoint to submit data archived elsewhere
+@app.post("/submit-archive", status_code=201)
+def submit_manual_archive(manual:schemas.SubmitManual, basic_auth = Depends(get_basic_auth)):
+    result = Metadata.from_json(manual.result)
+    logger.info(f"MANUAL SUBMIT {result.get_url()} {manual.author_id}")
+    manual.tags.add("manual")
+    try:
+        archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
+    except sqlalchemy.exc.IntegrityError as e:
+        logger.error(e)
+        raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
+    return JSONResponse({"id": archive_id})
+
 #----- Google Sheets Logic
 @app.post("/sheet", status_code=201)
 def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
@@ -154,19 +167,6 @@ def archive_sheet_service(sheet:schemas.SubmitSheet, basic_auth = Depends(get_se
         raise HTTPException(status_code=422, detail=f"sheet name or id is required")
     task = create_sheet_task.delay(sheet.json())
     return JSONResponse({"id": task.id})
-
-#----- endpoint to submit data archived elsewhere
-@app.post("/submit-archive", status_code=201)
-def submit_manual_archive(manual:schemas.SubmitManual, basic_auth = Depends(get_basic_auth)):
-    result = Metadata.from_json(manual.result)
-    logger.info(f"MANUAL SUBMIT {result.get_url()} {manual.author_id}")
-    manual.tags.add("manual")
-    try:
-        archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
-    except sqlalchemy.exc.IntegrityError as e:
-        logger.error(e)
-        raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
-    return JSONResponse({"id": archive_id})
 
 
 # Basic protected logic to allow access to 1 static file

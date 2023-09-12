@@ -37,8 +37,8 @@
 
 
 # FROM python:3.10
-# FROM python:3.10-slim
 FROM ubuntu:22.04
+# WORKDIR /app
 WORKDIR /app
 
 RUN apt update && \
@@ -66,8 +66,12 @@ RUN apt install -y python3.10 python3-pip && \
 	pip install --upgrade pip && \ 
 	pip install pipenv && \
 	pipenv install
+RUN apt install -y git
+RUN echo 'from here 6'; pipenv install -e git+https://github.com/bellingcat/auto-archiver.git@wacz-docker-fix#egg=auto_archiver
+
 
 COPY . .
+
 ENTRYPOINT ["pipenv", "run"]
 
 
@@ -78,11 +82,11 @@ ENTRYPOINT ["pipenv", "run"]
 # # FROM	 ubuntu:22.04
 # # set work directory, it's not /app since that overrides browsetrix
 
-# RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
-# 	sh get-docker.sh
+# # RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
+# # 	sh get-docker.sh
 
+# # WORKDIR /app
 # WORKDIR /app
-# # WORKDIR /app/aa-api
 
 # # set environment variables
 # ENV PYTHONUNBUFFERED 1
@@ -94,6 +98,7 @@ ENTRYPOINT ["pipenv", "run"]
 # # 	apt-get update && \
 # # 	pipenv install
 # RUN pipenv install
+# RUN pipenv install -e git+https://github.com/bellingcat/auto-archiver.git@wacz-docker-fix#egg=auto_archiver
 
 
 # # copy src code over
