@@ -12,6 +12,7 @@ redis/data/*
 .ipynb_checkpoints*
 #temp
 tests
-src/user-groups.yaml
+app/user-groups.yaml
 wit*
-src/crawls
+app/crawls
+docker-data-volume

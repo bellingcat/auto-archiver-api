@@ -19,7 +19,7 @@ from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from security import get_bearer_auth, get_basic_auth, get_server_auth, bearer_security
-from auto_archiver import Metadata
+# from auto_archiver import Metadata
 
 load_dotenv()
 
@@ -138,17 +138,17 @@ def delete_task(task_id, db: Session = Depends(get_db), email = Depends(get_bear
     })
 
 #----- endpoint to submit data archived elsewhere
-@app.post("/submit-archive", status_code=201)
-def submit_manual_archive(manual:schemas.SubmitManual, basic_auth = Depends(get_basic_auth)):
-    result = Metadata.from_json(manual.result)
-    logger.info(f"MANUAL SUBMIT {result.get_url()} {manual.author_id}")
-    manual.tags.add("manual")
-    try:
-        archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
-    except sqlalchemy.exc.IntegrityError as e:
-        logger.error(e)
-        raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
-    return JSONResponse({"id": archive_id})
+# @app.post("/submit-archive", status_code=201)
+# def submit_manual_archive(manual:schemas.SubmitManual, basic_auth = Depends(get_basic_auth)):
+#     result = Metadata.from_json(manual.result)
+#     logger.info(f"MANUAL SUBMIT {result.get_url()} {manual.author_id}")
+#     manual.tags.add("manual")
+#     try:
+#         archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
+#     except sqlalchemy.exc.IntegrityError as e:
+#         logger.error(e)
+#         raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
+#     return JSONResponse({"id": archive_id})
 
 #----- Google Sheets Logic
 @app.post("/sheet", status_code=201)

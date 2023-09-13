@@ -1,9 +1,9 @@
 x-broker-url: &broker-url "redis://:${REDIS_PASSWORD}@redis:6379/0"
 
-x-base-service: &base-service
-  build: ./src
+x-base-setup: &base-setup
+  # build: ./app
   restart: always
-  env_file: src/.env
+  env_file: app/.env
   environment:
     CELERY_BROKER_URL: *broker-url
     CELERY_RESULT_BACKEND: *broker-url
@@ -11,52 +11,37 @@ x-base-service: &base-service
 version: '3.8'
 
 name: auto-archiver-api
-# volumes:
-#   shared-data:
-
 services:
   web:
-    <<: *base-service
+    <<: *base-setup
+    build:
+      context: .
+      dockerfile: web.Dockerfile
     ports:
       - 8004:8000
-    command: uvicorn main:app --host 0.0.0.0
     volumes:
-      - ./src/secrets:/app/secrets
-      - ./src/logs:/app/logs
+      - ./app:/app
     depends_on:
       - redis
 
-  worker:
-    <<: *base-service
-    command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
-    volumes:
-      # use the docker/sock and bin for a DooD setup, for Dind you need to run the get-docker.sh script in the Dockerfile
-      - /var/run/docker.sock:/var/run/docker.sock
-      # the left side of this volume should be the result of '$(which docker)' on the host
-      - /usr/bin/docker:/usr/bin/docker
-      # same as web:
-      - ./src/secrets:/app/secrets
-      - ./src/logs:/app/logs
-      # to read crawler outputs
-      # - shared-data:/crawls
-      - ./src/crawls:/crawls
-    depends_on:
-      - web
-      - redis
-
-  # crawler:
-  #     image: webrecorder/browsertrix-crawler:latest
-  #     restart: always
-  #     volumes:
-  #       - shared-data:/crawls
-  #     cap_add:
-  #       - NET_ADMIN
-  #       - SYS_ADMIN
-  #     shm_size: 1gb
-  #     # command: 'while [ ! -f "/crawls/*" ]; do sleep 1; done'
-  #     command: ["tail", "-f", "/dev/null"]
-  #     # command: ["echo", "'started'"]
-
+  # worker:
+  #   <<: *base-setup
+  #   command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
+  #   volumes:
+  #     # use the docker/sock and bin for a DooD setup, for Dind you need to run the get-docker.sh script in the Dockerfile
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     # the left side of this volume should be the result of '$(which docker)' on the host
+  #     - /usr/bin/docker:/usr/bin/docker
+  #     # same as web:
+  #     # - ./app/secrets:/app/secrets
+  #     - ./app:/app
+  #     # - ./app/docker-data-volume/logs:/app/logs
+  #     # - ./app/docker-data-volume/database:/app/database
+  #     # - ./app/docker-data-volume/crawls:/crawls
+  #     # to read crawler outputs
+  #   depends_on:
+  #     - web
+  #     - redis
 
   redis:
     image: redis:6-alpine
@@ -66,16 +51,16 @@ services:
       - "./redis/data:/data"
       - "./redis/config:/conf"
 
-  # service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up flower" 
-  dashboard:
-    <<: *base-service
-    volumes: []
-    profiles:
-      - flower
-    command: ["flower", "--app=worker.celery", "--port=5555", "--broker", *broker-url, "--basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}"]
-    ports:
-      - 5556:5555
-    depends_on:
-      - web
-      - redis
-      - worker
+  # # service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up flower" 
+  # dashboard:
+  #   <<: *base-setup TODO
+  #   volumes: []
+  #   profiles:
+  #     - flower
+  #   command: ["flower", "--app=worker.celery", "--port=5555", "--broker", *broker-url, "--basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}"]
+  #   ports:
+  #     - 5556:5555
+  #   depends_on:
+  #     - web
+  #     - redis
+  #     - worker

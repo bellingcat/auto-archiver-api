@@ -4,8 +4,27 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+aiofiles = ">=0.6.0"
+celery = ">=4.4.7"
+flower = ">=0.9.7"
+redis = ">=3.5.3"
+requests = ">=2.25.1"
+aiosqlite = "*"
+python-dotenv = "*"
+loguru = "*"
+sqlalchemy = "*"
+alembic = "*"
+jinja2 = {version = "*", extras = ["web"]}
+uvicorn = {version = ">=0.13.4", extras = ["web"]}
+fastapi = {version = "*", extras = ["web"]}
+fastapi-utils = {version = "*", extras = ["web"]}
+prometheus-fastapi-instrumentator = {version = "*", extras = ["web"]}
+pyyaml = "*"
+auto-archiver = "*"
 
 [dev-packages]
+watchdog = "*"
+pytest = "==6.2.4"
 
 [requires]
 python_version = "3.10"
