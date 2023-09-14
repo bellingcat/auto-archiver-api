@@ -1,10 +1,9 @@
 version: '3.8'
 
 volumes:
-  browsertrix:
+  crawls:
 
 services:
-
   web:
     build: ./src
     restart: always
@@ -27,7 +26,7 @@ services:
     volumes:
       - ./src:/app
       - /var/run/docker.sock:/var/run/docker.sock
-      - browsertrix:/crawls
+      - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER
 
     env_file: src/.env
     environment:
