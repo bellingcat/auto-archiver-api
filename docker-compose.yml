@@ -1,63 +1,64 @@
+# reusable YAML variables
+x-broker-url: &broker-url "redis://:${REDIS_PASSWORD}@redis:6379/0"
+
+x-base-setup: &base-setup
+  build: ./src
+  restart: always
+  env_file: src/.env
+  environment:
+    CELERY_BROKER_URL: *broker-url
+    CELERY_RESULT_BACKEND: *broker-url
+
 version: '3.8'
 
 volumes:
   crawls:
 
+name: "auto-archiver-api"
 services:
   web:
-    build: ./src
-    restart: always
+    <<: *base-setup
     ports:
       - 8004:8000
     command: uvicorn main:app --host 0.0.0.0 --reload
     volumes:
       - ./src:/app
-    env_file: src/.env
-    environment:
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - redis
 
   worker:
-    build: ./src
-    restart: always
+    <<: *base-setup
     command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
     volumes:
       - ./src:/app
       - /var/run/docker.sock:/var/run/docker.sock
       - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER
-
-    env_file: src/.env
     environment:
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - WACZ_ENABLE_DOCKER=1 # Enable calling docker from this container
-      - BROWSERTRIX_HOME_HOST=crawls
-      - BROWSERTRIX_HOME_CONTAINER=/crawls
-
+      CELERY_BROKER_URL: *broker-url
+      CELERY_RESULT_BACKEND: *broker-url
+      WACZ_ENABLE_DOCKER: 1 # Enable calling docker from this container
+      BROWSERTRIX_HOME_HOST: crawls
+      BROWSERTRIX_HOME_CONTAINER: /crawls
     depends_on:
       - web
       - redis
 
   redis:
     image: redis:6-alpine
+    restart: always
     command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
     volumes:
       - "./redis/data:/data"
       - "./redis/config:/conf"
-    restart: always
 
+  # dashboard service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up flower"
   dashboard:
-    build: ./src
-    restart: always
-    command:  flower --app=worker.celery --port=5555 --broker=redis://:${REDIS_PASSWORD}@redis:6379/0 --basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}
-    env_file: src/.env
+    <<: *base-setup
+    profiles:
+      - flower
+    command: ["flower", "--app=worker.celery", "--port=5555", "--broker", *broker-url, "--basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}"]
     ports:
       - 5556:5555
-    environment:
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - web
       - redis
