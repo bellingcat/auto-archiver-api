@@ -37,7 +37,7 @@ services:
       CELERY_BROKER_URL: *broker-url
       CELERY_RESULT_BACKEND: *broker-url
       WACZ_ENABLE_DOCKER: 1 # Enable calling docker from this container
-      BROWSERTRIX_HOME_HOST: crawls
+      BROWSERTRIX_HOME_HOST: auto-archiver-api_crawls
       BROWSERTRIX_HOME_CONTAINER: /crawls
     depends_on:
       - web
