@@ -104,7 +104,7 @@ def get_user_groups(db: Session, email: str):
 
 
 def get_user(db: Session, author_id: str):
-    author_id = author_id.lower()
+    if type(author_id)==str: author_id = author_id.lower()
     db_user = db.query(models.User).filter(models.User.email == author_id).first()
     if not db_user:
         db_user = models.User(email=author_id)
