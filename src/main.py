@@ -18,7 +18,7 @@ from worker import create_archive_task, create_sheet_task, celery, insert_result
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from security import get_bearer_auth, get_basic_auth, get_server_auth, bearer_security
+from security import get_bearer_auth, get_basic_auth, get_server_auth, bearer_security, get_bearer_auth_token_or_jwt
 from auto_archiver import Metadata
 
 load_dotenv()
@@ -82,8 +82,7 @@ def get_user_groups(db: Session = Depends(get_db), email = Depends(get_bearer_au
     return crud.get_user_groups(db, email)
 
 @app.get("/tasks/search-url", response_model=list[schemas.Archive])
-def search_by_url(url:str, skip: int = 0, limit: int = 100, archived_after:datetime=None, archived_before:datetime=None, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
-    #TODO: test strip
+def search_by_url(url:str, skip: int = 0, limit: int = 100, archived_after:datetime=None, archived_before:datetime=None, db: Session = Depends(get_db), email = Depends(get_bearer_auth_token_or_jwt)):
     return crud.search_tasks_by_url(db, url.strip(), email, skip=skip, limit=limit, archived_after=archived_after, archived_before=archived_before)
     
 @app.get("/tasks/sync", response_model=list[schemas.Archive])

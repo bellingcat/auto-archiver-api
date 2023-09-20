@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session, load_only
 from sqlalchemy import Column, or_
 from loguru import logger
 from datetime import datetime
+
+from security import ALLOW_ANY_EMAIL
 from . import models, schemas
 import yaml, os
 
@@ -21,9 +23,13 @@ def get_tasks(db: Session, skip: int = 0, limit: int = 100):
 
 
 def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None):
-    email = email.lower()
-    groups = get_user_groups(db, email)
-    query = base_query(db).filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups))).filter(models.Archive.url.like(f'%{url}%'))
+    # searches for partial URLs, if email is * no ownership filtering happens
+    query = base_query(db)
+    if email != ALLOW_ANY_EMAIL:
+        email = email.lower()
+        groups = get_user_groups(db, email)
+        query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
+    query = query.filter(models.Archive.url.like(f'%{url}%'))
     if archived_after:
         query = query.filter(models.Archive.created_at >= archived_after)
     if archived_before:

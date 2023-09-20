@@ -18,7 +18,18 @@ basic_security = HTTPBasic()
 bearer_security = HTTPBearer()
 
 # --------------------- Bearer Auth
+ALLOW_ANY_EMAIL = "*"
 
+
+API_BEARER_TOKEN = os.environ.get("API_BEARER_TOKEN", "")  # min length is 20 chars
+async def get_bearer_auth_token_or_jwt(credentials: HTTPAuthorizationCredentials = Depends(bearer_security)):
+    # tries to use the static API_KEY and defaults to google JWT auth
+    access_token = credentials.credentials
+    if len(API_BEARER_TOKEN) >= 20: 
+        current_token_bytes = access_token.encode("utf8")
+        is_correct_token = secrets.compare_digest(current_token_bytes, API_BEARER_TOKEN.encode("utf8"))
+        if is_correct_token: return ALLOW_ANY_EMAIL # any email works
+    return await get_bearer_auth(credentials)
 
 async def get_bearer_auth(credentials: HTTPAuthorizationCredentials = Depends(bearer_security)):
     # validates the Bearer token in the case that it requires it
