@@ -100,6 +100,10 @@ def archive_tasks(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth
     task = create_archive_task.delay(archive.json())
     return JSONResponse({"id": task.id})
 
+@app.get("/archive/{task_id}")
+def lookup(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+    return crud.get_task(db, task_id)
+
 @app.get("/tasks/{task_id}")
 def get_status(task_id, email = Depends(get_bearer_auth)):
     logger.info(f"status check for user {email} task {task_id}")
