@@ -30,7 +30,9 @@ def get_db():
 def create_archive_task(self, archive_json: str):
     archive = schemas.ArchiveCreate.parse_raw(archive_json)
 
-    if (em := is_group_invalid_for_user(archive.public, archive.group_id, archive.author_id)): return {"error": em}
+    invalid = is_group_invalid_for_user(archive.public, archive.group_id, archive.author_id)
+    if (invalid):
+        raise Exception(invalid) # marks task FAILED, saves the Exception as reult
 
     url = archive.url
     logger.info(f"{url=} {archive=}")
@@ -40,10 +42,11 @@ def create_archive_task(self, archive_json: str):
     try:
         insert_result_into_db(result, archive.tags, archive.public, archive.group_id, archive.author_id, self.request.id)
     except Exception as e:
+        # Log it, then raise again to store the error as the task result
         logger.error(e)
         logger.error(traceback.format_exc())
-        return {"error": e}
-    return result.to_json()
+        raise e
+    return result.to_dict()
 
 
 @celery.task(name="create_sheet_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 0})
