@@ -25,7 +25,7 @@ load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.5.4"
+VERSION = "0.5.5"
 
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.1", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
@@ -99,6 +99,10 @@ def archive_tasks(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth
     logger.info("creating task")
     task = create_archive_task.delay(archive.json())
     return JSONResponse({"id": task.id})
+
+@app.get("/archive/{task_id}")
+def lookup(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth_token_or_jwt)):
+    return crud.get_task(db, task_id, email)
 
 @app.get("/tasks/{task_id}")
 def get_status(task_id, email = Depends(get_bearer_auth)):

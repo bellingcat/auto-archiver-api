@@ -14,12 +14,13 @@ DOMAIN_GROUPS_LOADED = False
 # --------------- TASK = Archive
 
 
-def get_task(db: Session, task_id: str):
-    return base_query(db).filter(models.Archive.id == task_id).first()
-
-
-def get_tasks(db: Session, skip: int = 0, limit: int = 100):
-    return base_query(db).offset(skip).limit(limit).all()
+def get_task(db: Session, task_id: str, email: str):
+    email = email.lower()
+    query = base_query(db).filter(models.Archive.id == task_id)
+    if email != ALLOW_ANY_EMAIL:
+        groups = get_user_groups(db, email)
+        query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
+    return query.first()
 
 
 def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None):
