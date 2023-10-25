@@ -152,6 +152,7 @@ def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
 @app.post("/sheet_service", status_code=201)
 def archive_sheet_service(sheet:schemas.SubmitSheet, basic_auth = Depends(get_server_auth)):
     logger.info(f"SHEET TASK for {sheet=}")
+    sheet.author_id = "api-endpoint"
     if not sheet.sheet_name and not sheet.sheet_id:
         raise HTTPException(status_code=422, detail=f"sheet name or id is required")
     task = create_sheet_task.delay(sheet.json())
