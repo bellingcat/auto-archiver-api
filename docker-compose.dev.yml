@@ -5,7 +5,7 @@ services:
     restart: "no"
     environment:
       - SERVE_LOCAL_ARCHIVE=/app/local_archive # See orchestration.yaml local_storage.save_to
-      - ALLOWED_ORIGINS=http://localhost:8004
+      - ALLOWED_ORIGINS=http://localhost:8004,http://localhost:3000
 
   worker:
     restart: "no"
@@ -14,3 +14,8 @@ services:
     restart: "no"
     ports:
       - 6379:6379
+
+  tools:
+    environment:
+      - AUTO_ARCHIVER_API_ENDPOINT_CLIENT=http://localhost:8004
+      - NEXTAUTH_URL=http://localhost:3000

@@ -63,3 +63,14 @@ services:
       - web
       - redis
       - worker
+
+  tools:
+    image: bellingcat:fact-check-tools
+    env_file: src/.env
+    ports:
+      - 3000:3000
+    depends_on:
+      - web
+      - worker
+    environment:
+      AUTO_ARCHIVER_API_ENDPOINT: http://web:8000
