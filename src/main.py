@@ -172,14 +172,6 @@ def submit_manual_archive(manual:schemas.SubmitManual, basic_auth = Depends(get_
     return JSONResponse({"id": archive_id})
 
 
-# Basic protected logic to allow access to 1 static file
-SF = os.environ.get("STATIC_FILE", "")
-if len(SF) > 1 and os.path.isfile(SF):
-    @app.get("/static-file")
-    def static_file(basic_auth = Depends(get_basic_auth)):
-        return FileResponse(SF, filename=os.path.basename(SF))
-
-
 # on startup
 @app.on_event("startup")
 async def on_startup():
