@@ -13,6 +13,8 @@ from db.database import SessionLocal
 from contextlib import contextmanager
 import json
 
+from security import ALLOW_ANY_EMAIL
+
 celery = Celery(__name__)
 celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
 celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
@@ -26,7 +28,7 @@ def get_db():
     finally: session.close()
 
 
-@celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 5})
+@celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def create_archive_task(self, archive_json: str):
     archive = schemas.ArchiveCreate.parse_raw(archive_json)
 
@@ -36,6 +38,15 @@ def create_archive_task(self, archive_json: str):
 
     url = archive.url
     logger.info(f"{url=} {archive=}")
+
+    if not archive.rearchive:
+        with get_db() as session:
+            archives = crud.search_tasks_by_url(session, url, ALLOW_ANY_EMAIL, absolute_search=True)
+            if len(archives):
+                logger.info(f"Skipping {url=} as it was already archived")
+                # TODO: can we achieve something better than the last result?
+                return archives[0].result
+
     orchestrator = choose_orchestrator(archive.group_id, archive.author_id)
     result = orchestrator.feed_item(Metadata().set_url(url))
 
