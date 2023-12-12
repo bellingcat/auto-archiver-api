@@ -38,7 +38,7 @@ def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit:
         query = query.filter(models.Archive.created_at >= archived_after)
     if archived_before:
         query = query.filter(models.Archive.created_at <= archived_before)
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(models.Archive.created_at.desc()).offset(skip).limit(limit).all()
 
 
 def search_tasks_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
