@@ -41,7 +41,7 @@ def create_archive_task(self, archive_json: str):
 
     if not archive.rearchive:
         with get_db() as session:
-            archives = crud.search_tasks_by_url(session, url, ALLOW_ANY_EMAIL, absolute_search=True)
+            archives = crud.search_tasks_by_url(session, url, archive.author_id, absolute_search=True)
             if len(archives):
                 logger.info(f"Skipping {url=} as it was already archived")
                 # TODO: can we achieve something better than the last result?
