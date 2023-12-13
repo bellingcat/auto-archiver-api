@@ -44,8 +44,7 @@ def create_archive_task(self, archive_json: str):
             archives = crud.search_tasks_by_url(session, url, archive.author_id, absolute_search=True)
             if len(archives):
                 logger.info(f"Skipping {url=} as it was already archived")
-                # TODO: can we achieve something better than the last result?
-                return archives[0].result
+                return Metadata.choose_most_complete([a.result for a in archives])
 
     orchestrator = choose_orchestrator(archive.group_id, archive.author_id)
     result = orchestrator.feed_item(Metadata().set_url(url))
