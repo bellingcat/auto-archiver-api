@@ -180,12 +180,12 @@
         },
         "auto-archiver": {
             "hashes": [
-                "sha256:833747537964656be5496227da1d12f99e04a7579cf3a603539095a27326f0d2",
-                "sha256:a5c3a328a9ea5c5eae2b1886debdb43521915b2d4165176b7c41927805a0048e"
+                "sha256:349b03c220c46a8da945897cfdadff7c932a07b150b6114d2073f72c218f52fc",
+                "sha256:68e98f0ddffeb4f164a5ff7c960e6c9b260db916c81588c5bbf9f1ec5e0fc1f7"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==0.7.6"
+            "version": "==0.7.8"
         },
         "beautifulsoup4": {
             "hashes": [
