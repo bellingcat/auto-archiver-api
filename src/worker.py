@@ -13,7 +13,7 @@ from db.database import SessionLocal
 from contextlib import contextmanager
 import json
 
-from sqlite3 import IntegrityError
+from sqlalchemy import exc
 
 celery = Celery(__name__)
 celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
@@ -77,13 +77,11 @@ def create_sheet_task(self, sheet_json: str):
         try:
             insert_result_into_db(result, sheet.tags, sheet.public, sheet.group_id, sheet.author_id, models.generate_uuid())
             stats["archived"] += 1
-        except IntegrityError as e:
-            # cache was used, so we skip
+        except exc.IntegrityError as e:
             logger.warning(f"cached result detected: {e}")
-            logger.warning(traceback.format_exc())
             stats["archived"] += 1
-            pass
         except Exception as e:
+            logger.error(type(e))
             logger.error(e)
             logger.error(traceback.format_exc())
             stats["failed"] += 1
