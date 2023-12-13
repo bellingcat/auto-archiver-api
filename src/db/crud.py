@@ -23,19 +23,22 @@ def get_task(db: Session, task_id: str, email: str):
     return query.first()
 
 
-def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None):
+def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False):
     # searches for partial URLs, if email is * no ownership filtering happens
     query = base_query(db)
     if email != ALLOW_ANY_EMAIL:
         email = email.lower()
         groups = get_user_groups(db, email)
         query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
-    query = query.filter(models.Archive.url.like(f'%{url}%'))
+    if absolute_search:
+        query = query.filter(models.Archive.url == url)
+    else:
+        query = query.filter(models.Archive.url.like(f'%{url}%'))
     if archived_after:
         query = query.filter(models.Archive.created_at >= archived_after)
     if archived_before:
         query = query.filter(models.Archive.created_at <= archived_before)
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(models.Archive.created_at.desc()).offset(skip).limit(limit).all()
 
 
 def search_tasks_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):

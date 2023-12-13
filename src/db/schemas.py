@@ -10,6 +10,7 @@ class ArchiveCreate(BaseModel):
     author_id: str | None = None
     group_id: str | None = None
     tags: set = set()
+    rearchive: bool = True
     # urls: list = []
 
 
