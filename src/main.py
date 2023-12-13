@@ -1,7 +1,7 @@
 from celery.result import AsyncResult
 from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_utils.tasks import repeat_every
@@ -25,7 +25,7 @@ load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.5.8"
+VERSION = "0.5.9"
 
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.1", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
@@ -40,7 +40,7 @@ app.add_middleware(
 )
 
 # prometheus exposed in /metrics with authentication
-Instrumentator().instrument(app).expose(app, dependencies=[Depends(get_basic_auth)])
+Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(get_basic_auth)])
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
