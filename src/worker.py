@@ -74,6 +74,9 @@ def create_sheet_task(self, sheet_json: str):
 
     stats = {"archived": 0, "failed": 0, "errors": []}
     for result in orchestrator.feed():
+        if not result: 
+            logger.error("Got empty result from feeder, an internal error must have occurred.")
+            continue
         try:
             insert_result_into_db(result, sheet.tags, sheet.public, sheet.group_id, sheet.author_id, models.generate_uuid())
             stats["archived"] += 1
