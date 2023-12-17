@@ -25,7 +25,7 @@ load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.5.12"
+VERSION = "0.5.13"
 
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.1", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
@@ -152,7 +152,7 @@ def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
 @app.post("/sheet_service", status_code=201)
 def archive_sheet_service(sheet:schemas.SubmitSheet, basic_auth = Depends(get_server_auth)):
     logger.info(f"SHEET TASK for {sheet=}")
-    sheet.author_id = "api-endpoint"
+    sheet.author_id = sheet.author_id or "api-endpoint"
     if not sheet.sheet_name and not sheet.sheet_id:
         raise HTTPException(status_code=422, detail=f"sheet name or id is required")
     task = create_sheet_task.delay(sheet.json())
