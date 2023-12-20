@@ -45,8 +45,8 @@ class ArchiveUrl(Base):
     __tablename__ = "archive_urls"
 
     url = Column(String, primary_key=True, index=True)
+    archive_id = Column(String, ForeignKey("archives.id"), primary_key=True)
     key = Column(String, default=None)
-    archive_id = Column(String, ForeignKey("archives.id"))
 
     archive = relationship("Archive", back_populates="urls")
 
