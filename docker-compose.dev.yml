@@ -5,7 +5,9 @@ services:
     restart: "no"
     environment:
       - SERVE_LOCAL_ARCHIVE=/app/local_archive # See orchestration.yaml local_storage.save_to
-      - ALLOWED_ORIGINS=http://localhost:8004
+      - ALLOWED_ORIGINS=http://localhost:8004,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp
+      - SERVICE_PASSWORD=dev-service-password
+      - STATIC_FILE_PASSWORD=dev-static-file-password
 
   worker:
     restart: "no"
