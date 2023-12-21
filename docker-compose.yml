@@ -51,7 +51,7 @@ services:
       - "./redis/data:/data"
       - "./redis/config:/conf"
 
-  # dashboard service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up flower"
+  # dashboard service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up dashboard"
   dashboard:
     <<: *base-setup
     profiles:
