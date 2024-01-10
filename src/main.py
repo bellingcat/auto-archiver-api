@@ -12,6 +12,7 @@ from loguru import logger
 from datetime import datetime
 import sqlalchemy
 from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter
 
 from worker import create_archive_task, create_sheet_task, celery, insert_result_into_db
 
@@ -39,8 +40,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+EXCEPTION_COUNTER = Counter(
+    "exceptions",
+    "Number of times a certain exception has occurred.",
+    labelnames=("types",)
+)
 # prometheus exposed in /metrics with authentication
-Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(get_basic_auth)])
+Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(get_server_auth)])
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -54,13 +60,18 @@ def get_db():
     try: yield session
     finally: session.close()
 
+
 # logging configurations
 logger.add("logs/api_logs.log", retention="30 days", rotation="3 days")
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next):
-    response = await call_next(request)
-    logger.info(f"{request.client.host}:{request.client.port} {request.method} {request.url._url} - HTTP {response.status_code}")
-    return response
+    try:
+        response = await call_next(request)
+        logger.info(f"{request.client.host}:{request.client.port} {request.method} {request.url._url} - HTTP {response.status_code}")
+        return response
+    except Exception as e:
+        EXCEPTION_COUNTER.labels(type(e).__name__).inc()
+        raise e
 
 @app.get("/")
 async def home(request: Request): 
