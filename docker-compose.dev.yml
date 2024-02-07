@@ -8,6 +8,7 @@ services:
       - ALLOWED_ORIGINS=http://localhost:8004,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp
       - SERVICE_PASSWORD=dev-service-password
       - STATIC_FILE_PASSWORD=dev-static-file-password
+      - API_BEARER_TOKEN=dev-api-bearer-token
 
   worker:
     restart: "no"
