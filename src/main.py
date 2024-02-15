@@ -19,7 +19,7 @@ from worker import create_archive_task, create_sheet_task, celery, insert_result
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from security import get_bearer_auth, get_basic_auth, get_server_auth, bearer_security, get_bearer_auth_token_or_jwt
+from security import get_user_auth, static_api_key_auth, service_api_key_auth, bearer_security, get_token_or_user_auth
 from auto_archiver import Metadata
 
 load_dotenv()
@@ -46,7 +46,7 @@ EXCEPTION_COUNTER = Counter(
     labelnames=("types",)
 )
 # prometheus exposed in /metrics with authentication
-Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(get_server_auth)])
+Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(service_api_key_auth)])
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -78,7 +78,7 @@ async def home(request: Request):
     status = {"version": VERSION, "breakingChanges": BREAKING_CHANGES}
     try:
         # if authenticated will load available groups
-        email = await get_bearer_auth(await bearer_security(request))
+        email = await get_user_auth(await bearer_security(request))
         db: Session = next(get_db())
         status["groups"] = crud.get_user_groups(db, email)
     except HTTPException: pass
@@ -89,19 +89,19 @@ async def home(request: Request):
 #-----Submit URL and manipulate tasks. Bearer protected below
 
 @app.get("/groups", response_model=list[str])
-def get_user_groups(db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+def get_user_groups(db: Session = Depends(get_db), email = Depends(get_user_auth)):
     return crud.get_user_groups(db, email)
 
 @app.get("/tasks/search-url", response_model=list[schemas.Archive])
-def search_by_url(url:str, skip: int = 0, limit: int = 100, archived_after:datetime=None, archived_before:datetime=None, db: Session = Depends(get_db), email = Depends(get_bearer_auth_token_or_jwt)):
+def search_by_url(url:str, skip: int = 0, limit: int = 100, archived_after:datetime=None, archived_before:datetime=None, db: Session = Depends(get_db), email = Depends(get_token_or_user_auth)):
     return crud.search_tasks_by_url(db, url.strip(), email, skip=skip, limit=limit, archived_after=archived_after, archived_before=archived_before)
     
 @app.get("/tasks/sync", response_model=list[schemas.Archive])
-def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email = Depends(get_user_auth)):
     return crud.search_tasks_by_email(db, email, skip=skip, limit=limit)
 
 @app.post("/tasks", status_code=201)
-def archive_tasks(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth_token_or_jwt)):
+def archive_tasks(archive:schemas.ArchiveCreate, email = Depends(get_token_or_user_auth)):
     archive.author_id = email
     url = archive.url
     logger.info(f"new {archive.public=} task for {email=} and {archive.group_id=}: {url}")
@@ -112,11 +112,11 @@ def archive_tasks(archive:schemas.ArchiveCreate, email = Depends(get_bearer_auth
     return JSONResponse({"id": task.id})
 
 @app.get("/archive/{task_id}")
-def lookup(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth_token_or_jwt)):
+def lookup(task_id, db: Session = Depends(get_db), email = Depends(get_token_or_user_auth)):
     return crud.get_task(db, task_id, email)
 
 @app.get("/tasks/{task_id}")
-def get_status(task_id, email = Depends(get_bearer_auth)):
+def get_status(task_id, email = Depends(get_user_auth)):
     logger.info(f"status check for user {email} task {task_id}")
     task = AsyncResult(task_id, app=celery)
     try:
@@ -143,7 +143,7 @@ def get_status(task_id, email = Depends(get_bearer_auth)):
         })
 
 @app.delete("/tasks/{task_id}")
-def delete_task(task_id, db: Session = Depends(get_db), email = Depends(get_bearer_auth)):
+def delete_task(task_id, db: Session = Depends(get_db), email = Depends(get_user_auth)):
     logger.info(f"deleting task {task_id} request by {email}")
     return JSONResponse({
         "id": task_id,
@@ -152,7 +152,7 @@ def delete_task(task_id, db: Session = Depends(get_db), email = Depends(get_bear
 
 #----- Google Sheets Logic
 @app.post("/sheet", status_code=201)
-def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
+def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_user_auth)):
     logger.info(f"SHEET TASK for {sheet=}")
     sheet.author_id = email
     if not sheet.sheet_name and not sheet.sheet_id:
@@ -161,7 +161,7 @@ def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_bearer_auth)):
     return JSONResponse({"id": task.id})
 
 @app.post("/sheet_service", status_code=201)
-def archive_sheet_service(sheet:schemas.SubmitSheet, basic_auth = Depends(get_server_auth)):
+def archive_sheet_service(sheet:schemas.SubmitSheet, auth = Depends(service_api_key_auth)):
     logger.info(f"SHEET TASK for {sheet=}")
     sheet.author_id = sheet.author_id or "api-endpoint"
     if not sheet.sheet_name and not sheet.sheet_id:
@@ -171,7 +171,7 @@ def archive_sheet_service(sheet:schemas.SubmitSheet, basic_auth = Depends(get_se
 
 #----- endpoint to submit data archived elsewhere
 @app.post("/submit-archive", status_code=201)
-def submit_manual_archive(manual:schemas.SubmitManual, basic_auth = Depends(get_basic_auth)):
+def submit_manual_archive(manual:schemas.SubmitManual, auth = Depends(static_api_key_auth)):
     result = Metadata.from_json(manual.result)
     logger.info(f"MANUAL SUBMIT {result.get_url()} {manual.author_id}")
     manual.tags.add("manual")
