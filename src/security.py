@@ -1,7 +1,7 @@
 from loguru import logger
-import requests, os, re, secrets
+import requests, os, secrets
 from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBasic, HTTPBasicCredentials, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
 # Configuration
@@ -39,15 +39,7 @@ def api_key_auth(api_key):
 
     return auth
 
-# --------------------- Static Auth for local AA deployments to add archives to the API
-SFP = os.environ.get("STATIC_FILE_PASSWORD", "")  # min length is 20 chars
-static_api_key_auth = api_key_auth(SFP)
-
-# --------------------- Service Auth for the AA setup tool and Prometheus
-SERVICE_PASSWORD = os.environ.get("SERVICE_PASSWORD", "")  # min length is 20 chars
-service_api_key_auth = api_key_auth(SERVICE_PASSWORD)
-
-# --------------------- Token Auth for AA itself to query the API
+# --------------------- Token Auth for AA itself to query the API, AA setup tool and Prometheus
 API_BEARER_TOKEN = os.environ.get("API_BEARER_TOKEN", "")  # min length is 20 chars
 token_api_key_auth = api_key_auth(API_BEARER_TOKEN)
 

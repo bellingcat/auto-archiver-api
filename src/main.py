@@ -19,14 +19,14 @@ from worker import create_archive_task, create_sheet_task, celery, insert_result
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from security import get_user_auth, static_api_key_auth, service_api_key_auth, bearer_security, get_token_or_user_auth
+from security import get_user_auth, token_api_key_auth, bearer_security, get_token_or_user_auth
 from auto_archiver import Metadata
 
 load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.5.13"
+VERSION = "0.5.14"
 
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.1", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
@@ -46,7 +46,7 @@ EXCEPTION_COUNTER = Counter(
     labelnames=("types",)
 )
 # prometheus exposed in /metrics with authentication
-Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(service_api_key_auth)])
+Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -161,7 +161,7 @@ def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_user_auth)):
     return JSONResponse({"id": task.id})
 
 @app.post("/sheet_service", status_code=201)
-def archive_sheet_service(sheet:schemas.SubmitSheet, auth = Depends(service_api_key_auth)):
+def archive_sheet_service(sheet:schemas.SubmitSheet, auth = Depends(token_api_key_auth)):
     logger.info(f"SHEET TASK for {sheet=}")
     sheet.author_id = sheet.author_id or "api-endpoint"
     if not sheet.sheet_name and not sheet.sheet_id:
@@ -171,7 +171,7 @@ def archive_sheet_service(sheet:schemas.SubmitSheet, auth = Depends(service_api_
 
 #----- endpoint to submit data archived elsewhere
 @app.post("/submit-archive", status_code=201)
-def submit_manual_archive(manual:schemas.SubmitManual, auth = Depends(static_api_key_auth)):
+def submit_manual_archive(manual:schemas.SubmitManual, auth = Depends(token_api_key_auth)):
     result = Metadata.from_json(manual.result)
     logger.info(f"MANUAL SUBMIT {result.get_url()} {manual.author_id}")
     manual.tags.add("manual")

@@ -52,13 +52,14 @@ Update `main.py:VERSION`.
 
 Copy `.env` and `src/.env` to deployment, along with the contents of `secrets/` including `secrets/orchestration.yaml`.
 
-Then `docker compose up -d`.
+Then `make prod`.
 
 #### updating packages/app/access
-If pipenv packages are updated:  `docker compose down` + `docker compose up --build -d` to build images with new packages.
-<!-- OUTDATED unless we revert to reqs.txt:~`pipenv lock --requirements -r  > requirements.txt` (or `pipenv requirements > requirements.txt` depending on pipenv version) (manually comment line `-i https://pypi.org/simple`) and then~ -->
+If pipenv packages are updated:  `make prod` to build images with new packages.
 
-New users should be added to the `src/.env` file `ALLOWED_EMAILS` prop
+New users should be added to the `src/.env` file `ALLOWED_EMAILS` prop.
+
+Run `pipenv update auto-archiver` inside `src` to update the auto-archiver version being used, then test with `make dev`. 
 
 
 ```bash
