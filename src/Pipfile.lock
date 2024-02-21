@@ -188,12 +188,12 @@
         },
         "auto-archiver": {
             "hashes": [
-                "sha256:49cf975ae3777af767c621b58b99ff0ed459b0284fd42d2d2f8cc6e47b17cd43",
-                "sha256:d7fccd070bba8d14aa247ba4b68abacf5fb3078da6ac728ed1943fa2c328387d"
+                "sha256:998f7420c7bbf91e08a7a3b994af083b34cfb2981b460b02faeebb0951623002",
+                "sha256:d132062d60680b8e4638e4af6c9d4a6c7051f30328c7968624508419e02b26dc"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==0.9.3"
+            "version": "==0.9.4"
         },
         "beautifulsoup4": {
             "hashes": [
@@ -751,11 +751,11 @@
         },
         "google-auth": {
             "hashes": [
-                "sha256:3cfc1b6e4e64797584fb53fc9bd0b7afa9b7c0dba2004fa7dcc9349e58cc3195",
-                "sha256:7634d29dcd1e101f5226a23cbc4a0c6cda6394253bf80e281d9c5c6797869c53"
+                "sha256:25141e2d7a14bfcba945f5e9827f98092716e99482562f15306e5b026e21aa72",
+                "sha256:34fc3046c257cedcf1622fc4b31fc2be7923d9b4d44973d481125ecc50d83885"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==2.28.0"
+            "version": "==2.28.1"
         },
         "google-auth-httplib2": {
             "hashes": [
