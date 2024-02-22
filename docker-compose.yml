@@ -32,7 +32,7 @@ services:
     volumes:
       - ./src:/app
       - /var/run/docker.sock:/var/run/docker.sock
-      - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER
+      - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER, do not change /crawls
     environment:
       CELERY_BROKER_URL: *broker-url
       CELERY_RESULT_BACKEND: *broker-url
