@@ -188,12 +188,12 @@
         },
         "auto-archiver": {
             "hashes": [
-                "sha256:830a7f37c9ae2e15456cc236662d240a6f662aaeed09edb7ced40ec06402bc88",
-                "sha256:90f6c62302470cec85fc77f7f14d3e27139e284f8948b8908aafc4ccaadbc6b9"
+                "sha256:86d58dad5bdcd19a4d187d9bb4b1c533714354f6cdd37be2cd6383fdded06742",
+                "sha256:91071c180a4cc728a08ae1e16a8b8e11b5f93b69ee156f0f3a0add580102b637"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==0.9.8"
+            "version": "==0.9.9"
         },
         "beautifulsoup4": {
             "hashes": [
@@ -2078,7 +2078,7 @@
                 "sha256:23478f88c37f27d76ac8aee6c905017a143b0b1b886c3c9f66bc2fd94f9f5783",
                 "sha256:af72aea155e91adfc61c3ae9e0e342dbc0cba726d6cba4b6c72c1f34e47291cd"
             ],
-            "markers": "python_version >= '3.8'",
+            "markers": "python_version < '3.11'",
             "version": "==4.9.0"
         },
         "typing-inspect": {

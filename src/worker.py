@@ -197,7 +197,7 @@ def convert_if_media(media):
     elif isinstance(media, dict):
         try: return Media.from_dict(media)
         except Exception as e:
-            logger.debug(e)
+            logger.debug(f"error parsing {media} : {e}")
     return False
 
 
