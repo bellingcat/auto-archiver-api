@@ -188,12 +188,12 @@
         },
         "auto-archiver": {
             "hashes": [
-                "sha256:66edb9b833317f32891f3a4635f09dd761195f2a863fa1f5b4d19086fbe9848b",
-                "sha256:a4ad3b3c601a797be3dea05d642c7811001120a119671d40ad35d7732f8d16c3"
+                "sha256:830a7f37c9ae2e15456cc236662d240a6f662aaeed09edb7ced40ec06402bc88",
+                "sha256:90f6c62302470cec85fc77f7f14d3e27139e284f8948b8908aafc4ccaadbc6b9"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==0.9.7"
+            "version": "==0.9.8"
         },
         "beautifulsoup4": {
             "hashes": [
@@ -220,19 +220,19 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:1de708665cbf156e76ca67e376d6cabc5f9a06d7213f925a510cb818a15340a6",
-                "sha256:7574afd70c767fdbb19726565a67b47291e1e35ec792c9fbb8ee63cb3f630d45"
+                "sha256:adc785ff05aec9fc93f82d507420b320203cd4fd011c67eb369b3aa2b5aeb298",
+                "sha256:f9873c3f03de546d7297475c6acd771840c385521caadb8c121a1ac38bc59cd4"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==1.34.47"
+            "version": "==1.34.48"
         },
         "botocore": {
             "hashes": [
-                "sha256:29f1d6659602c5d79749eca7430857f7a48dd02e597d0ea4a95a83c47847993e",
-                "sha256:8f0c989d12cfceb06b005808492ec1ff6ae90fab1fc4bf7ac8e825ac86bc8a0b"
+                "sha256:eabdde36309274b76bb79ae9bdfa10c1fd91a2c9b3343cfa15b8a91f8e1ec224",
+                "sha256:f3e1c84fa75fd6921dfbfb4b2f803bcc424b9b866982fe80e08edbd26ca9861c"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==1.34.47"
+            "version": "==1.34.48"
         },
         "brotli": {
             "hashes": [
@@ -743,11 +743,11 @@
         },
         "google-api-python-client": {
             "hashes": [
-                "sha256:9d83b178496b180e058fd206ebfb70ea1afab49f235dd326f557513f56f496d5",
-                "sha256:ebf4927a3f5184096647be8f705d090e7f06d48ad82b0fa431a2fe80c2cbe182"
+                "sha256:84e43bdb58dd8d2301669513863996378ffe9a3bf6d23b5ccd4f1e021323dbeb",
+                "sha256:ff9ef7539eaf7e088a481b25d1af4704210b07863e1d51b5ee498b910a3a46a3"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==2.118.0"
+            "version": "==2.119.0"
         },
         "google-auth": {
             "hashes": [
