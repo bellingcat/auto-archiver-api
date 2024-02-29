@@ -10,6 +10,7 @@ import yaml, os
 
 DOMAIN_GROUPS = {}
 DOMAIN_GROUPS_LOADED = False
+MAX_LIMIT = 100
 
 # --------------- TASK = Archive
 
@@ -38,12 +39,12 @@ def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit:
         query = query.filter(models.Archive.created_at >= archived_after)
     if archived_before:
         query = query.filter(models.Archive.created_at <= archived_before)
-    return query.order_by(models.Archive.created_at.desc()).offset(skip).limit(limit).all()
+    return query.order_by(models.Archive.created_at.desc()).offset(skip).limit(min(limit, MAX_LIMIT)).all()
 
 
 def search_tasks_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
     email = email.lower()
-    return base_query(db).filter(models.Archive.author.has(email=email)).offset(skip).limit(limit).all()
+    return base_query(db).filter(models.Archive.author.has(email=email)).offset(skip).limit(min(limit, MAX_LIMIT)).all()
 
 
 def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]):
@@ -85,7 +86,7 @@ def create_tag(db: Session, tag: str):
 
 
 def search_tags(db: Session, tag: str, skip: int = 0, limit: int = 100):
-    return db.query(models.Tag).filter(models.Tag.url.like(f'%{tag}%')).offset(skip).limit(limit).all()
+    return db.query(models.Tag).filter(models.Tag.url.like(f'%{tag}%')).offset(skip).limit(min(limit, MAX_LIMIT)).all()
 
 
 def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
