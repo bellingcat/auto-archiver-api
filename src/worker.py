@@ -48,7 +48,7 @@ def create_archive_task(self, archive_json: str):
 
     orchestrator = choose_orchestrator(archive.group_id, archive.author_id)
     result = orchestrator.feed_item(Metadata().set_url(url))
-
+    
     try:
         insert_result_into_db(result, archive.tags, archive.public, archive.group_id, archive.author_id, self.request.id)
     except Exception as e:
@@ -165,7 +165,7 @@ def is_group_invalid_for_user(public: bool, group_id: str, author_id: str):
 
 def insert_result_into_db(result: Metadata, tags: Set[str], public: bool, group_id: str, author_id: str, task_id: str) -> str:
     logger.info(f"INSERTING {public=} {group_id=} {author_id=} {tags=} into {task_id}")
-    assert result, f"UNABLE TO archive: {result.get_url()}"
+    assert result, f"UNABLE TO archive: {result.get_url() if result else result}"
     with get_db() as session:
         # urls are created by get_all_urls
         # create author_id if needed
