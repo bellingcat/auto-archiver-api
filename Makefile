@@ -11,7 +11,10 @@ stop-dev:
 
 prod:
 	docker compose build
+	docker image prune -f
+	docker buildx prune --keep-storage 20gb -f
 	docker compose up -d --remove-orphans
+	docker system df
 
 stop-prod:
 	docker compose down
