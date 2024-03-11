@@ -12,14 +12,15 @@ from db import crud, schemas, models
 from db.database import SessionLocal
 from contextlib import contextmanager
 import json
-
+import redis
 from sqlalchemy import exc
 
 celery = Celery(__name__)
 celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
 celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
 USER_GROUPS_FILENAME = os.environ.get("USER_GROUPS_FILENAME", "user-groups.yaml")
-
+REDIS_EXCEPTIONS_CHANNEL = "exceptions-channel"
+Rdis = redis.Redis.from_url(celery.conf.broker_url)
 
 @contextmanager
 def get_db():
@@ -55,6 +56,7 @@ def create_archive_task(self, archive_json: str):
         # Log it, then raise again to store the error as the task result
         logger.error(e)
         logger.error(traceback.format_exc())
+        redis_publish_exception(e, self.name)
         raise e
     return result.to_dict()
 
@@ -87,6 +89,7 @@ def create_sheet_task(self, sheet_json: str):
             logger.error(type(e))
             logger.error(e)
             logger.error(traceback.format_exc())
+            redis_publish_exception(e, self.name)
             stats["failed"] += 1
             stats["errors"].append(str(e))
 
@@ -96,12 +99,12 @@ def create_sheet_task(self, sheet_json: str):
 
 @task_failure.connect(sender=create_sheet_task)
 @task_failure.connect(sender=create_archive_task)
-def task_failure_notifier(sender=None, **kwargs):
+def task_failure_notifier(sender, **kwargs):
     logger.warning("😅 From task_failure_notifier ==> Task failed successfully! ")
     logger.error(kwargs['exception'])
     logger.error(kwargs['traceback'])
     logger.error("\n".join(traceback.format_list(traceback.extract_tb(kwargs['traceback']))))
-
+    redis_publish_exception(kwargs['exception'], sender.name)
 
 def choose_orchestrator(group, email):
     global ORCHESTRATORS
@@ -199,6 +202,14 @@ def convert_if_media(media):
         except Exception as e:
             logger.debug(f"error parsing {media} : {e}")
     return False
+
+def redis_publish_exception(exception, task_name):
+    try:
+        Rdis.publish(REDIS_EXCEPTIONS_CHANNEL, json.dumps({"exception": exception, "task": task_name}, default=str))
+    except Exception as e:
+        logger.error(e)
+        logger.error(traceback.format_exc())
+        logger.error(f"Could not publish to {REDIS_EXCEPTIONS_CHANNEL}")
 
 
 # INIT

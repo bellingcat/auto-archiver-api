@@ -13,8 +13,10 @@ from datetime import datetime
 import sqlalchemy
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter
+from contextlib import asynccontextmanager
+import asyncio, json
 
-from worker import create_archive_task, create_sheet_task, celery, insert_result_into_db
+from worker import REDIS_EXCEPTIONS_CHANNEL, create_archive_task, create_sheet_task, celery, insert_result_into_db, Rdis
 
 from db import crud, models, schemas
 from db.database import engine, SessionLocal
@@ -26,12 +28,34 @@ load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.6.1"
-
+VERSION = "0.6.2"
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.1", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
 
-app = FastAPI(title="Auto-Archiver API", version=VERSION, contact={"name":"Bellingcat", "url":"https://github.com/bellingcat/auto-archiver-api"}) 
+@repeat_every(seconds=60 * 60) # 1 hour
+async def refresh_user_groups():
+    db: Session = next(get_db())
+    crud.upsert_user_groups(db)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # see https://fastapi.tiangolo.com/advanced/events/#lifespan
+    # STARTUP
+
+    models.Base.metadata.create_all(bind=engine)
+    alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
+    # disabling uvicorn logger since we use loguru in logging_middleware
+    logging.getLogger("uvicorn.access").disabled = True
+    asyncio.create_task(redis_subscribe_worker_exceptions())
+    asyncio.create_task(refresh_user_groups())
+    
+    yield # separates startup from shutdown instructions
+
+    # SHUTDOWN
+    logger.info("shutting down")
+
+
+app = FastAPI(title="Auto-Archiver API", version=VERSION, contact={"name":"Bellingcat", "url":"https://github.com/bellingcat/auto-archiver-api"}, lifespan=lifespan) 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -183,18 +207,17 @@ def submit_manual_archive(manual:schemas.SubmitManual, auth = Depends(token_api_
     return JSONResponse({"id": archive_id})
 
 
-# on startup
-@app.on_event("startup")
-async def on_startup():
-#     # Not needed if you setup a migration system like Alembic
-#     await create_db_and_tables()
-    models.Base.metadata.create_all(bind=engine)
-    alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
-    # disabling uvicorn logger since we use loguru in logging_middleware
-    logging.getLogger("uvicorn.access").disabled = True
-
-@app.on_event("startup")
-@repeat_every(seconds=60 * 60)  # 1 hour
-async def on_startup():
-    db: Session = next(get_db())
-    crud.upsert_user_groups(db)
+WORKER_EXCEPTION = Counter(
+    "worker_exceptions_total",
+    "Number of times a certain exception has occurred on the worker.",
+    labelnames=("exception", "task",)
+)
+async def redis_subscribe_worker_exceptions():
+    PubSubExceptions = Rdis.pubsub()
+    PubSubExceptions.subscribe(REDIS_EXCEPTIONS_CHANNEL)
+    while True:
+        message = PubSubExceptions.get_message()
+        if message and message["type"] == "message":
+            data = json.loads(message["data"].decode("utf-8"))
+            WORKER_EXCEPTION.labels(exception=data["exception"], task=data["task"]).inc()
+        await asyncio.sleep(0.5)
