@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     logging.getLogger("uvicorn.access").disabled = True
     asyncio.create_task(redis_subscribe_worker_exceptions())
     asyncio.create_task(refresh_user_groups())
-    asyncio.create_task(measure_disk_utilization())
+    asyncio.create_task(measure_regular_metrics())
     
     yield # separates startup from shutdown instructions
 
@@ -236,8 +236,9 @@ DATABASE_METRICS = Gauge(
     labelnames=("query", "user")
 )
 
-@repeat_every(seconds=15)
-async def measure_disk_utilization():
+REPEAT_COUNT_METRICS_SECONDS = 15
+@repeat_every(seconds=REPEAT_COUNT_METRICS_SECONDS)
+async def measure_regular_metrics():
     _total, used, free = shutil.disk_usage("/")
     DISK_UTILIZATION.labels(type="used").set(used / (2**30))
     DISK_UTILIZATION.labels(type="free").set(free / (2**30))
@@ -252,5 +253,5 @@ async def measure_disk_utilization():
     DATABASE_METRICS.labels(query="count_archives", user="-").set(count_archives)
     DATABASE_METRICS.labels(query="count_archive_urls", user="-").set(count_archive_urls)
 
-    for user in crud.count_by_user_since(session):
+    for user in crud.count_by_user_since(session, REPEAT_COUNT_METRICS_SECONDS):
         DATABASE_METRICS.labels(query="count_by_user", user=user.author_id).set(user.total)
