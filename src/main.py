@@ -12,14 +12,15 @@ from loguru import logger
 from datetime import datetime
 import sqlalchemy
 from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import Counter
+from prometheus_client import Counter, Gauge
 from contextlib import asynccontextmanager
 import asyncio, json
+import shutil
 
 from worker import REDIS_EXCEPTIONS_CHANNEL, create_archive_task, create_sheet_task, celery, insert_result_into_db, Rdis
 
 from db import crud, models, schemas
-from db.database import engine, SessionLocal
+from db.database import engine, SessionLocal, SQLALCHEMY_DATABASE_URL
 from sqlalchemy.orm import Session
 from security import get_user_auth, token_api_key_auth, bearer_security, get_token_or_user_auth
 from auto_archiver import Metadata
@@ -48,6 +49,7 @@ async def lifespan(app: FastAPI):
     logging.getLogger("uvicorn.access").disabled = True
     asyncio.create_task(redis_subscribe_worker_exceptions())
     asyncio.create_task(refresh_user_groups())
+    asyncio.create_task(measure_disk_utilization())
     
     yield # separates startup from shutdown instructions
 
@@ -206,6 +208,7 @@ def submit_manual_archive(manual:schemas.SubmitManual, auth = Depends(token_api_
         raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
     return JSONResponse({"id": archive_id})
 
+# --------- Prometheus metrics
 
 WORKER_EXCEPTION = Counter(
     "worker_exceptions_total",
@@ -220,4 +223,34 @@ async def redis_subscribe_worker_exceptions():
         if message and message["type"] == "message":
             data = json.loads(message["data"].decode("utf-8"))
             WORKER_EXCEPTION.labels(exception=data["exception"], task=data["task"]).inc()
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1)
+
+DISK_UTILIZATION = Gauge(
+    "disk_utilization",
+    "Disk utilization in GB",
+    labelnames=("type",)
+)
+DATABASE_METRICS = Gauge(
+    "database_metrics",
+    "Useful database metrics from queries",
+    labelnames=("query", "user")
+)
+
+@repeat_every(seconds=15)
+async def measure_disk_utilization():
+    _total, used, free = shutil.disk_usage("/")
+    DISK_UTILIZATION.labels(type="used").set(used / (2**30))
+    DISK_UTILIZATION.labels(type="free").set(free / (2**30))
+    try: 
+        fs = os.stat(SQLALCHEMY_DATABASE_URL.replace("sqlite:///", ""))
+        DISK_UTILIZATION.labels(type="database").set(fs.st_size / (2**30))
+    except Exception as e: logger.info(e)
+
+    session: Session = next(get_db())
+    count_archives = crud.count_archives(session)
+    count_archive_urls = crud.count_archive_urls(session)
+    DATABASE_METRICS.labels(query="count_archives", user="-").set(count_archives)
+    DATABASE_METRICS.labels(query="count_archive_urls", user="-").set(count_archive_urls)
+
+    for user in crud.count_by_user_since(session):
+        DATABASE_METRICS.labels(query="count_by_user", user=user.author_id).set(user.total)

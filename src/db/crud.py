@@ -1,8 +1,8 @@
 from functools import cache
 from sqlalchemy.orm import Session, load_only
-from sqlalchemy import Column, or_
+from sqlalchemy import Column, or_, func
 from loguru import logger
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from security import ALLOW_ANY_EMAIL
 from . import models, schemas
@@ -65,6 +65,18 @@ def soft_delete_task(db: Session, task_id: str, email: str) -> bool:
         db.commit()
     return db_task is not None
 
+def count_archives(db:Session):
+    return db.query(func.count(models.Archive.id)).scalar()
+
+def count_archive_urls(db:Session):
+    return db.query(func.count(models.ArchiveUrl.url)).scalar()
+
+def count_by_user_since(db:Session, time_delta: timedelta = timedelta(seconds=30)):
+    time_threshold = datetime.now() - time_delta
+    return db.query(models.Archive.author_id,func.count().label('total'))\
+        .filter(models.Archive.created_at >= time_threshold)\
+        .group_by(models.Archive.author_id)\
+        .order_by(func.count().desc()).limit(5 * MAX_LIMIT).all()
 
 def base_query(db: Session):
     # allow only some fields to be returned, for example author should remain hidden
