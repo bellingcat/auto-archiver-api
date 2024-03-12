@@ -245,7 +245,7 @@ async def measure_regular_metrics():
     try: 
         fs = os.stat(SQLALCHEMY_DATABASE_URL.replace("sqlite:///", ""))
         DISK_UTILIZATION.labels(type="database").set(fs.st_size / (2**30))
-    except Exception as e: logger.info(e)
+    except Exception as e: logger.error(e)
 
     session: Session = next(get_db())
     count_archives = crud.count_archives(session)
