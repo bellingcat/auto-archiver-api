@@ -29,7 +29,7 @@ load_dotenv()
 
 # Configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "chrome-extension://ondkcheoicfckabcnkdgbepofpjmjcmb,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp").split(",")
-VERSION = "0.6.2"
+VERSION = "0.6.3"
 # min-version refers to the version of auto-archiver-extension on the webstore
 BREAKING_CHANGES = {"minVersion": "0.3.1", "message": "The latest update has breaking changes, please update the extension to the most recent version."}
 
@@ -142,7 +142,7 @@ def lookup(task_id, db: Session = Depends(get_db), email = Depends(get_token_or_
     return crud.get_task(db, task_id, email)
 
 @app.get("/tasks/{task_id}")
-def get_status(task_id, email = Depends(get_user_auth)):
+def get_status(task_id, email = Depends(get_token_or_user_auth)):
     logger.info(f"status check for user {email} task {task_id}")
     task = AsyncResult(task_id, app=celery)
     try:
