@@ -32,10 +32,10 @@ def get_db():
 @celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def create_archive_task(self, archive_json: str):
     archive = schemas.ArchiveCreate.parse_raw(archive_json)
-
+    logger.info(f"Archiving {archive.url=} {archive.tags=} {archive.public=} {archive.group_id=} {archive.author_id=}")
     invalid = is_group_invalid_for_user(archive.public, archive.group_id, archive.author_id)
-    if (invalid):
-        raise Exception(invalid) # marks task FAILED, saves the Exception as reult
+    if invalid:
+        raise Exception(invalid) # marks task FAILED, saves the Exception as result
 
     url = archive.url
     logger.info(f"{url=} {archive=}")
