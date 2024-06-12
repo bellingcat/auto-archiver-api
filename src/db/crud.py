@@ -102,6 +102,7 @@ def search_tags(db: Session, tag: str, skip: int = 0, limit: int = 100):
 
 
 def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
+    if email == ALLOW_ANY_EMAIL: return True
     return len(group_name) and len(email) and group_name in get_user_groups(db, email)
 
 
@@ -112,10 +113,7 @@ def get_user_groups(db: Session, email: str):
     # given an email retrieves the user groups from the DB and then the email-domain groups from a global variable
     groups = db.query(models.association_table_user_groups).filter_by(user_id=email).with_entities(Column("group_id")).all()
     user_level_groups = [g[0] for g in groups]
-    if email != ALLOW_ANY_EMAIL:
-        domain_level_groups = DOMAIN_GROUPS.get(email.split('@')[1], [])
-    else:
-        domain_level_groups = []
+    domain_level_groups = DOMAIN_GROUPS.get(email.split('@')[1], [])
     logger.success(f"EMAIL {email} has {user_level_groups=} and {domain_level_groups=}")
     return list(set(user_level_groups) | set(domain_level_groups))
 
