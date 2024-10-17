@@ -5,7 +5,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 from prometheus_fastapi_instrumentator import Instrumentator
 from datetime import datetime
 import sqlalchemy
@@ -24,8 +23,6 @@ from core.events import lifespan
 from auto_archiver import Metadata
 
 from endpoints import default_router, url_router, sheet_router, task_router, interoperability_router
-
-load_dotenv()
 
 
 app = FastAPI(

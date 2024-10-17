@@ -1,7 +1,4 @@
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 VERSION = "0.7.0"
 API_DESCRIPTION = """
