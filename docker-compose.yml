@@ -4,7 +4,7 @@ x-broker-url: &broker-url "redis://:${REDIS_PASSWORD}@redis:6379/0"
 x-base-setup: &base-setup
   build: ./src
   restart: always
-  env_file: src/.env
+  env_file: src/.env.prod
   environment:
     CELERY_BROKER_URL: *broker-url
     CELERY_RESULT_BACKEND: *broker-url
@@ -23,10 +23,15 @@ services:
       - ./src:/app
     depends_on:
       - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   worker:
     <<: *base-setup
-    command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
+    command: celery --app=worker.celery worker --loglevel=info --logfile=logs/celery.log
     volumes:
       - ./src:/app
       - /var/run/docker.sock:/var/run/docker.sock
@@ -41,6 +46,11 @@ services:
     depends_on:
       - web
       - redis
+    healthcheck:
+      test: ["CMD", "pipenv", "run", "celery", "-A", "worker.celery", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   redis:
     image: redis:6-alpine
@@ -49,6 +59,11 @@ services:
     volumes:
       - "./redis/data:/data"
       - "./redis/config:/conf"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # dashboard service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up dashboard"
   dashboard:

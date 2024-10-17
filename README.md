@@ -6,6 +6,8 @@ An api that uses celery workers to process URL archive requests via [bellingcat/
 ## Development
 http://localhost:8004
 
+TODO: update .env file instructions, should use .env.prod and .env.dev and only use .env for always overwriting dev/prod settings.
+
 requires `src/.env`
 
 cd /src
@@ -37,7 +39,7 @@ Auto-archiver orchestrator files configurations. For each archiving task an orch
 orchestrators:
   group1: secrets/orchestration-group1.yaml
   group2: secrets/orchestration-group2.yaml
-  default: secrets/orchestration-default:.yaml
+  default: secrets/orchestration-default:orchestration.yaml
 ```
 
 ## Database migrations

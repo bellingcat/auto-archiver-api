@@ -7,11 +7,14 @@ secrets
 __pycache
 .pytest_cach
 .env
+.env.dev
+.env.prod
 *.db
 redis/data/*
 .ipynb_checkpoints*
 #temp
 tests
 src/user-groups.yaml
+src/user-groups.dev.yaml
 wit*
 src/crawls

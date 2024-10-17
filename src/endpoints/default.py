@@ -26,6 +26,10 @@ async def home(request: Request):
     return JSONResponse(status)
 
 
+@default_router.get("/health")
+async def health(request: Request):
+    return JSONResponse({"status": "ok"})
+
 @default_router.get("/groups", response_model=list[str])
 def get_user_groups(db: Session = Depends(get_db), email=Depends(get_user_auth)):
     return crud.get_user_groups(db, email)
