@@ -12,7 +12,7 @@ requires `src/.env`
 
 cd /src
 <!-- * `pipenv install --editable ../../auto-archiver` -->
-* console 1 - `docker compose up redis` optionally add `dashboard` for flower dashboard and `web` if not running uvicorn locally
+* console 1 - `docker compose up redis` optionally add `web` if not running uvicorn locally
 * console 2 - `pipenv shell` + `celery worker --app=worker.celery --loglevel=info --logfile=logs/celery_dev.log`
   * `celery --app=worker.celery worker --loglevel=info --logfile=logs/celery_dev.log` celery 5
   * or with watchdog for dev auto-reload `watchmedo auto-restart -d ./  -- celery --app=worker.celery worker --loglevel=info --logfile=logs/celery_dev.log`

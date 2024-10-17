@@ -64,16 +64,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # dashboard service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up dashboard"
-  dashboard:
-    <<: *base-setup
-    profiles:
-      - flower
-    command: ["flower", "--app=worker.celery", "--port=5555", "--broker", *broker-url, "--basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}"]
-    ports:
-      - 5556:5555
-    depends_on:
-      - web
-      - redis
-      - worker
