@@ -8,8 +8,6 @@ from core.config import CHROME_APP_IDS, BLOCKED_EMAILS
 assert len(CHROME_APP_IDS) > 0, "CHROME_APP_IDS env variable not properly set, it's a csv"
 for app_id in CHROME_APP_IDS:
     assert len(app_id) > 10, f"CHROME_APP_IDS got invalid id: {app_id} env variable not set"
-logger.info(f"{CHROME_APP_IDS=}")
-logger.info(f"{len(BLOCKED_EMAILS)=}")
 
 # Auth logic
 bearer_security = HTTPBearer()

@@ -50,11 +50,16 @@ app.include_router(interoperability_router)
 # prometheus exposed in /metrics with authentication
 Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
 
-# used mostly for development in combination with local_archive
-SERVE_LOCAL_ARCHIVE = os.environ.get("SERVE_LOCAL_ARCHIVE", "")
-if len(SERVE_LOCAL_ARCHIVE) > 1 and os.path.isdir(SERVE_LOCAL_ARCHIVE):
-    logger.info(f"mounting local archive {SERVE_LOCAL_ARCHIVE}")
-    app.mount(SERVE_LOCAL_ARCHIVE, StaticFiles(directory=SERVE_LOCAL_ARCHIVE), name=SERVE_LOCAL_ARCHIVE)
+def setup_local_archive_serve():
+    # if env SERVE_LOCAL_ARCHIVE is set it serves files from that dir, useful for development and using local_archive
+    SERVE_LOCAL_ARCHIVE = os.environ.get("SERVE_LOCAL_ARCHIVE", "")
+    local_dir = SERVE_LOCAL_ARCHIVE
+    if not os.path.isdir(local_dir) and os.path.isdir(local_dir.replace("/app", ".")):
+        local_dir = local_dir.replace("/app", ".")
+    if len(SERVE_LOCAL_ARCHIVE) > 1 and os.path.isdir(local_dir):
+        logger.warning(f"MOUNTing local archive {SERVE_LOCAL_ARCHIVE}")
+        app.mount(SERVE_LOCAL_ARCHIVE, StaticFiles(directory=local_dir), name=SERVE_LOCAL_ARCHIVE)
+setup_local_archive_serve()
 
 
 app.middleware("http")(logging_middleware)

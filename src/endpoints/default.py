@@ -12,7 +12,6 @@ from security import get_user_auth, bearer_security
 
 default_router = APIRouter()
 
-
 @default_router.get("/")
 async def home(request: Request):
     # TODO: maybe split into 2 routes: one non authenticated and one authenticated for the groups info only
@@ -27,7 +26,7 @@ async def home(request: Request):
 
 
 @default_router.get("/health")
-async def health(request: Request):
+async def health():
     return JSONResponse({"status": "ok"})
 
 @default_router.get("/groups", response_model=list[str])
