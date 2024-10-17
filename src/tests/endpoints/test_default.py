@@ -60,6 +60,7 @@ def test_endpoint_groups(m1):
     assert r.status_code == 200
     j = r.json()
     assert j == ["group1", "group2"]
+    app.dependency_overrides = {}
 
 
 def test_no_serve_local_archive_by_default():
