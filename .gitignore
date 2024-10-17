@@ -12,8 +12,6 @@ __pycache
 *.db
 redis/data/*
 .ipynb_checkpoints*
-#temp
-tests
 src/user-groups.yaml
 src/user-groups.dev.yaml
 wit*

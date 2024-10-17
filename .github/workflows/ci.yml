@@ -37,5 +37,5 @@ jobs:
       working-directory: src
 
     - name: Run tests
-      run: pipenv run PYTHONPATH=. pytest -v --color=yes tests/
+      run: PYTHONPATH=. pipenv run pytest -v --color=yes tests/
       working-directory: src
