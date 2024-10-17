@@ -1,6 +1,6 @@
 # Auto Archiver API
 
-An api that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps an d enables CORS, everything runs on docker but development can be done without docker (except for redis).
+An api that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps and enables CORS, everything runs on docker but development can be done without docker (except for redis).
 
 
 ## Development

@@ -2,18 +2,16 @@ from loguru import logger
 import requests, os, secrets
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from core.config import CHROME_APP_IDS, BLOCKED_EMAILS
 
-
-# Configuration
-CHROME_APP_IDS = set([app_id.strip() for app_id in os.environ.get("CHROME_APP_IDS", "").split(",")])
+# Configuration checks
 assert len(CHROME_APP_IDS) > 0, "CHROME_APP_IDS env variable not properly set, it's a csv"
 for app_id in CHROME_APP_IDS:
     assert len(app_id) > 10, f"CHROME_APP_IDS got invalid id: {app_id} env variable not set"
 logger.info(f"{CHROME_APP_IDS=}")
-
-BLOCKED_EMAILS = set([e.strip().lower() for e in os.environ.get("BLOCKED_EMAILS", "").split(",")])
 logger.info(f"{len(BLOCKED_EMAILS)=}")
 
+# Auth logic
 bearer_security = HTTPBearer()
 
 ALLOW_ANY_EMAIL = "*"

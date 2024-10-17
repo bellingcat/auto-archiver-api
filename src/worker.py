@@ -1,9 +1,9 @@
 
-import os, traceback, yaml, datetime
+import os, traceback, yaml, datetime, sys
 from typing import List, Set
 
 from celery import Celery
-from celery.signals import task_failure
+from celery.signals import task_failure, worker_init
 from auto_archiver import Config, ArchivingOrchestrator, Metadata
 from auto_archiver.core import Media
 from loguru import logger
@@ -42,7 +42,7 @@ def create_archive_task(self, archive_json: str):
 
     if not archive.rearchive:
         with get_db() as session:
-            archives = crud.search_tasks_by_url(session, url, archive.author_id, absolute_search=True)
+            archives = crud.search_archives_by_url(session, url, archive.author_id, absolute_search=True)
             if len(archives):
                 logger.info(f"Skipping {url=} as it was already archived")
                 return Metadata.choose_most_complete([a.result for a in archives])
@@ -212,6 +212,9 @@ def redis_publish_exception(exception, task_name):
         logger.error(f"Could not publish to {REDIS_EXCEPTIONS_CHANNEL}")
 
 
-# INIT
-ORCHESTRATORS = {}
-load_orchestrators()
+@worker_init.connect
+def at_start(sender, **kwargs):
+    global ORCHESTRATORS
+    ORCHESTRATORS = {}
+    load_orchestrators()
+    logger.info("Orchestrators loaded successfully.")

@@ -9,8 +9,6 @@ x-base-setup: &base-setup
     CELERY_BROKER_URL: *broker-url
     CELERY_RESULT_BACKEND: *broker-url
 
-version: '3.8'
-
 volumes:
   crawls:
 
@@ -34,6 +32,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER, do not change /crawls
     environment:
+      # celery broker-url needs to be duplicated here, do not remove
       CELERY_BROKER_URL: *broker-url
       CELERY_RESULT_BACKEND: *broker-url
       WACZ_ENABLE_DOCKER: 1 # Enable calling docker from this container

@@ -19,9 +19,7 @@ class Archive(ArchiveCreate):
     updated_at: datetime | None
     deleted: bool
 
-    class Config:
-        orm_mode = True
-
+    model_config = { "from_attributes": True }
 
 class SubmitSheet(BaseModel):
     sheet_name: str | None = None
@@ -39,3 +37,13 @@ class SubmitManual(BaseModel):
     author_id: str | None = None
     group_id: str | None = None
     tags: set | None = set()
+
+class Task(BaseModel):
+    id: str
+
+class TaskResult(Task):
+    status: str
+    result: str
+
+class TaskDelete(Task):
+    deleted: bool

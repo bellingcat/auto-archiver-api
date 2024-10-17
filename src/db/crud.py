@@ -15,7 +15,7 @@ MAX_LIMIT = 100
 # --------------- TASK = Archive
 
 
-def get_task(db: Session, task_id: str, email: str):
+def get_archive(db: Session, task_id: str, email: str):
     email = email.lower()
     query = base_query(db).filter(models.Archive.id == task_id)
     if email != ALLOW_ANY_EMAIL:
@@ -24,7 +24,7 @@ def get_task(db: Session, task_id: str, email: str):
     return query.first()
 
 
-def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False):
+def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False):
     # searches for partial URLs, if email is * no ownership filtering happens
     query = base_query(db)
     if email != ALLOW_ANY_EMAIL:
@@ -42,7 +42,7 @@ def search_tasks_by_url(db: Session, url: str, email: str, skip: int = 0, limit:
     return query.order_by(models.Archive.created_at.desc()).offset(skip).limit(min(limit, MAX_LIMIT)).all()
 
 
-def search_tasks_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
+def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
     email = email.lower()
     return base_query(db).filter(models.Archive.author.has(email=email)).offset(skip).limit(min(limit, MAX_LIMIT)).all()
 
