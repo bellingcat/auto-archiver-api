@@ -16,3 +16,6 @@ src/user-groups.yaml
 src/user-groups.dev.yaml
 wit*
 src/crawls
+.coverage
+.pytest_cache/*
+htmlcov

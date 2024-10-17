@@ -24,6 +24,7 @@ auto-archiver = "*"
 watchdog = "*"
 pytest = "*"
 httpx = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.10"

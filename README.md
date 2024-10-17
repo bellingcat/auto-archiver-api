@@ -69,3 +69,23 @@ Run `pipenv update auto-archiver` inside `src` to update the auto-archiver versi
 curl -XPOST -H "Authorization: Bearer GOOGLE_OAUTH_TOKEN" -H "Content-type: application/json" -d '{"sheet_id": "SHEET_ID", "header": 1}' 'http://localhost:8004/sheet'
 
 ```
+
+
+### Testing
+```bash
+# can be done from top level but let's do it from the src folder for consistency with CI etc
+cd src
+# run tests 
+PYTHONPATH=. pipenv run pytest -v --color=yes tests/
+
+# TO GET COVERAGE
+# run tests with coverage instead 
+PYTHONPATH=. pipenv run coverage run -m pytest -v --color=yes tests/
+
+# get coverage
+pipenv run coverage report
+# get coverage HTML
+
+pipenv run coverage html
+# > open/run server on htmlcov/index.html to navigate through line coverage
+```

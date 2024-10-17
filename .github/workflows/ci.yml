@@ -36,6 +36,10 @@ jobs:
       run: pipenv install --dev
       working-directory: src
 
-    - name: Run tests
-      run: PYTHONPATH=. pipenv run pytest -v --color=yes tests/
+    - name: Run tests with coverage
+      run: PYTHONPATH=. pipenv run coverage run -m pytest -v --color=yes tests/
+      working-directory: src
+
+    - name: Report coverage
+      run: pipenv run coverage report
       working-directory: src
