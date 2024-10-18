@@ -43,9 +43,8 @@ def test_endpoint_health(client_with_auth):
     assert r.json() == {"status": "ok"}
 
 
-def test_endpoint_groups_403(client):
-    r = client.get("/groups")
-    assert r.status_code == 403
+def test_endpoint_groups_no_auth(client, test_no_auth):
+    test_no_auth(client.get, "/groups")
 
 
 def test_endpoint_groups_rick_and_morty(client_with_auth):

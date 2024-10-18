@@ -1,5 +1,8 @@
 from unittest.mock import patch
-from fastapi.testclient import TestClient
+
+
+def test_endpoint_task_status_no_auth(client, test_no_auth):
+    test_no_auth(client.get, "/task/test-task-id")
 
 
 @patch("endpoints.task.AsyncResult")
