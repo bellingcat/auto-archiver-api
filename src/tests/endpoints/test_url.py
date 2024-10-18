@@ -6,18 +6,9 @@ from unittest.mock import patch
 
 from db.schemas import ArchiveCreate, TaskResult
 
-NO_AUTH = {'detail': 'Not authenticated'}
-
-
-def test_archive_url_unauthenticated(client):
-    response = client.post("/url/archive")
-    assert response.status_code == 403
-    assert response.json() == NO_AUTH
-
-    # this will call archive/{id}
-    response = client.get("/url/archive")
-    assert response.status_code == 403
-    assert response.json() == NO_AUTH
+def test_archive_url_unauthenticated(client, test_no_auth):
+    test_no_auth(client.post, "/url/archive")
+    test_no_auth(client.get, "/url/archive")
 
 
 @patch("worker.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
@@ -36,10 +27,8 @@ def test_archive_url(m1, client_with_auth):
     assert json.loads(called_val) == {"id": None, "url": "https://example.com", "result": None, "public": True, "author_id": "rick@example.com", "group_id": None, "tags": [], "rearchive": True}
 
 
-def test_search_by_url_unauthenticated(client):
-    response = client.get("/url/search")
-    assert response.status_code == 403
-    assert response.json() == NO_AUTH
+def test_search_by_url_unauthenticated(client, test_no_auth):
+    test_no_auth(client.get, "/url/search")
 
 
 def test_search_by_url(client_with_auth, db_session):
@@ -81,10 +70,8 @@ def test_search_by_url(client_with_auth, db_session):
     assert len(response.json()) == 10
 
 
-def test_latest_unauthenticated(client):
-    response = client.get("/url/latest")
-    assert response.status_code == 403
-    assert response.json() == NO_AUTH
+def test_latest_unauthenticated(client, test_no_auth):
+    test_no_auth(client.get, "/url/latest")
 
 
 def test_latest(client_with_auth, db_session):
@@ -116,10 +103,8 @@ def test_latest(client_with_auth, db_session):
     assert len(response.json()) == 2
 
 
-def test_lookup_unauthenticated(client):
-    response = client.get("/url/123-456-789")
-    assert response.status_code == 403
-    assert response.json() == NO_AUTH
+def test_lookup_unauthenticated(client, test_no_auth):
+    test_no_auth(client.get, "/url/123-456-789")
 
 
 def test_lookup(client_with_auth, db_session):
@@ -144,10 +129,8 @@ def test_lookup(client_with_auth, db_session):
     assert j["rearchive"] == True
 
 
-def test_delete_task_unauthenticated(client):
-    response = client.delete("/url/123-456-789")
-    assert response.status_code == 403
-    assert response.json() == NO_AUTH
+def test_delete_task_unauthenticated(client, test_no_auth):
+    test_no_auth(client.delete, "/url/123-456-789")
 
 
 def test_delete_task(client_with_auth, db_session):

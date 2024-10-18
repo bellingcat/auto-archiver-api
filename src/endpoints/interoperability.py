@@ -23,4 +23,4 @@ def submit_manual_archive(manual: schemas.SubmitManual, auth=Depends(token_api_k
     except sqlalchemy.exc.IntegrityError as e:
         logger.error(e)
         raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
-    return JSONResponse({"id": archive_id})
+    return JSONResponse({"id": archive_id}, status_code=201)

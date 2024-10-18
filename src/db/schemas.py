@@ -35,7 +35,7 @@ class SubmitSheet(BaseModel):
     public: bool = False
     author_id: str | None = None
     group_id: str | None = None
-    tags: set[Tag] | None = set()
+    tags: set[str] | None = set()
     columns: dict | None = {} # TODO: implement
 
 class SubmitManual(BaseModel):
@@ -43,7 +43,7 @@ class SubmitManual(BaseModel):
     public: bool = False
     author_id: str | None = None
     group_id: str | None = None
-    tags: set[Tag] | None = set()
+    tags: set[str] | None = set()
 
 class Task(BaseModel):
     id: str
