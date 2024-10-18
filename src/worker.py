@@ -1,5 +1,5 @@
 
-import os, traceback, yaml, datetime, sys
+import traceback, yaml, datetime
 from typing import List, Set
 
 from celery import Celery
@@ -9,29 +9,25 @@ from auto_archiver.core import Media
 from loguru import logger
 
 from db import crud, schemas, models
-from db.database import SessionLocal
-from contextlib import contextmanager
+from db.database import get_db
+from shared.settings import Settings
 import json
 import redis
 from sqlalchemy import exc
 
+settings = Settings()
+
 celery = Celery(__name__)
-celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
-celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
-USER_GROUPS_FILENAME = os.environ.get("USER_GROUPS_FILENAME", "user-groups.yaml")
-REDIS_EXCEPTIONS_CHANNEL = "exceptions-channel"
+celery.conf.broker_url = settings.CELERY_BROKER_URL
+celery.conf.result_backend = settings.CELERY_RESULT_BACKEND
+USER_GROUPS_FILENAME = settings.USER_GROUPS_FILENAME
+REDIS_EXCEPTIONS_CHANNEL = settings.REDIS_EXCEPTIONS_CHANNEL
+
 Rdis = redis.Redis.from_url(celery.conf.broker_url)
-
-@contextmanager
-def get_db():
-    session = SessionLocal()
-    try: yield session
-    finally: session.close()
-
 
 @celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def create_archive_task(self, archive_json: str):
-    archive = schemas.ArchiveCreate.parse_raw(archive_json)
+    archive = schemas.ArchiveCreate.model_validate_json(archive_json)
     logger.info(f"Archiving {archive.url=} {archive.tags=} {archive.public=} {archive.group_id=} {archive.author_id=}")
     invalid = is_group_invalid_for_user(archive.public, archive.group_id, archive.author_id)
     if invalid:
@@ -63,7 +59,7 @@ def create_archive_task(self, archive_json: str):
 
 @celery.task(name="create_sheet_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 0})
 def create_sheet_task(self, sheet_json: str):
-    sheet = schemas.SubmitSheet.parse_raw(sheet_json)
+    sheet = schemas.SubmitSheet.model_validate_json(sheet_json)
     sheet.tags.add("gsheet")
     logger.info(f"SHEET START {sheet=}")
 

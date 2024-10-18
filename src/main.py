@@ -16,14 +16,16 @@ from worker import create_archive_task, create_sheet_task, celery, insert_result
 
 from db import crud, models, schemas
 from security import get_user_auth, token_api_key_auth, get_token_or_user_auth
-from core.config import ALLOWED_ORIGINS, VERSION, SERVE_LOCAL_ARCHIVE, API_DESCRIPTION
-from db.database import get_db
+from core.config import VERSION, API_DESCRIPTION
+from db.database import get_db_dependency
 from core.events import lifespan
+from shared.settings import Settings
 
 from auto_archiver import Metadata
 
 from endpoints import default_router, url_router, sheet_router, task_router, interoperability_router
 
+settings = Settings()
 
 app = FastAPI(
     title="Auto-Archiver API",
@@ -35,7 +37,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,17 +50,15 @@ app.include_router(task_router)
 app.include_router(interoperability_router)
 
 # prometheus exposed in /metrics with authentication
-Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
+Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics", "/health"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
 
 def setup_local_archive_serve():
-    # if env SERVE_LOCAL_ARCHIVE is set it serves files from that dir, useful for development and using local_archive
-    SERVE_LOCAL_ARCHIVE = os.environ.get("SERVE_LOCAL_ARCHIVE", "")
-    local_dir = SERVE_LOCAL_ARCHIVE
+    local_dir = settings.SERVE_LOCAL_ARCHIVE
     if not os.path.isdir(local_dir) and os.path.isdir(local_dir.replace("/app", ".")):
         local_dir = local_dir.replace("/app", ".")
-    if len(SERVE_LOCAL_ARCHIVE) > 1 and os.path.isdir(local_dir):
-        logger.warning(f"MOUNTing local archive {SERVE_LOCAL_ARCHIVE}")
-        app.mount(SERVE_LOCAL_ARCHIVE, StaticFiles(directory=local_dir), name=SERVE_LOCAL_ARCHIVE)
+    if len(settings.SERVE_LOCAL_ARCHIVE) > 1 and os.path.isdir(local_dir):
+        logger.warning(f"MOUNTing local archive {settings.SERVE_LOCAL_ARCHIVE}")
+        app.mount(settings.SERVE_LOCAL_ARCHIVE, StaticFiles(directory=local_dir), name=settings.SERVE_LOCAL_ARCHIVE)
 setup_local_archive_serve()
 
 
@@ -68,12 +68,12 @@ app.middleware("http")(logging_middleware)
 
 
 @app.get("/tasks/search-url", response_model=list[schemas.Archive], deprecated=True)  # DEPRECATED
-def search_by_url(url: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, db: Session = Depends(get_db), email=Depends(get_token_or_user_auth)):
+def search_by_url(url: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, db: Session = Depends(get_db_dependency), email=Depends(get_token_or_user_auth)):
     return crud.search_archives_by_url(db, url.strip(), email, skip=skip, limit=limit, archived_after=archived_after, archived_before=archived_before)
 
 
 @app.get("/tasks/sync", response_model=list[schemas.Archive], deprecated=True)  # DEPRECATED
-def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), email=Depends(get_user_auth)):
+def search(skip: int = 0, limit: int = 100, db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)):
     return crud.search_archives_by_email(db, email, skip=skip, limit=limit)
 
 
@@ -90,7 +90,7 @@ def archive_tasks(archive: schemas.ArchiveCreate, email=Depends(get_token_or_use
 
 
 @app.get("/archive/{task_id}", deprecated=True)  # DEPRECATED
-def lookup(task_id, db: Session = Depends(get_db), email=Depends(get_token_or_user_auth)):
+def lookup(task_id, db: Session = Depends(get_db_dependency), email=Depends(get_token_or_user_auth)):
     return crud.get_archive(db, task_id, email)
 
 
@@ -123,7 +123,7 @@ def get_status(task_id, email=Depends(get_token_or_user_auth)):
 
 
 @app.delete("/tasks/{task_id}", deprecated=True)  # DEPRECATED
-def delete_task(task_id, db: Session = Depends(get_db), email=Depends(get_user_auth)):
+def delete_task(task_id, db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)):
     logger.info(f"deleting task {task_id} request by {email}")
     return JSONResponse({
         "id": task_id,

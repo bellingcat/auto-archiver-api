@@ -2,6 +2,13 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
+class Tag(BaseModel):
+    id: str
+    created_at: datetime
+
+    model_config = { "from_attributes": True }
+    __hash__ = object.__hash__
+
 class ArchiveCreate(BaseModel):
     id: str | None = None
     url: str
@@ -9,7 +16,7 @@ class ArchiveCreate(BaseModel):
     public: bool = True
     author_id: str | None = None
     group_id: str | None = None
-    tags: set = set()
+    tags: set[Tag] | None = set()
     rearchive: bool = True
     # urls: list = []
 
@@ -28,7 +35,7 @@ class SubmitSheet(BaseModel):
     public: bool = False
     author_id: str | None = None
     group_id: str | None = None
-    tags: set | None = set()
+    tags: set[Tag] | None = set()
     columns: dict | None = {} # TODO: implement
 
 class SubmitManual(BaseModel):
@@ -36,7 +43,7 @@ class SubmitManual(BaseModel):
     public: bool = False
     author_id: str | None = None
     group_id: str | None = None
-    tags: set | None = set()
+    tags: set[Tag] | None = set()
 
 class Task(BaseModel):
     id: str

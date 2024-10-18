@@ -1,8 +1,10 @@
 from sqlalchemy import Column, String, JSON, DateTime, Boolean, Table, ForeignKey
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, declarative_base
 import uuid
-from .database import Base
+
+
+Base = declarative_base()
 
 def generate_uuid():
     return str(uuid.uuid4())
@@ -58,7 +60,6 @@ class Tag(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     archives = relationship("Archive", back_populates="tags", secondary=association_table_archive_tags)
-
 
 class User(Base):
     __tablename__ = "users"

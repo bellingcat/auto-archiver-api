@@ -1,17 +1,36 @@
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
-from core.config import SQLALCHEMY_DATABASE_URL
+from shared.settings import Settings
+from contextlib import contextmanager
 
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+settings = Settings()
 
-Base = declarative_base()
+def make_engine(database_url: str):
+    engine = create_engine(database_url, connect_args={"check_same_thread": False})
+
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(conn, _) -> None:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.close()
+
+    return engine
 
 
+def make_session_local(engine: Engine):
+    session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    return session_local
+
+
+@contextmanager
 def get_db():
-    session = SessionLocal()
+    session = make_session_local(make_engine(settings.DATABASE_PATH))()
     try: yield session
     finally: session.close()
+
+
+def get_db_dependency():
+    # to use with Depends and ensure proper session closing
+    with get_db() as db:
+        yield db

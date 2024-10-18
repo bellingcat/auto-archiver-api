@@ -19,6 +19,7 @@ alembic = "*"
 fastapi-utils = "*"
 prometheus-fastapi-instrumentator = "*"
 auto-archiver = "*"
+pydantic-settings = "*"
 
 [dev-packages]
 watchdog = "*"

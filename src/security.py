@@ -2,20 +2,17 @@ from loguru import logger
 import requests, os, secrets
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from core.config import CHROME_APP_IDS, BLOCKED_EMAILS
-
-# Configuration checks
-assert len(CHROME_APP_IDS) > 0, "CHROME_APP_IDS env variable not properly set, it's a csv"
-for app_id in CHROME_APP_IDS:
-    assert len(app_id) > 10, f"CHROME_APP_IDS got invalid id: {app_id} env variable not set"
-
-# Auth logic
-bearer_security = HTTPBearer()
+from shared.settings import Settings
 
 ALLOW_ANY_EMAIL = "*"
 
+settings = Settings()
+bearer_security = HTTPBearer()
+
+
 def secure_compare(token, api_key):
     return secrets.compare_digest(token.encode("utf8"), api_key.encode("utf8"))
+
 
 # Factory method to create an authentication dependency for a specific key
 def api_key_auth(api_key):
@@ -35,15 +32,17 @@ def api_key_auth(api_key):
 
     return auth
 
+
 # --------------------- Token Auth for AA itself to query the API, AA setup tool and Prometheus
-API_BEARER_TOKEN = os.environ.get("API_BEARER_TOKEN", "")  # min length is 20 chars
-token_api_key_auth = api_key_auth(API_BEARER_TOKEN)
+token_api_key_auth = api_key_auth(settings.API_BEARER_TOKEN)
+
 
 async def get_token_or_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bearer_security)):
     # tries to use the static API_KEY and defaults to google JWT auth
     access_token = credentials.credentials
     if token_api_key_auth(access_token, auto_error=False): return ALLOW_ANY_EMAIL
     return await get_user_auth(credentials)
+
 
 async def get_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bearer_security)):
     # validates the Bearer token in the case that it requires it
@@ -56,6 +55,7 @@ async def get_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bear
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+
 def authenticate_user(access_token):
     # https://cloud.google.com/docs/authentication/token-types#access
     if type(access_token) != str or len(access_token) < 10: return False, "invalid access_token"
@@ -63,9 +63,9 @@ def authenticate_user(access_token):
     if r.status_code != 200: return False, "error occurred"
     try:
         j = r.json()
-        if j.get("azp") not in CHROME_APP_IDS and j.get("aud") not in CHROME_APP_IDS:
+        if j.get("azp") not in settings.CHROME_APP_IDS and j.get("aud") not in settings.CHROME_APP_IDS:
             return False, f"token does not belong to valid APP_ID"
-        if j.get("email") in BLOCKED_EMAILS:
+        if j.get("email") in settings.BLOCKED_EMAILS:
             return False, f"email '{j.get('email')}' not allowed"
         if j.get("email_verified") != "true":
             return False, f"email '{j.get('email')}' not verified"
@@ -75,4 +75,3 @@ def authenticate_user(access_token):
     except Exception as e:
         logger.warning(f"EXCEPTION occurred: {e}")
         return False, f"EXCEPTION occurred"
-

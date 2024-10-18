@@ -1,6 +1,5 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 from fastapi.testclient import TestClient
-
 
 
 def setup_client():
@@ -9,6 +8,7 @@ def setup_client():
     async def mock_get_token_or_user_auth(): return "example@email.com"
     app.dependency_overrides[get_token_or_user_auth] = mock_get_token_or_user_auth
     return TestClient(app), app
+
 
 @patch("endpoints.task.AsyncResult")
 def test_get_status_success(mock_async_result):
