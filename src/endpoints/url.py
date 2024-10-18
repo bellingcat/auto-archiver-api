@@ -25,7 +25,7 @@ def archive_url(archive: schemas.ArchiveCreate, email=Depends(get_token_or_user_
     logger.info("creating task")
     task = create_archive_task.delay(archive.model_dump_json())
     task_response = schemas.Task(id=task.id)
-    return JSONResponse(task_response.model_dump())
+    return JSONResponse(task_response.model_dump(), status_code=201)
 
 
 @url_router.get("/search", response_model=list[schemas.Archive], summary="Search for archive entries by URL.")
@@ -44,13 +44,15 @@ def latest(skip: int = 0, limit: int = 25, db: Session = Depends(get_db_dependen
 
 @url_router.get("/{id}", response_model=schemas.Archive, summary="Fetch a single URL archive by the associated id.")
 def lookup(id, db: Session = Depends(get_db_dependency), email=Depends(get_token_or_user_auth)):
-    return crud.get_archive(db, id, email)
+    archive = crud.get_archive(db, id, email)
+    if archive is None:
+        raise HTTPException(status_code=404, detail="Archive not found")
+    return archive
 
 
 @url_router.delete("/{id}", response_model=schemas.TaskDelete, summary="Delete a single URL archive by id.")
 def delete_task(id, db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)):
     logger.info(f"deleting url archive task {id} request by {email}")
-    #TODO: use response model?
     return JSONResponse({
         "id": id,
         "deleted": crud.soft_delete_task(db, id, email)

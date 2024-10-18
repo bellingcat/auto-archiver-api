@@ -43,7 +43,7 @@ def test_db(settings: Settings):
     models.Base.metadata.drop_all(bind=engine)
     for suffix in ["", "-wal", "-shm"]:
         new_fs = fs + suffix
-        if os.path.exists(new_fs): 
+        if os.path.exists(new_fs):
             os.remove(new_fs)
 
 
@@ -56,13 +56,9 @@ def db_session(test_db):
 
 
 @pytest.fixture()
-def app(db_session, settings):
+def app(db_session):
     from web.main import app_factory
     app = app_factory()
-    from security import get_token_or_user_auth
-    app.dependency_overrides[get_token_or_user_auth] = lambda: "example@email.com"
-    # app.dependency_overrides[settings] = lambda: settings
-    # app.dependency_overrides[get_session] = lambda: db_session
     return app
 
 
@@ -71,16 +67,16 @@ def client(app):
     client = TestClient(app)
     return client
 
-# # create test data and insert it into the database
-# def create_test_data():
-#     from db.database import SessionLocal
-#     from db.models import Task
 
-#     db = SessionLocal()
-#     task = Task(id="test-task-id", status="PENDING")
-#     db.add(task)
-#     db.commit()
-#     db.refresh(task)
-#     db.close()
+@pytest.fixture()
+def app_with_auth(app):
+    from security import get_token_or_user_auth, get_user_auth
+    app.dependency_overrides[get_token_or_user_auth] = lambda: "rick@example.com"
+    app.dependency_overrides[get_user_auth] = lambda: "morty@example.com"
+    return app
 
-#     return task.id
+
+@pytest.fixture()
+def client_with_auth(app_with_auth):
+    client = TestClient(app_with_auth)
+    return client

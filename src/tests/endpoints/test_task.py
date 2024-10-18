@@ -3,11 +3,11 @@ from fastapi.testclient import TestClient
 
 
 @patch("endpoints.task.AsyncResult")
-def test_get_status_success(mock_async_result, client):
+def test_get_status_success(mock_async_result, client_with_auth):
     mock_async_result.return_value.status = "SUCCESS"
     mock_async_result.return_value.result = {"data": "some result"}
 
-    response = client.get("/task/test-task-id")
+    response = client_with_auth.get("/task/test-task-id")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -18,12 +18,12 @@ def test_get_status_success(mock_async_result, client):
 
 
 @patch("endpoints.task.AsyncResult")
-def test_get_status_failure(mock_async_result, client):
+def test_get_status_failure(mock_async_result, client_with_auth):
 
     mock_async_result.return_value.status = "FAILURE"
     mock_async_result.return_value.result = Exception("Some error")
 
-    response = client.get("/task/test-task-id")
+    response = client_with_auth.get("/task/test-task-id")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -34,11 +34,11 @@ def test_get_status_failure(mock_async_result, client):
 
 
 @patch("endpoints.task.AsyncResult")
-def test_get_status_pending(mock_async_result, client):
+def test_get_status_pending(mock_async_result, client_with_auth):
     mock_async_result.return_value.status = "PENDING"
     mock_async_result.return_value.result = None
 
-    response = client.get("/task/test-task-id")
+    response = client_with_auth.get("/task/test-task-id")
 
     assert response.status_code == 200
     assert response.json() == {

@@ -16,9 +16,9 @@ DATABASE_QUERY_LIMIT = Settings().DATABASE_QUERY_LIMIT
 # --------------- TASK = Archive
 
 
-def get_archive(db: Session, task_id: str, email: str):
+def get_archive(db: Session, id: str, email: str):
     email = email.lower()
-    query = base_query(db).filter(models.Archive.id == task_id)
+    query = base_query(db).filter(models.Archive.id == id)
     if email != ALLOW_ANY_EMAIL:
         groups = get_user_groups(db, email)
         query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
@@ -45,7 +45,7 @@ def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, lim
 
 def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
     email = email.lower()
-    return base_query(db).filter(models.Archive.author.has(email=email)).offset(skip).limit(min(limit, DATABASE_QUERY_LIMIT)).all()
+    return base_query(db).filter(models.Archive.author.has(email=email)).order_by(models.Archive.created_at.desc()).offset(skip).limit(min(limit, DATABASE_QUERY_LIMIT)).all()
 
 
 def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]):
