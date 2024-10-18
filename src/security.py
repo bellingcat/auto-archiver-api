@@ -60,7 +60,7 @@ def authenticate_user(access_token):
     # https://cloud.google.com/docs/authentication/token-types#access
     if type(access_token) != str or len(access_token) < 10: return False, "invalid access_token"
     r = requests.get("https://oauth2.googleapis.com/tokeninfo", {"access_token": access_token})
-    if r.status_code != 200: return False, "error occurred"
+    if r.status_code != 200: return False, "invalid token"
     try:
         j = r.json()
         if j.get("azp") not in settings.CHROME_APP_IDS and j.get("aud") not in settings.CHROME_APP_IDS:

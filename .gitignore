@@ -20,5 +20,6 @@ src/crawls
 .pytest_cache/*
 htmlcov
 local_archive
+local_archive_test
 *db-wal
 *db-shm

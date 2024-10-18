@@ -5,8 +5,8 @@ services:
     environment:
       - SERVE_LOCAL_ARCHIVE=/app/local_archive # See orchestration.yaml local_storage.save_to
       - ALLOWED_ORIGINS=http://localhost:8004,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp
-      - API_BEARER_TOKEN=dev-api-bearer-token
       - USER_GROUPS_FILENAME=user-groups.dev.yaml
+      - DATABASE_PATH=sqlite:////app/auto-archiver.db
 
   worker:
     restart: "no"

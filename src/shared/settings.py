@@ -28,4 +28,3 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: Annotated[set[str], Len(min_length=1)]
     CHROME_APP_IDS: Annotated[set[Annotated[str, Len(min_length=10)]], Len(min_length=1)]
     BLOCKED_EMAILS: Annotated[Set[str], Len(min_length=0)] = set()
-
