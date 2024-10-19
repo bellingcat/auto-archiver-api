@@ -64,7 +64,7 @@ def test_search_by_url(client_with_auth, db_session):
     assert response.status_code == 200
     assert len(response.json()) == 0
 
-    response = client_with_auth.get("/url/search?url=https://example.com&archived_affter=2010-01-01")
+    response = client_with_auth.get("/url/search?url=https://example.com&archived_after=2010-01-01")
     assert response.status_code == 200
     assert len(response.json()) == 10
 
