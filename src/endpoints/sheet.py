@@ -20,4 +20,4 @@ def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_token_or_user_a
     if not sheet.sheet_name and not sheet.sheet_id:
         raise HTTPException(status_code=422, detail=f"sheet name or id is required")
     task = create_sheet_task.delay(sheet.model_dump_json())
-    return JSONResponse({"id": task.id})
+    return JSONResponse({"id": task.id}, status_code=201)
