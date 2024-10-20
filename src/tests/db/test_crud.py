@@ -135,7 +135,6 @@ def test_search_archives_by_url(test_data, db_session):
 def test_search_archives_by_email(test_data, db_session):
     from web.security import ALLOW_ANY_EMAIL
     from db import crud
-    from web.security import ALLOW_ANY_EMAIL
 
     # lower/upper case
     assert len(crud.search_archives_by_email(db_session, "rick@example.com")) == 34
@@ -363,13 +362,13 @@ def test_get_group(test_data, db_session):
 def test_upsert_user_groups(db_session):
     from db import crud
 
-    @patch('db.crud.Settings', new = lambda: bad_setings)
+    @patch('db.crud.get_settings', new = lambda: bad_setings)
     def test_missing_yaml(db_session):
         with pytest.raises(FileNotFoundError):
             crud.upsert_user_groups(db_session)
 
 
-    @patch('db.crud.Settings', new = lambda: bad_setings)
+    @patch('db.crud.get_settings', new = lambda: bad_setings)
     def test_broken_yaml(db_session):
         with pytest.raises(yaml.YAMLError):
             crud.upsert_user_groups(db_session)

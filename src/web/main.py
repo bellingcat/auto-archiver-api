@@ -19,14 +19,14 @@ from web.security import get_user_auth, token_api_key_auth, get_token_or_user_au
 from core.config import VERSION, API_DESCRIPTION
 from db.database import get_db_dependency
 from core.events import lifespan
-from shared.settings import Settings
+from shared.settings import get_settings
 
 from auto_archiver import Metadata
 
 from endpoints import default_router, url_router, sheet_router, task_router, interoperability_router
 
 
-def app_factory(settings = Settings()):
+def app_factory(settings = get_settings()):
     app = FastAPI(
         title="Auto-Archiver API",
         description=API_DESCRIPTION,

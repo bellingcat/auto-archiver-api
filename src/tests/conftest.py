@@ -13,7 +13,7 @@ def mock_logger_add():
 
 
 @pytest.fixture()
-def settings():
+def get_settings():
     return Settings(_env_file=".env.test")
 
 @pytest.fixture(autouse=True)
@@ -23,13 +23,13 @@ def mock_settings():
 
 
 @pytest.fixture()
-def test_db(settings: Settings):
+def test_db(get_settings: Settings):
     from db.database import make_engine
     from db import models
 
-    engine = make_engine(settings.DATABASE_PATH)
+    engine = make_engine(get_settings.DATABASE_PATH)
 
-    fs = settings.DATABASE_PATH.replace("sqlite:///", "")
+    fs = get_settings.DATABASE_PATH.replace("sqlite:///", "")
     if not os.path.exists(fs):
         open(fs, 'w').close()
 

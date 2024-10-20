@@ -1,11 +1,11 @@
 import os
 from fastapi.testclient import TestClient
-from shared.settings import Settings
+from shared.settings import get_settings
 
 
 import shutil
 
-def test_serve_local_archive_logic(settings: Settings):
+def test_serve_local_archive_logic(get_settings):
     # create a test file first
     os.makedirs("local_archive_test", exist_ok=True)
     with open("local_archive_test/temp.txt", "w") as f:
@@ -13,9 +13,9 @@ def test_serve_local_archive_logic(settings: Settings):
 
     try:
         # modify the settings
-        settings.SERVE_LOCAL_ARCHIVE = "/app/local_archive_test"
+        get_settings.SERVE_LOCAL_ARCHIVE = "/app/local_archive_test"
         from web.main import app_factory
-        app = app_factory(settings)
+        app = app_factory(get_settings)
         
         # test
         client = TestClient(app)

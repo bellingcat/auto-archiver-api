@@ -1,4 +1,5 @@
 
+from functools import lru_cache
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 from typing import Annotated, Set
@@ -28,3 +29,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: Annotated[set[str], Len(min_length=1)]
     CHROME_APP_IDS: Annotated[set[Annotated[str, Len(min_length=10)]], Len(min_length=1)]
     BLOCKED_EMAILS: Annotated[Set[str], Len(min_length=0)] = set()
+
+@lru_cache
+def get_settings():
+    return Settings()

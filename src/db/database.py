@@ -1,10 +1,8 @@
 from sqlalchemy import Engine, create_engine, event
-from sqlalchemy.orm import sessionmaker, declarative_base
-from shared.settings import Settings
+from sqlalchemy.orm import sessionmaker
+from shared.settings import get_settings
 from contextlib import contextmanager
 
-
-settings = Settings()
 
 def make_engine(database_url: str):
     engine = create_engine(database_url, connect_args={"check_same_thread": False})
@@ -25,7 +23,7 @@ def make_session_local(engine: Engine):
 
 @contextmanager
 def get_db():
-    session = make_session_local(make_engine(settings.DATABASE_PATH))()
+    session = make_session_local(make_engine(get_settings().DATABASE_PATH))()
     try: yield session
     finally: session.close()
 

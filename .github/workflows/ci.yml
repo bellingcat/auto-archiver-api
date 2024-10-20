@@ -37,7 +37,7 @@ jobs:
       working-directory: src
 
     - name: Run tests with coverage
-      run: PYTHONPATH=. pipenv run coverage run -m pytest -v --color=yes tests/
+      run: PYTHONPATH=. PIPENV_DOTENV_LOCATION=.env.test pipenv run coverage run -m pytest -v --color=yes tests/
       working-directory: src
 
     - name: Report coverage

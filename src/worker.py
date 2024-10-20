@@ -10,12 +10,12 @@ from loguru import logger
 
 from db import crud, schemas, models
 from db.database import get_db
-from shared.settings import Settings
+from shared.settings import get_settings
 import json
 import redis
 from sqlalchemy import exc
 
-settings = Settings()
+settings = get_settings()
 
 celery = Celery(__name__)
 celery.conf.broker_url = settings.CELERY_BROKER_URL

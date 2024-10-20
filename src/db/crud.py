@@ -5,13 +5,13 @@ from loguru import logger
 from datetime import datetime, timedelta
 
 from web.security import ALLOW_ANY_EMAIL
-from shared.settings import Settings
+from shared.settings import get_settings
 from . import models, schemas
 import yaml
 
 DOMAIN_GROUPS = {}
 DOMAIN_GROUPS_LOADED = False
-DATABASE_QUERY_LIMIT = Settings().DATABASE_QUERY_LIMIT
+DATABASE_QUERY_LIMIT = get_settings().DATABASE_QUERY_LIMIT
 
 # --------------- TASK = Archive
 
@@ -152,7 +152,7 @@ def upsert_user_groups(db: Session):
     along with new participation of users in groups
     """
     logger.debug("Updating user-groups configuration.")
-    filename = Settings().USER_GROUPS_FILENAME
+    filename = get_settings().USER_GROUPS_FILENAME
 
     # read yaml safely
     try:

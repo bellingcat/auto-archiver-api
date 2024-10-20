@@ -8,10 +8,8 @@ from loguru import logger
 
 from db import crud, models
 from db.database import get_db, make_engine
-from shared.settings import Settings
+from shared.settings import get_settings
 from utils.metrics import measure_regular_metrics, redis_subscribe_worker_exceptions
-
-settings = Settings()
 
 
 @asynccontextmanager
@@ -19,7 +17,7 @@ async def lifespan(app: FastAPI):
     # see https://fastapi.tiangolo.com/advanced/events/#lifespan
 
     # STARTUP
-    engine = make_engine(settings.DATABASE_PATH)
+    engine = make_engine(get_settings().DATABASE_PATH)
     models.Base.metadata.create_all(bind=engine)
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
     # disabling uvicorn logger since we use loguru in logging_middleware
@@ -42,6 +40,6 @@ async def refresh_user_groups():
         crud.upsert_user_groups(db)
 
 
-@repeat_every(seconds=settings.REPEAT_COUNT_METRICS_SECONDS)
+@repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS)
 async def repeat_measure_regular_metrics():
-    measure_regular_metrics(settings.DATABASE_PATH, settings.REPEAT_COUNT_METRICS_SECONDS)
+    measure_regular_metrics(get_settings().DATABASE_PATH, get_settings().REPEAT_COUNT_METRICS_SECONDS)
