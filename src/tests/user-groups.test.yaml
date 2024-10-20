@@ -6,11 +6,12 @@ users:
   morty@example.com:
     - spaceship
   jerry@example.com:
+    - the-jerrys-club
+  birdman@example.com:
 
 domains:
   example.com:
     - animated-characters
-
 
 orchestrators:
   spaceship: secrets/orchestration-dev.yaml

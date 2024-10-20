@@ -27,8 +27,6 @@ from endpoints import default_router, url_router, sheet_router, task_router, int
 
 
 def app_factory(settings = Settings()):
-    
-
     app = FastAPI(
         title="Auto-Archiver API",
         description=API_DESCRIPTION,

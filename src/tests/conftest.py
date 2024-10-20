@@ -16,7 +16,6 @@ def mock_logger_add():
 def settings():
     return Settings(_env_file=".env.test")
 
-
 @pytest.fixture(autouse=True)
 def mock_settings():
     with patch('shared.settings.Settings', return_value=Settings(_env_file=".env.test")) as mock_settings:
@@ -58,7 +57,9 @@ def db_session(test_db):
 @pytest.fixture()
 def app(db_session):
     from web.main import app_factory
+    from db import crud
     app = app_factory()
+    crud.upsert_user_groups(db_session)
     return app
 
 

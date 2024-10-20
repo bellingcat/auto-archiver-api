@@ -37,15 +37,15 @@ def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, lim
     else:
         query = query.filter(models.Archive.url.like(f'%{url}%'))
     if archived_after:
-        query = query.filter(models.Archive.created_at >= archived_after)
+        query = query.filter(models.Archive.created_at > archived_after)
     if archived_before:
-        query = query.filter(models.Archive.created_at <= archived_before)
+        query = query.filter(models.Archive.created_at < archived_before)
     return query.order_by(models.Archive.created_at.desc()).offset(skip).limit(min(limit, DATABASE_QUERY_LIMIT)).all()
 
 
 def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
     email = email.lower()
-    return base_query(db).filter(models.Archive.author.has(email=email)).order_by(models.Archive.created_at.desc()).offset(skip).limit(min(limit, DATABASE_QUERY_LIMIT)).all()
+    return base_query(db).filter(models.Archive.author_id == email).order_by(models.Archive.created_at.desc()).offset(skip).limit(min(limit, DATABASE_QUERY_LIMIT)).all()
 
 
 def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]):
@@ -66,21 +66,25 @@ def soft_delete_task(db: Session, task_id: str, email: str) -> bool:
         db.commit()
     return db_task is not None
 
-def count_archives(db:Session):
+
+def count_archives(db: Session):
     return db.query(func.count(models.Archive.id)).scalar()
 
-def count_archive_urls(db:Session):
+
+def count_archive_urls(db: Session):
     return db.query(func.count(models.ArchiveUrl.url)).scalar()
 
-def count_by_user_since(db:Session, seconds_delta: int = 15):
+
+def count_by_user_since(db: Session, seconds_delta: int = 15):
     time_threshold = datetime.now() - timedelta(seconds=seconds_delta)
-    return db.query(models.Archive.author_id,func.count().label('total'))\
+    return db.query(models.Archive.author_id, func.count().label('total'))\
         .filter(models.Archive.created_at >= time_threshold)\
         .group_by(models.Archive.author_id)\
         .order_by(func.count().desc()).limit(5 * DATABASE_QUERY_LIMIT).all()
 
+
 def base_query(db: Session):
-    # allow only some fields to be returned, for example author should remain hidden
+    # TODO: allow only some fields to be returned, for example author should remain hidden
     return db.query(models.Archive)\
         .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result))\
         .filter(models.Archive.deleted == False)
@@ -98,10 +102,6 @@ def create_tag(db: Session, tag: str):
     return db_tag
 
 
-def search_tags(db: Session, tag: str, skip: int = 0, limit: int = 100):
-    return db.query(models.Tag).filter(models.Tag.url.like(f'%{tag}%')).offset(skip).limit(min(limit, DATABASE_QUERY_LIMIT)).all()
-
-
 def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
     if email == ALLOW_ANY_EMAIL: return True
     return len(group_name) and len(email) and group_name in get_user_groups(db, email)
@@ -109,6 +109,7 @@ def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
 
 def get_user_groups(db: Session, email: str):
     email = email.lower()
+    if "@" not in email: return []
     global DOMAIN_GROUPS, DOMAIN_GROUPS_LOADED
     if not DOMAIN_GROUPS_LOADED: upsert_user_groups(db)
     # given an email retrieves the user groups from the DB and then the email-domain groups from a global variable
@@ -122,8 +123,8 @@ def get_user_groups(db: Session, email: str):
 # --------------- INIT User-Groups
 
 
-def get_user(db: Session, author_id: str):
-    if type(author_id)==str: author_id = author_id.lower()
+def create_or_get_user(db: Session, author_id: str):
+    if type(author_id) == str: author_id = author_id.lower()
     db_user = db.query(models.User).filter(models.User.email == author_id).first()
     if not db_user:
         db_user = models.User(email=author_id)
@@ -134,11 +135,13 @@ def get_user(db: Session, author_id: str):
 
 
 @cache
-def get_group(db: Session, group_name: str) -> models.Group:
+def create_or_get_group(db: Session, group_name: str) -> models.Group:
     db_group = db.query(models.Group).filter(models.Group.id == group_name).first()
     if db_group is None:
         db_group = models.Group(id=group_name)
         db.add(db_group)
+        db.commit()
+        db.refresh(db_group)
     return db_group
 
 
@@ -152,12 +155,13 @@ def upsert_user_groups(db: Session):
     filename = Settings().USER_GROUPS_FILENAME
 
     # read yaml safely
-    with open(filename) as inf:
-        try:
+    try:
+        with open(filename) as inf:
             user_groups_yaml = yaml.safe_load(inf)
-        except yaml.YAMLError as e:
-            logger.error(f"could not open user groups filename {filename}: {e}")
-            raise e
+            logger.error(user_groups_yaml)
+    except Exception as e:
+        logger.error(f"could not open user groups filename {filename}: {e}")
+        raise e
     # updating domain->groups access
     DOMAIN_GROUPS = user_groups_yaml.get("domains", {})
 
@@ -176,7 +180,7 @@ def upsert_user_groups(db: Session):
             db.add(db_user)
         if not groups: continue  # avoid hanging in for x in None:
         for group in groups:
-            db_group = get_group(db, group)
+            db_group = create_or_get_group(db, group)
             db_group.users.append(db_user)
 
     db.commit()

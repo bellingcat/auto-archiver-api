@@ -84,7 +84,7 @@ def test_latest(client_with_auth, db_session):
         #NB: this insertion is too fast for the ordering to be correct as they are within the same second
 
     # user must exist for /latest to work
-    crud.get_user(db_session, "morty@example.com")
+    crud.create_or_get_user(db_session, "morty@example.com")
 
     response = client_with_auth.get("/url/latest")
     assert response.status_code == 200

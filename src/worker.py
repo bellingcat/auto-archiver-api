@@ -168,7 +168,7 @@ def insert_result_into_db(result: Metadata, tags: Set[str], public: bool, group_
     with get_db() as session:
         # urls are created by get_all_urls
         # create author_id if needed
-        crud.get_user(session, author_id)
+        crud.create_or_get_user(session, author_id)
         # create DB TAGs if needed
         db_tags = [crud.create_tag(session, tag) for tag in tags]
         # insert archive
