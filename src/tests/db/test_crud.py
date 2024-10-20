@@ -57,7 +57,7 @@ def test_data(db_session):
 
 def test_get_archive(test_data, db_session):
     from db import crud
-    from security import ALLOW_ANY_EMAIL
+    from web.security import ALLOW_ANY_EMAIL
 
     print(db_session.query(models.Group).all())
 
@@ -88,7 +88,7 @@ def test_get_archive(test_data, db_session):
 
 def test_search_archives_by_url(test_data, db_session):
     from db import crud
-    from security import ALLOW_ANY_EMAIL
+    from web.security import ALLOW_ANY_EMAIL
 
     # rick's archives are private
     assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "rick@example.com")) == 34
@@ -133,9 +133,9 @@ def test_search_archives_by_url(test_data, db_session):
 
 
 def test_search_archives_by_email(test_data, db_session):
-    from security import ALLOW_ANY_EMAIL
+    from web.security import ALLOW_ANY_EMAIL
     from db import crud
-    from security import ALLOW_ANY_EMAIL
+    from web.security import ALLOW_ANY_EMAIL
 
     # lower/upper case
     assert len(crud.search_archives_by_email(db_session, "rick@example.com")) == 34
@@ -158,7 +158,7 @@ def test_search_archives_by_email(test_data, db_session):
 @patch("db.crud.DATABASE_QUERY_LIMIT", new=25)
 def test_max_query_limit(test_data, db_session):
     from db import crud
-    from security import ALLOW_ANY_EMAIL
+    from web.security import ALLOW_ANY_EMAIL
 
     assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL)) == 25
     assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, limit=1000)) == 25
@@ -290,7 +290,7 @@ def test_create_tag(db_session):
 
 def test_is_user_in_group(test_data, db_session):
     from db import crud
-    from security import ALLOW_ANY_EMAIL
+    from web.security import ALLOW_ANY_EMAIL
 
     # see user-groups.test.yaml
     test_pairs = [

@@ -15,7 +15,7 @@ from core.logging import logging_middleware
 from worker import create_archive_task, create_sheet_task, celery, insert_result_into_db
 
 from db import crud, models, schemas
-from security import get_user_auth, token_api_key_auth, get_token_or_user_auth
+from web.security import get_user_auth, token_api_key_auth, get_token_or_user_auth
 from core.config import VERSION, API_DESCRIPTION
 from db.database import get_db_dependency
 from core.events import lifespan

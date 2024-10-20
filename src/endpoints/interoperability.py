@@ -4,7 +4,7 @@ from auto_archiver import Metadata
 from loguru import logger
 import sqlalchemy
 
-from security import token_api_key_auth
+from web.security import token_api_key_auth
 from db import models, schemas
 from worker import insert_result_into_db
 

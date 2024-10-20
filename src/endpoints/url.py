@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from datetime import datetime
 
 from loguru import logger
-from security import get_user_auth, get_token_or_user_auth
+from web.security import get_user_auth, get_token_or_user_auth
 from sqlalchemy.orm import Session
 
 from db import crud, schemas

@@ -71,7 +71,7 @@ def client(app):
 
 @pytest.fixture()
 def app_with_auth(app):
-    from security import get_token_or_user_auth, get_user_auth, token_api_key_auth
+    from web.security import get_token_or_user_auth, get_user_auth, token_api_key_auth
     app.dependency_overrides[get_token_or_user_auth] = lambda: "rick@example.com"
     app.dependency_overrides[get_user_auth] = lambda: "morty@example.com"
     app.dependency_overrides[token_api_key_auth] = lambda: "jerry@example.com"

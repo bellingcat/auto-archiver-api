@@ -57,7 +57,7 @@ def test_endpoint_groups_rick_and_morty(client_with_auth):
 
 @patch("endpoints.default.crud.get_user_groups", return_value=["group1", "group2"])
 def test_endpoint_groups(m1, app):
-    from security import get_user_auth
+    from web.security import get_user_auth
     app.dependency_overrides[get_user_auth] = lambda: True
     client = TestClient(app)
 

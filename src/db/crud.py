@@ -4,7 +4,7 @@ from sqlalchemy import Column, or_, func
 from loguru import logger
 from datetime import datetime, timedelta
 
-from security import ALLOW_ANY_EMAIL
+from web.security import ALLOW_ANY_EMAIL
 from shared.settings import Settings
 from . import models, schemas
 import yaml

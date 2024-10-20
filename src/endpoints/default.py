@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from core.config import VERSION, BREAKING_CHANGES
 from db import crud
 from db.database import get_db_dependency, get_db
-from security import get_user_auth, bearer_security
+from web.security import get_user_auth, bearer_security
 
 default_router = APIRouter()
 
