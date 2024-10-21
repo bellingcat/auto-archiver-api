@@ -4,6 +4,8 @@ from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 import pytest
 
+from core.config import ALLOW_ANY_EMAIL
+
 
 def test_secure_compare():
     from web.security import secure_compare
@@ -14,7 +16,7 @@ def test_secure_compare():
 
 @pytest.mark.asyncio
 async def test_get_token_or_user_auth_with_api():
-    from web.security import get_token_or_user_auth, ALLOW_ANY_EMAIL
+    from web.security import get_token_or_user_auth
     mock_api = HTTPAuthorizationCredentials(scheme="lorem", credentials="this_is_the_test_api_token")
     assert await get_token_or_user_auth(mock_api) == ALLOW_ANY_EMAIL
 

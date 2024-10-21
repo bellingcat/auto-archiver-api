@@ -4,7 +4,8 @@ from fastapi.responses import JSONResponse
 
 from loguru import logger
 
-from web.security import ALLOW_ANY_EMAIL, get_token_or_user_auth
+from core.config import ALLOW_ANY_EMAIL
+from web.security import get_token_or_user_auth
 from db import schemas
 from worker import create_sheet_task
 

@@ -4,7 +4,7 @@ from sqlalchemy import Column, or_, func
 from loguru import logger
 from datetime import datetime, timedelta
 
-from web.security import ALLOW_ANY_EMAIL
+from core.config import ALLOW_ANY_EMAIL
 from shared.settings import get_settings
 from . import models, schemas
 import yaml
@@ -158,7 +158,6 @@ def upsert_user_groups(db: Session):
     try:
         with open(filename) as inf:
             user_groups_yaml = yaml.safe_load(inf)
-            logger.error(user_groups_yaml)
     except Exception as e:
         logger.error(f"could not open user groups filename {filename}: {e}")
         raise e

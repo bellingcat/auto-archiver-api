@@ -2,9 +2,8 @@ from loguru import logger
 import requests, secrets
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from core.config import ALLOW_ANY_EMAIL
 from shared.settings import get_settings
-
-ALLOW_ANY_EMAIL = "*"
 
 settings = get_settings()
 bearer_security = HTTPBearer()
@@ -63,7 +62,7 @@ def authenticate_user(access_token):
     if r.status_code != 200: return False, "invalid token"
     try:
         j = r.json()
-        if j.get("azp") not in settings.CHROME_APP_IDS and j.get("aud") not in settings.CHROME_APP_IDS:
+        if j.get("azp") not in settings.CHROME_APP_IDS and j.get("aud") not in seuser_grouttings.CHROME_APP_IDS:
             return False, f"token does not belong to valid APP_ID"
         if j.get("email") in settings.BLOCKED_EMAILS:
             return False, f"email '{j.get('email')}' not allowed"
