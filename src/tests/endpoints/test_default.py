@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
+import pytest
 from core.config import VERSION
 
 
@@ -76,3 +77,32 @@ def test_favicon(client_with_auth):
     r = client_with_auth.get("/favicon.ico")
     assert r.status_code == 200
     assert r.headers["content-type"] == "image/vnd.microsoft.icon"
+
+
+from tests.db.test_crud import test_data
+
+
+@pytest.mark.asyncio
+async def test_prometheus_metrics(test_data, client_with_auth, get_settings):
+    # before metrics calculation
+    r = client_with_auth.get("/metrics")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
+    assert "disk_utilization" in r.text
+    assert "database_metrics" in r.text
+    assert "exceptions" in r.text
+    assert "worker_exceptions_total" in r.text
+    assert 'disk_utilization{type="used"}' not in r.text
+
+    # after metrics calculation
+    from utils.metrics import measure_regular_metrics
+    await measure_regular_metrics(get_settings.DATABASE_PATH, 60 * 60 * 24 * 31 * 12 * 100)
+    r2 = client_with_auth.get("/metrics")
+    assert 'disk_utilization{type="used"}' in r2.text
+    assert 'disk_utilization{type="free"}' in r2.text
+    assert 'disk_utilization{type="database"}' in r2.text
+    assert 'database_metrics{query="count_archives",user="-"} 100.0' in r2.text
+    assert 'database_metrics{query="count_archive_urls",user="-"} 1000.0' in r2.text
+    assert 'database_metrics{query="count_by_user",user="rick@example.com"} 34.0' in r2.text
+    assert 'database_metrics{query="count_by_user",user="morty@example.com"} 33.0' in r2.text
+    assert 'database_metrics{query="count_by_user",user="jerry@example.com"} 33.0' in r2.text
