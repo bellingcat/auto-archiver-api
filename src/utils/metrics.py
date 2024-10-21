@@ -4,7 +4,6 @@ import os
 import shutil
 from loguru import logger
 from prometheus_client import Counter, Gauge
-from sqlalchemy.orm import Session
 
 from db import crud
 from db.database import get_db
@@ -54,7 +53,7 @@ async def measure_regular_metrics(sqlite_db_url:str, repeat_in_seconds:int):
         DISK_UTILIZATION.labels(type="database").set(fs.st_size / (2**30))
     except Exception as e: logger.error(e)
 
-    with get_db as db:
+    with get_db() as db:
         count_archives = crud.count_archives(db)
         count_archive_urls = crud.count_archive_urls(db)
         DATABASE_METRICS.labels(query="count_archives", user="-").set(count_archives)
