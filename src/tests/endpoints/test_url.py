@@ -10,7 +10,7 @@ def test_archive_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.get, "/url/archive")
 
 
-@patch("worker.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
+@patch("worker.main.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
 def test_archive_url(m1, client_with_auth):
     response = client_with_auth.post("/url/archive", json={"url": "bad"})
     assert response.status_code == 422

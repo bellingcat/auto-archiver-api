@@ -6,7 +6,7 @@ import sqlalchemy
 
 from web.security import token_api_key_auth
 from db import models, schemas
-from worker import insert_result_into_db
+from worker.main import insert_result_into_db
 from core.logging import log_error
 
 

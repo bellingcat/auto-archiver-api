@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from loguru import logger
 
 from core.logging import logging_middleware, log_error
-from worker import create_archive_task, create_sheet_task, celery, insert_result_into_db
+from worker.main import create_archive_task, create_sheet_task, celery, insert_result_into_db
 
 from db import crud, models, schemas
 from web.security import get_user_auth, token_api_key_auth, get_token_or_user_auth

@@ -8,7 +8,7 @@ def test_sheet_no_auth(client, test_no_auth):
     test_no_auth(client.post, "/sheet/archive")
 
 
-@patch("worker.create_sheet_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
+@patch("worker.main.create_sheet_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
 def test_sheet_rick(m1, client_with_auth):
 
     response = client_with_auth.post("/sheet/archive", json={"sheet_id": "123-sheet-id"})
@@ -26,7 +26,7 @@ def test_sheet_missing_sheet_data(client_with_auth):
     assert r.json() == {"detail": "sheet name or id is required"}
 
 
-@patch("worker.create_sheet_task.delay", return_value=TaskResult(id="123-API-789", status="PENDING", result=""))
+@patch("worker.main.create_sheet_task.delay", return_value=TaskResult(id="123-API-789", status="PENDING", result=""))
 def test_sheet_api(m1, client):
 
     response = client.post("/sheet/archive", json={"sheet_name": "456-sheet_name-id"}, headers={"Authorization": "Bearer this_is_the_test_api_token"})

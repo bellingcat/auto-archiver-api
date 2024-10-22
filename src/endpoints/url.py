@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from db import crud, schemas
 from db.database import get_db_dependency
 
-from worker import create_archive_task
+from worker.main import create_archive_task
 
 url_router = APIRouter(prefix="/url", tags=["Single URL operations"])
 

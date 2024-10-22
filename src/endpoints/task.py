@@ -8,7 +8,7 @@ from web.security import get_token_or_user_auth
 
 from db import schemas
 from core.logging import log_error
-from worker import celery
+from worker.main import celery
 
 
 task_router = APIRouter(prefix="/task", tags=["Async task operations"])

@@ -7,7 +7,7 @@ from loguru import logger
 from core.config import ALLOW_ANY_EMAIL
 from web.security import get_token_or_user_auth
 from db import schemas
-from worker import create_sheet_task
+from worker.main import create_sheet_task
 
 sheet_router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"])
 
