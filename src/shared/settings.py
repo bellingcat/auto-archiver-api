@@ -12,10 +12,12 @@ class Settings(BaseSettings):
 	# general
     SERVE_LOCAL_ARCHIVE: str = ""
     USER_GROUPS_FILENAME: str = "user-groups.yaml"
+    SHEET_ORCHESTRATION_YAML : str = "secrets/orchestration-sheet.yaml"
     
 	# database
     DATABASE_PATH: str
     DATABASE_QUERY_LIMIT: int = 100
+
     # redis
     CELERY_BROKER_URL: str = "redis://localhost:6379"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379"

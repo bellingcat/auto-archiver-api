@@ -37,6 +37,7 @@ def create_archive_task(self, archive_json: str):
     url = archive.url
     logger.info(f"{url=} {archive=}")
 
+    # TODO: re-evaluate if this logic is to be used
     if not archive.rearchive:
         with get_db() as session:
             archives = crud.search_archives_by_url(session, url, archive.author_id, absolute_search=True)
@@ -63,11 +64,12 @@ def create_sheet_task(self, sheet_json: str):
     sheet.tags.add("gsheet")
     logger.info(f"SHEET START {sheet=}")
 
-    if (em := is_group_invalid_for_user(sheet.public, sheet.group_id, sheet.author_id)): return {"error": em}
+    if (em := is_group_invalid_for_user(sheet.public, sheet.group_id, sheet.author_id)):
+        return {"error": em}
 
     config = Config()
     # TODO: use choose_orchestrator and overwrite the feeder
-    config.parse(use_cli=False, yaml_config_filename="secrets/orchestration-sheet.yaml", overwrite_configs={"configurations": {"gsheet_feeder": {"sheet": sheet.sheet_name, "sheet_id": sheet.sheet_id, "header": sheet.header}}})
+    config.parse(use_cli=False, yaml_config_filename=get_settings().SHEET_ORCHESTRATION_YAML, overwrite_configs={"configurations": {"gsheet_feeder": {"sheet": sheet.sheet_name, "sheet_id": sheet.sheet_id, "header": sheet.header}}})
     orchestrator = ArchivingOrchestrator(config)
 
     stats = {"archived": 0, "failed": 0, "errors": []}
@@ -80,7 +82,6 @@ def create_sheet_task(self, sheet_json: str):
             stats["archived"] += 1
         except exc.IntegrityError as e:
             logger.warning(f"cached result detected: {e}")
-            stats["archived"] += 1
         except Exception as e:
             log_error(e, extra=f"{self.name}: {sheet_json}")
             redis_publish_exception(e, self.name, traceback.format_exc())
@@ -121,7 +122,8 @@ def read_user_groups():
 def get_user_first_group(email):
     user_groups_yaml = read_user_groups()
     groups = user_groups_yaml.get("users", {}).get(email, [])
-    if groups != None and len(groups): return groups[0]
+    if groups != None and len(groups):
+        return groups[0]
     return "default"
 
 
@@ -151,12 +153,14 @@ def is_group_invalid_for_user(public: bool, group_id: str, author_id: str):
     if public is true the requirement is not needed
     returns an error message if invalid, or False if all is good.
     """
-    if not public and group_id and len(group_id) > 0:
-        # ensure group is valid for user
-        with get_db() as session:
-            if not crud.is_user_in_group(session, group_id, author_id):
-                logger.error(em := f"User {author_id} is not part of {group_id}, no permission")
-                return em
+    if public: return False
+    if not group_id or len(group_id) == 0: return False
+    
+    # otherwise group must match
+    with get_db() as session:
+        if not crud.is_user_in_group(session, group_id, author_id):
+            logger.error(em := f"User {author_id} is not part of {group_id}, no permission")
+            return em
     return False
 
 

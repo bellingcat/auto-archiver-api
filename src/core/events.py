@@ -42,4 +42,4 @@ async def refresh_user_groups():
 
 @repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS)
 async def repeat_measure_regular_metrics():
-    measure_regular_metrics(get_settings().DATABASE_PATH, get_settings().REPEAT_COUNT_METRICS_SECONDS)
+    await measure_regular_metrics(get_settings().DATABASE_PATH, get_settings().REPEAT_COUNT_METRICS_SECONDS)
