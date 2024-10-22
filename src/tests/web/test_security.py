@@ -25,10 +25,11 @@ async def test_get_token_or_user_auth_with_api():
 async def test_get_token_or_user_auth_with_user():
     from web.security import get_token_or_user_auth
     bad_user = HTTPAuthorizationCredentials(scheme="ipsum", credentials="invalid")
+    e: pytest.ExceptionInfo = None
     with pytest.raises(HTTPException) as e:
         await get_token_or_user_auth(bad_user)
-        assert e.status_code == 401
-        assert e.detail == "invalid access_token"
+    assert e.value.status_code == 401
+    assert e.value.detail == "invalid access_token"
 
 
 @patch("web.security.authenticate_user", return_value=(True, "summer@example.com"))
@@ -44,10 +45,11 @@ async def test_get_user_auth(m1):
 async def test_token_api_key_auth_exception(m1):
     from web.security import token_api_key_auth
 
+    e: pytest.ExceptionInfo = None
     with pytest.raises(HTTPException) as e:
         await token_api_key_auth(HTTPAuthorizationCredentials(scheme="ipsum", credentials="does-not-matter"), auto_error=True)
-        assert e.status_code == 401
-        assert e.detail == "Wrong auth credentials"
+    assert e.value.status_code == 401
+    assert e.value.detail == "Wrong auth credentials"
 
 
 @pytest.mark.asyncio

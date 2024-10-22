@@ -1,4 +1,3 @@
-import traceback
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
@@ -8,7 +7,7 @@ from loguru import logger
 from web.security import get_token_or_user_auth
 
 from db import schemas
-
+from core.logging import log_error
 from worker import celery
 
 
@@ -25,8 +24,6 @@ def get_status(task_id, email=Depends(get_token_or_user_auth)):
             # The :attr:`result` attribute then contains the exception raised by the task.
             # https://docs.celeryq.dev/en/stable/_modules/celery/result.html#AsyncResult
             raise task.result
-        # TODO: refactor to use schema?
-        # response = schemas.TaskResult(id=task_id, status=task.status, result=task.result)
 
         response = {
             "id": task_id,
@@ -36,10 +33,7 @@ def get_status(task_id, email=Depends(get_token_or_user_auth)):
         return JSONResponse(jsonable_encoder(response, exclude_unset=True))
 
     except Exception as e:
-        logger.error(e)
-        logger.error(traceback.format_exc())
-        # TODO: refactor to use schema?
-        # response = schemas.TaskResult(id=task_id, status="FAILURE", result={"error": str(e)})
+        log_error(e)
         return JSONResponse({
             "id": task_id,
             "status": "FAILURE",

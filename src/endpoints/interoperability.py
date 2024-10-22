@@ -7,6 +7,7 @@ import sqlalchemy
 from web.security import token_api_key_auth
 from db import models, schemas
 from worker import insert_result_into_db
+from core.logging import log_error
 
 
 interoperability_router = APIRouter(prefix="/interop", tags=["Interoperability endpoints."])
@@ -21,6 +22,6 @@ def submit_manual_archive(manual: schemas.SubmitManual, auth=Depends(token_api_k
     try:
         archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
     except sqlalchemy.exc.IntegrityError as e:
-        logger.error(e)
+        log_error(e)
         raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
     return JSONResponse({"id": archive_id}, status_code=201)

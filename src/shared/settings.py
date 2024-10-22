@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     REDIS_EXCEPTIONS_CHANNEL: str = "exceptions-channel"
     
 	# observability
-    REPEAT_COUNT_METRICS_SECONDS: int = 15
+    REPEAT_COUNT_METRICS_SECONDS: int = 30
 
 	# security
     API_BEARER_TOKEN: Annotated[str, Len(min_length=20)]

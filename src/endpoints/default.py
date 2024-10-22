@@ -1,10 +1,10 @@
 
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
-from loguru import logger
 from sqlalchemy.orm import Session
 
 from core.config import VERSION, BREAKING_CHANGES
+from core.logging import log_error
 from db import crud
 from db.database import get_db_dependency, get_db
 from web.security import get_user_auth, bearer_security
@@ -21,7 +21,7 @@ async def home(request: Request):
         with get_db() as db:
             status["groups"] = crud.get_user_groups(db, email)
     except HTTPException: pass  # not authenticated is fine
-    except Exception as e: logger.error(e)
+    except Exception as e: log_error(e)
     return JSONResponse(status)
 
 

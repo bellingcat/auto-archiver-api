@@ -252,6 +252,13 @@ def test_count_archive_urls(test_data, db_session):
     assert crud.count_archives(db_session) == 99
     assert crud.count_archive_urls(db_session) == 999
 
+def test_count_users(test_data, db_session):
+    from db import crud
+
+    assert crud.count_users(db_session) == 4
+    db_session.query(models.User).filter(models.User.email == "rick@example.com").delete()
+    db_session.commit()
+    assert crud.count_users(db_session) == 3
 
 def test_count_by_users_since(test_data, db_session):
     from db import crud

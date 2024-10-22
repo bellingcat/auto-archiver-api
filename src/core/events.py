@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
     # disabling uvicorn logger since we use loguru in logging_middleware
     logging.getLogger("uvicorn.access").disabled = True
-    asyncio.create_task(redis_subscribe_worker_exceptions())
+    asyncio.create_task(redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL, get_settings().CELERY_BROKER_URL))
     asyncio.create_task(refresh_user_groups())
     asyncio.create_task(repeat_measure_regular_metrics())
 

@@ -2,62 +2,68 @@ import asyncio
 import json
 import os
 import shutil
-from loguru import logger
 from prometheus_client import Counter, Gauge
+import redis
 
 from db import crud
 from db.database import get_db
-from worker import REDIS_EXCEPTIONS_CHANNEL, Rdis
+from core.logging import log_error
 
 
 # Custom metrics
 EXCEPTION_COUNTER = Counter(
     "exceptions",
     "Number of times a certain exception has occurred.",
-    labelnames=("types",)
+    labelnames=["types"]
 )
 WORKER_EXCEPTION = Counter(
     "worker_exceptions_total",
     "Number of times a certain exception has occurred on the worker.",
-    labelnames=("exception", "task",)
+    labelnames=["types", "exception", "task", "traceback"]
 )
 DISK_UTILIZATION = Gauge(
     "disk_utilization",
     "Disk utilization in GB",
-    labelnames=("type",)
+    labelnames=["type"]
 )
 DATABASE_METRICS = Gauge(
     "database_metrics",
-    "Useful database metrics from queries",
-    labelnames=("query", "user")
+    "Database metric readings at a certain point in time",
+    labelnames=["query"]
+)
+DATABASE_METRICS_COUNTER = Counter(
+    "database_metrics_counter",
+    "Database metrics that increase over time",
+    labelnames=["query", "user"]
 )
 
 
-async def redis_subscribe_worker_exceptions():
+async def redis_subscribe_worker_exceptions(REDIS_EXCEPTIONS_CHANNEL, CELERY_BROKER_URL):
     # Subscribe to Redis channel and increment the counter for each exception with info on the exception and task
+    Rdis = redis.Redis.from_url(CELERY_BROKER_URL)
     PubSubExceptions = Rdis.pubsub()
     PubSubExceptions.subscribe(REDIS_EXCEPTIONS_CHANNEL)
     while True:
         message = PubSubExceptions.get_message()
         if message and message["type"] == "message":
             data = json.loads(message["data"].decode("utf-8"))
-            WORKER_EXCEPTION.labels(exception=data["exception"], task=data["task"]).inc()
+            WORKER_EXCEPTION.labels(types=type(data["exception"]).__name__, exception=data["exception"], task=data["task"], traceback=data["traceback"]).inc()
         await asyncio.sleep(1)
 
-async def measure_regular_metrics(sqlite_db_url:str, repeat_in_seconds:int):
+
+async def measure_regular_metrics(sqlite_db_url: str, repeat_in_seconds: int):
     _total, used, free = shutil.disk_usage("/")
     DISK_UTILIZATION.labels(type="used").set(used / (2**30))
     DISK_UTILIZATION.labels(type="free").set(free / (2**30))
-    try: 
+    try:
         fs = os.stat(sqlite_db_url.replace("sqlite:///", ""))
         DISK_UTILIZATION.labels(type="database").set(fs.st_size / (2**30))
-    except Exception as e: logger.error(e)
+    except Exception as e: log_error(e)
 
     with get_db() as db:
-        count_archives = crud.count_archives(db)
-        count_archive_urls = crud.count_archive_urls(db)
-        DATABASE_METRICS.labels(query="count_archives", user="-").set(count_archives)
-        DATABASE_METRICS.labels(query="count_archive_urls", user="-").set(count_archive_urls)
+        DATABASE_METRICS.labels(query="count_archives").set(crud.count_archives(db))
+        DATABASE_METRICS.labels(query="count_archive_urls").set(crud.count_archive_urls(db))
+        DATABASE_METRICS.labels(query="count_users").set(crud.count_users(db))
 
         for user in crud.count_by_user_since(db, repeat_in_seconds):
-            DATABASE_METRICS.labels(query="count_by_user", user=user.author_id).set(user.total)
+            DATABASE_METRICS_COUNTER.labels(query="count_by_user", user=user.author_id).inc(user.total)

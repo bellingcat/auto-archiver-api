@@ -74,13 +74,16 @@ def count_archives(db: Session):
 def count_archive_urls(db: Session):
     return db.query(func.count(models.ArchiveUrl.url)).scalar()
 
+def count_users(db: Session):
+    return db.query(func.count(models.User.email)).scalar()
 
 def count_by_user_since(db: Session, seconds_delta: int = 15):
     time_threshold = datetime.now() - timedelta(seconds=seconds_delta)
     return db.query(models.Archive.author_id, func.count().label('total'))\
         .filter(models.Archive.created_at >= time_threshold)\
         .group_by(models.Archive.author_id)\
-        .order_by(func.count().desc()).limit(5 * DATABASE_QUERY_LIMIT).all()
+        .order_by(func.count().desc())\
+        .limit(500).all()
 
 
 def base_query(db: Session):

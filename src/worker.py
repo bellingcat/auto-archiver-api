@@ -14,6 +14,7 @@ from shared.settings import get_settings
 import json
 import redis
 from sqlalchemy import exc
+from core.logging import log_error
 
 settings = get_settings()
 
@@ -21,9 +22,9 @@ celery = Celery(__name__)
 celery.conf.broker_url = settings.CELERY_BROKER_URL
 celery.conf.result_backend = settings.CELERY_RESULT_BACKEND
 USER_GROUPS_FILENAME = settings.USER_GROUPS_FILENAME
-REDIS_EXCEPTIONS_CHANNEL = settings.REDIS_EXCEPTIONS_CHANNEL
 
 Rdis = redis.Redis.from_url(celery.conf.broker_url)
+
 
 @celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def create_archive_task(self, archive_json: str):
@@ -31,7 +32,7 @@ def create_archive_task(self, archive_json: str):
     logger.info(f"Archiving {archive.url=} {archive.tags=} {archive.public=} {archive.group_id=} {archive.author_id=}")
     invalid = is_group_invalid_for_user(archive.public, archive.group_id, archive.author_id)
     if invalid:
-        raise Exception(invalid) # marks task FAILED, saves the Exception as result
+        raise Exception(invalid)  # marks task FAILED, saves the Exception as result
 
     url = archive.url
     logger.info(f"{url=} {archive=}")
@@ -45,14 +46,13 @@ def create_archive_task(self, archive_json: str):
 
     orchestrator = choose_orchestrator(archive.group_id, archive.author_id)
     result = orchestrator.feed_item(Metadata().set_url(url))
-    
+
     try:
         insert_result_into_db(result, archive.tags, archive.public, archive.group_id, archive.author_id, self.request.id)
     except Exception as e:
         # Log it, then raise again to store the error as the task result
-        logger.error(e)
-        logger.error(traceback.format_exc())
-        redis_publish_exception(e, self.name)
+        log_error(e)
+        redis_publish_exception(e, self.name, traceback.format_exc())
         raise e
     return result.to_dict()
 
@@ -72,7 +72,7 @@ def create_sheet_task(self, sheet_json: str):
 
     stats = {"archived": 0, "failed": 0, "errors": []}
     for result in orchestrator.feed():
-        if not result: 
+        if not result:
             logger.error("Got empty result from feeder, an internal error must have occurred.")
             continue
         try:
@@ -82,10 +82,8 @@ def create_sheet_task(self, sheet_json: str):
             logger.warning(f"cached result detected: {e}")
             stats["archived"] += 1
         except Exception as e:
-            logger.error(type(e))
-            logger.error(e)
-            logger.error(traceback.format_exc())
-            redis_publish_exception(e, self.name)
+            log_error(e, extra=f"{self.name}: {sheet_json}")
+            redis_publish_exception(e, self.name, traceback.format_exc())
             stats["failed"] += 1
             stats["errors"].append(str(e))
 
@@ -96,11 +94,11 @@ def create_sheet_task(self, sheet_json: str):
 @task_failure.connect(sender=create_sheet_task)
 @task_failure.connect(sender=create_archive_task)
 def task_failure_notifier(sender, **kwargs):
-    logger.warning("😅 From task_failure_notifier ==> Task failed successfully! ")
-    logger.error(kwargs['exception'])
-    logger.error(kwargs['traceback'])
-    logger.error("\n".join(traceback.format_list(traceback.extract_tb(kwargs['traceback']))))
-    redis_publish_exception(kwargs['exception'], sender.name)
+    traceback_msg = "\n".join(traceback.format_list(traceback.extract_tb(kwargs['traceback'])))
+    logger.warning("😅 From task_failure_notifier ==> Task failed successfully!")
+    log_error(kwargs['exception'], traceback_msg, f"task_failure: {sender.name}")
+    redis_publish_exception(kwargs['exception'], sender.name, traceback_msg)
+
 
 def choose_orchestrator(group, email):
     global ORCHESTRATORS
@@ -187,9 +185,10 @@ def get_all_urls(result: Metadata) -> List[models.ArchiveUrl]:
             if isinstance(prop, list):
                 for i, prop_media in enumerate(prop):
                     if prop_media := convert_if_media(prop_media):
-                        for j, url in enumerate(prop_media.urls): 
+                        for j, url in enumerate(prop_media.urls):
                             db_urls.append(models.ArchiveUrl(url=url, key=prop_media.get("id", f"{k}{prop_media.key}_{i}.{j}")))
     return db_urls
+
 
 def convert_if_media(media):
     if isinstance(media, Media): return media
@@ -199,13 +198,13 @@ def convert_if_media(media):
             logger.debug(f"error parsing {media} : {e}")
     return False
 
-def redis_publish_exception(exception, task_name):
+
+def redis_publish_exception(exception, task_name, traceback: str = ""):
+    REDIS_EXCEPTIONS_CHANNEL = settings.REDIS_EXCEPTIONS_CHANNEL
     try:
-        Rdis.publish(REDIS_EXCEPTIONS_CHANNEL, json.dumps({"exception": exception, "task": task_name}, default=str))
+        Rdis.publish(REDIS_EXCEPTIONS_CHANNEL, json.dumps({"exception": exception, "task": task_name, "traceback": traceback}, default=str))
     except Exception as e:
-        logger.error(e)
-        logger.error(traceback.format_exc())
-        logger.error(f"Could not publish to {REDIS_EXCEPTIONS_CHANNEL}")
+        log_error(e, f"[CRITICAL] Could not publish to {REDIS_EXCEPTIONS_CHANNEL}")
 
 
 @worker_init.connect

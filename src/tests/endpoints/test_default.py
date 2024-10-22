@@ -101,8 +101,20 @@ async def test_prometheus_metrics(test_data, client_with_auth, get_settings):
     assert 'disk_utilization{type="used"}' in r2.text
     assert 'disk_utilization{type="free"}' in r2.text
     assert 'disk_utilization{type="database"}' in r2.text
-    assert 'database_metrics{query="count_archives",user="-"} 100.0' in r2.text
-    assert 'database_metrics{query="count_archive_urls",user="-"} 1000.0' in r2.text
-    assert 'database_metrics{query="count_by_user",user="rick@example.com"} 34.0' in r2.text
-    assert 'database_metrics{query="count_by_user",user="morty@example.com"} 33.0' in r2.text
-    assert 'database_metrics{query="count_by_user",user="jerry@example.com"} 33.0' in r2.text
+    assert 'database_metrics{query="count_archives"} 100.0' in r2.text
+    assert 'database_metrics{query="count_archive_urls"} 1000.0' in r2.text
+    assert 'database_metrics{query="count_users"} 4.0' in r2.text
+    assert 'database_metrics_counter_total{query="count_by_user",user="rick@example.com"} 34.0' in r2.text
+    assert 'database_metrics_counter_total{query="count_by_user",user="morty@example.com"} 33.0' in r2.text
+    assert 'database_metrics_counter_total{query="count_by_user",user="jerry@example.com"} 33.0' in r2.text
+
+    # 30s window, should not change the gauges nor the total in the counters
+    from utils.metrics import measure_regular_metrics
+    await measure_regular_metrics(get_settings.DATABASE_PATH, 30)
+    r3 = client_with_auth.get("/metrics")
+    assert 'database_metrics{query="count_archives"} 100.0' in r3.text
+    assert 'database_metrics{query="count_archive_urls"} 1000.0' in r3.text
+    assert 'database_metrics{query="count_users"} 4.0' in r3.text
+    assert 'database_metrics_counter_total{query="count_by_user",user="rick@example.com"} 34.0' in r3.text
+    assert 'database_metrics_counter_total{query="count_by_user",user="morty@example.com"} 33.0' in r3.text
+    assert 'database_metrics_counter_total{query="count_by_user",user="jerry@example.com"} 33.0' in r3.text

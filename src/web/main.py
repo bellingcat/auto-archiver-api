@@ -1,4 +1,4 @@
-import traceback, os
+import os
 from celery.result import AsyncResult
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
@@ -11,7 +11,7 @@ import sqlalchemy
 from sqlalchemy.orm import Session
 from loguru import logger
 
-from core.logging import logging_middleware
+from core.logging import logging_middleware, log_error
 from worker import create_archive_task, create_sheet_task, celery, insert_result_into_db
 
 from db import crud, models, schemas
@@ -42,6 +42,7 @@ def app_factory(settings = get_settings()):
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.middleware("http")(logging_middleware)
 
     app.include_router(default_router)
     app.include_router(url_router)
@@ -60,7 +61,6 @@ def app_factory(settings = get_settings()):
         app.mount(settings.SERVE_LOCAL_ARCHIVE, StaticFiles(directory=local_dir), name=settings.SERVE_LOCAL_ARCHIVE)
 
 
-    app.middleware("http")(logging_middleware)
 
     # -----Submit URL and manipulate tasks. Bearer protected below
 
@@ -111,8 +111,7 @@ def app_factory(settings = get_settings()):
             return JSONResponse(jsonable_encoder(response, exclude_unset=True))
 
         except Exception as e:
-            logger.error(e)
-            logger.error(traceback.format_exc())
+            log_error(e)
             return JSONResponse({
                 "id": task_id,
                 "status": "FAILURE",
@@ -161,7 +160,7 @@ def app_factory(settings = get_settings()):
         try:
             archive_id = insert_result_into_db(result, manual.tags, manual.public, manual.group_id, manual.author_id, models.generate_uuid())
         except sqlalchemy.exc.IntegrityError as e:
-            logger.error(e)
+            log_error(e)
             raise HTTPException(status_code=422, detail=f"Cannot insert into DB due to integrity error")
         return JSONResponse({"id": archive_id})
 
