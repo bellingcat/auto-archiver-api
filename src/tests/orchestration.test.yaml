@@ -1,0 +1,24 @@
+steps:
+  feeder: cli_feeder
+  archivers: # order matters
+    - youtubedl_archiver
+  enrichers:
+    - hash_enricher
+
+  formatter: html_formatter # defaults to mute_formatter
+  storages:
+    - local_storage
+  databases:
+    - console_db
+
+configurations:
+  cli_feeder:
+    urls: 
+      - "url1"
+  hash_enricher:
+    algorithm: "SHA-256"
+  local_storage:
+    save_to: "./local_archive"
+    save_absolute: true
+    filename_generator: static
+    path_generator: flat
