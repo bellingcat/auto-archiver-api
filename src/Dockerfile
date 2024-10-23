@@ -7,8 +7,8 @@ WORKDIR /app
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
     sh get-docker.sh
 # set environment variables
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # install dependencies
 RUN pip install --upgrade pip && \

@@ -1,0 +1,19 @@
+# NOTE: all emails should be lower-cased
+users:
+  rick@example.com:
+    - spaceship
+    - interdimensional
+  morty@example.com:
+    - spaceship
+  jerry@example.com:
+    - the-jerrys-club
+  birdman@example.com:
+
+domains:
+  example.com:
+    - animated-characters
+
+orchestrators:
+  spaceship: tests/orchestration.test.yaml
+  interdimensional: tests/orchestration.test.yaml
+  default: tests/orchestration.test.yaml

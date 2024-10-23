@@ -4,12 +4,10 @@ x-broker-url: &broker-url "redis://:${REDIS_PASSWORD}@redis:6379/0"
 x-base-setup: &base-setup
   build: ./src
   restart: always
-  env_file: src/.env
+  env_file: src/.env.prod
   environment:
     CELERY_BROKER_URL: *broker-url
     CELERY_RESULT_BACKEND: *broker-url
-
-version: '3.8'
 
 volumes:
   crawls:
@@ -20,20 +18,26 @@ services:
     <<: *base-setup
     ports:
       - "127.0.0.1:8004:8000"
-    command: uvicorn main:app --host 0.0.0.0 --reload
+    command: uvicorn web:app --host 0.0.0.0 --reload
     volumes:
       - ./src:/app
     depends_on:
       - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   worker:
     <<: *base-setup
-    command: celery worker --app=worker.celery --loglevel=info --logfile=logs/celery.log
+    command: celery --app=worker.main.celery worker --loglevel=info --logfile=logs/celery.log
     volumes:
       - ./src:/app
       - /var/run/docker.sock:/var/run/docker.sock
       - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER, do not change /crawls
     environment:
+      # celery broker-url needs to be duplicated here, do not remove
       CELERY_BROKER_URL: *broker-url
       CELERY_RESULT_BACKEND: *broker-url
       WACZ_ENABLE_DOCKER: 1 # Enable calling docker from this container
@@ -42,6 +46,11 @@ services:
     depends_on:
       - web
       - redis
+    healthcheck:
+      test: ["CMD", "pipenv", "run", "celery", "-A", "worker.celery", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   redis:
     image: redis:6-alpine
@@ -50,16 +59,8 @@ services:
     volumes:
       - "./redis/data:/data"
       - "./redis/config:/conf"
-
-  # dashboard service will only launch the dashboard if "--profile flower" is passed to docker compose; or if explicitly called "docker compose up dashboard"
-  dashboard:
-    <<: *base-setup
-    profiles:
-      - flower
-    command: ["flower", "--app=worker.celery", "--port=5555", "--broker", *broker-url, "--basic_auth=${FLOWER_USERNAME}:${FLOWER_PASSWORD}"]
-    ports:
-      - 5556:5555
-    depends_on:
-      - web
-      - redis
-      - worker
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

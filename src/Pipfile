@@ -5,9 +5,8 @@ name = "pypi"
 
 [packages]
 aiofiles = "==0.6.0"
-celery = "==4.4.7"
+celery = ">=5.0"
 fastapi = "*"
-flower = "==0.9.7"
 jinja2 = "*"
 redis = "==3.5.3"
 requests = ">=2.25.1"
@@ -20,10 +19,14 @@ alembic = "*"
 fastapi-utils = "*"
 prometheus-fastapi-instrumentator = "*"
 auto-archiver = "*"
+pydantic-settings = "*"
 
 [dev-packages]
 watchdog = "*"
-pytest = "==6.2.4"
+pytest = "*"
+httpx = "*"
+coverage = "*"
+pytest-asyncio = "*"
 
 [requires]
 python_version = "3.10"

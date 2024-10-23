@@ -1,16 +1,18 @@
 # Auto Archiver API
 
-An api that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps an d enables CORS, everything runs on docker but development can be done without docker (except for redis).
+An api that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps and enables CORS, everything runs on docker but development can be done without docker (except for redis).
 
 
 ## Development
 http://localhost:8004
 
+TODO: update .env file instructions, should use .env.prod and .env.dev and only use .env for always overwriting dev/prod settings.
+
 requires `src/.env`
 
 cd /src
 <!-- * `pipenv install --editable ../../auto-archiver` -->
-* console 1 - `docker compose up redis` optionally add `dashboard` for flower dashboard and `web` if not running uvicorn locally
+* console 1 - `docker compose up redis` optionally add `web` if not running uvicorn locally
 * console 2 - `pipenv shell` + `celery worker --app=worker.celery --loglevel=info --logfile=logs/celery_dev.log`
   * `celery --app=worker.celery worker --loglevel=info --logfile=logs/celery_dev.log` celery 5
   * or with watchdog for dev auto-reload `watchmedo auto-restart -d ./  -- celery --app=worker.celery worker --loglevel=info --logfile=logs/celery_dev.log`
@@ -37,7 +39,7 @@ Auto-archiver orchestrator files configurations. For each archiving task an orch
 orchestrators:
   group1: secrets/orchestration-group1.yaml
   group2: secrets/orchestration-group2.yaml
-  default: secrets/orchestration-default:.yaml
+  default: secrets/orchestration-default:orchestration.yaml
 ```
 
 ## Database migrations
@@ -66,4 +68,21 @@ Run `pipenv update auto-archiver` inside `src` to update the auto-archiver versi
 # CALL /sheet POST endpoint
 curl -XPOST -H "Authorization: Bearer GOOGLE_OAUTH_TOKEN" -H "Content-type: application/json" -d '{"sheet_id": "SHEET_ID", "header": 1}' 'http://localhost:8004/sheet'
 
+```
+
+
+### Testing
+```bash
+# can be done from top level but let's do it from the src folder for consistency with CI etc
+cd src
+# run tests and generate coverage
+PYTHONPATH=. PIPENV_DOTENV_LOCATION=.env.test pipenv run coverage run -m pytest -vv --disable-warnings --color=yes tests/  && pipenv run coverage html
+
+# get coverage report in command line
+pipenv run coverage report
+
+# get coverage HTML
+pipenv run coverage html
+
+# > open/run server on htmlcov/index.html to navigate through line coverage
 ```
