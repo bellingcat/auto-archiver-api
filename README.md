@@ -75,17 +75,14 @@ curl -XPOST -H "Authorization: Bearer GOOGLE_OAUTH_TOKEN" -H "Content-type: appl
 ```bash
 # can be done from top level but let's do it from the src folder for consistency with CI etc
 cd src
-# run tests 
-PYTHONPATH=. pipenv run pytest -v --color=yes tests/
+# run tests and generate coverage
+PYTHONPATH=. PIPENV_DOTENV_LOCATION=.env.test pipenv run coverage run -m pytest -vv --disable-warnings --color=yes tests/  && pipenv run coverage html
 
-# TO GET COVERAGE
-# run tests with coverage instead 
-PYTHONPATH=. pipenv run coverage run -m pytest -v --color=yes tests/
-
-# get coverage
+# get coverage report in command line
 pipenv run coverage report
-# get coverage HTML
 
+# get coverage HTML
 pipenv run coverage html
+
 # > open/run server on htmlcov/index.html to navigate through line coverage
 ```
