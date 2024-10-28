@@ -15,10 +15,9 @@ def secure_compare(token, api_key):
 
 # Factory method to create an authentication dependency for a specific key
 def api_key_auth(api_key):
+    assert len(api_key) >= 20, "Invalid API key, must be at least 20 chars"
 
     async def auth(bearer: HTTPAuthorizationCredentials = Depends(bearer_security), auto_error=True):
-        assert len(api_key) >= 20, "Invalid API key, must be at least 20 chars"
-
         is_correct = secure_compare(bearer.credentials, api_key)
         if is_correct: return True
 
