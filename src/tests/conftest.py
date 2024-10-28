@@ -26,7 +26,8 @@ def mock_settings():
 def test_db(get_settings: Settings):
     from db.database import make_engine
     from db import models
-
+    
+    make_engine.cache_clear()
     engine = make_engine(get_settings.DATABASE_PATH)
 
     fs = get_settings.DATABASE_PATH.replace("sqlite:///", "")

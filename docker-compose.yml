@@ -47,7 +47,7 @@ services:
       - web
       - redis
     healthcheck:
-      test: ["CMD", "pipenv", "run", "celery", "-A", "worker.celery", "status"]
+      test: ["CMD", "pipenv", "run", "celery", "-A", "worker.main.celery", "status"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -51,7 +51,7 @@ def app_factory(settings = get_settings()):
     app.include_router(interoperability_router)
 
     # prometheus exposed in /metrics with authentication
-    Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics", "/health"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
+    Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics", "/health", "/openapi.json", "/favicon.ico"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
 
     local_dir = settings.SERVE_LOCAL_ARCHIVE
     if not os.path.isdir(local_dir) and os.path.isdir(local_dir.replace("/app", ".")):

@@ -1,9 +1,11 @@
+from functools import lru_cache
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import sessionmaker
 from shared.settings import get_settings
 from contextlib import contextmanager
 
 
+@lru_cache
 def make_engine(database_url: str):
     engine = create_engine(database_url, connect_args={"check_same_thread": False})
 
