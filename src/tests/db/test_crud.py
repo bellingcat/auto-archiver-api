@@ -293,6 +293,15 @@ def test_create_tag(db_session):
     assert second_tag.id == "tag-102"
     assert db_session.query(models.Tag).count() == 2
 
+def test_is_active_user(test_data, db_session):
+    from db import crud
+
+    assert crud.is_active_user(db_session, "") == False
+    assert crud.is_active_user(db_session, "example.com") == False
+    assert crud.is_active_user(db_session, "unknown@example.com") == False
+    assert crud.is_active_user(db_session, "rick@example.com") == True
+    assert crud.is_active_user(db_session, "RICK@example.com") == True
+
 
 def test_is_user_in_group(test_data, db_session):
     from db import crud

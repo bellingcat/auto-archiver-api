@@ -104,6 +104,9 @@ def create_tag(db: Session, tag: str):
         db.refresh(db_tag)
     return db_tag
 
+def is_active_user(db: Session, email: str) -> bool:
+    email = email.lower()
+    return len(email) and db.query(models.User).filter(models.User.email == email).count() > 0
 
 def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
     if email == ALLOW_ANY_EMAIL: return True
