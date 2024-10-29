@@ -2,6 +2,8 @@ from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 import pytest
 from core.config import VERSION
+from tests.db.test_crud import test_data
+
 
 
 def test_endpoint_home(client_with_auth):
@@ -44,6 +46,24 @@ def test_endpoint_health(client_with_auth):
     assert r.json() == {"status": "ok"}
 
 
+def test_endpoint_active_no_auth(client, test_no_auth):
+    test_no_auth(client.get, "/user/active")
+
+
+def test_endpoint_active_true_user(client_with_auth):
+    r = client_with_auth.get("/user/active")
+    assert r.status_code == 200
+    assert r.json() == {"active": True}
+
+def test_endpoint_active_true_user(client_with_auth, db_session):
+    from db import models
+    db_session.query(models.User).delete()
+    db_session.commit()
+    r = client_with_auth.get("/user/active")
+    assert r.status_code == 200
+    assert r.json() == {"active": False}
+
+
 def test_endpoint_groups_no_auth(client, test_no_auth):
     test_no_auth(client.get, "/groups")
 
@@ -77,9 +97,6 @@ def test_favicon(client_with_auth):
     r = client_with_auth.get("/favicon.ico")
     assert r.status_code == 200
     assert r.headers["content-type"] == "image/vnd.microsoft.icon"
-
-
-from tests.db.test_crud import test_data
 
 
 @pytest.mark.asyncio

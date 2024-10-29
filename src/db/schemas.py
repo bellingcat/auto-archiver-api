@@ -54,3 +54,6 @@ class TaskResult(Task):
 
 class TaskDelete(Task):
     deleted: bool
+
+class ActiveUser(BaseModel):
+    active: bool
