@@ -106,6 +106,11 @@ def create_tag(db: Session, tag: str):
 
 def is_active_user(db: Session, email: str) -> bool:
     email = email.lower()
+    if "@" not in email: return False
+    global DOMAIN_GROUPS, DOMAIN_GROUPS_LOADED
+    if not DOMAIN_GROUPS_LOADED: upsert_user_groups(db)
+    domain = email.split('@')[1]
+    if domain in DOMAIN_GROUPS: return True
     return len(email) and db.query(models.User).filter(models.User.email == email, models.User.is_active == True).first() is not None
 
 def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:

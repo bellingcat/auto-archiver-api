@@ -55,11 +55,13 @@ def test_endpoint_active_true_user(client_with_auth):
     assert r.status_code == 200
     assert r.json() == {"active": True}
 
-def test_endpoint_active_true_user(client_with_auth, db_session):
-    from db import models
-    db_session.query(models.User).delete()
-    db_session.commit()
-    r = client_with_auth.get("/user/active")
+def test_endpoint_active_false_user(app):
+    from web.security import get_user_auth
+
+    app.dependency_overrides[get_user_auth] = lambda: "morty@not-recognized-group.com"
+    client = TestClient(app)
+    r = client.get("/user/active")
+
     assert r.status_code == 200
     assert r.json() == {"active": False}
 
