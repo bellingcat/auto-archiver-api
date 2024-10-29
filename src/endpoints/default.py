@@ -30,13 +30,13 @@ async def health():
     return JSONResponse({"status": "ok"})
 
 
-@default_router.get("/user/active", summary="Check if the user is active and can use the tool.", response_model=schemas.ActiveUser)
-async def active(db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)):
+@default_router.get("/user/active", summary="Check if the user is active and can use the tool.")
+async def active(db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)) -> schemas.ActiveUser:
     return {"active": crud.is_active_user(db, email)}
 
 
-@default_router.get("/groups", response_model=list[str])
-def get_user_groups(db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)):
+@default_router.get("/groups")
+def get_user_groups(db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)) -> list[str]:
     return crud.get_user_groups(db, email)
 
 

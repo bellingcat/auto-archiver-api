@@ -87,10 +87,10 @@ def count_by_user_since(db: Session, seconds_delta: int = 15):
 
 
 def base_query(db: Session):
-    # TODO: allow only some fields to be returned, for example author should remain hidden
+    #NOTE: load_only is for optimization and not obfuscation, use .with_entities() if needed
     return db.query(models.Archive)\
-        .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result))\
-        .filter(models.Archive.deleted == False)
+        .filter(models.Archive.deleted == False)\
+        .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result))
 
 # --------------- TAG
 
