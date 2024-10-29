@@ -342,15 +342,22 @@ def test_create_or_get_user(test_data, db_session):
 
     assert db_session.query(models.User).count() == 4
 
+    # already exists
     assert (u1 := crud.create_or_get_user(db_session, "rick@example.com")) is not None
     assert u1.email == "rick@example.com"
     assert u1.is_active == True
 
-    assert (u2 := crud.create_or_get_user(db_session, "beth@example.com")) is not None
+    # new active
+    assert (u2 := crud.create_or_get_user(db_session, "beth@example.com", is_active=True)) is not None
     assert u2.email == "beth@example.com"
     assert u2.is_active == True
 
-    assert db_session.query(models.User).count() == 5
+    # new not active
+    assert (u3 := crud.create_or_get_user(db_session, "not-active@example.com")) is not None
+    assert u3.email == "not-active@example.com"
+    assert u3.is_active == False
+
+    assert db_session.query(models.User).count() == 6
 
 
 def test_get_group(test_data, db_session):

@@ -106,7 +106,7 @@ def create_tag(db: Session, tag: str):
 
 def is_active_user(db: Session, email: str) -> bool:
     email = email.lower()
-    return len(email) and db.query(models.User).filter(models.User.email == email).count() > 0
+    return len(email) and db.query(models.User).filter(models.User.email == email, models.User.is_active == True).first() is not None
 
 def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
     if email == ALLOW_ANY_EMAIL: return True
@@ -129,11 +129,11 @@ def get_user_groups(db: Session, email: str):
 # --------------- INIT User-Groups
 
 
-def create_or_get_user(db: Session, author_id: str):
+def create_or_get_user(db: Session, author_id: str, is_active: bool = models.User.is_active.default.arg) -> models.User:
     if type(author_id) == str: author_id = author_id.lower()
     db_user = db.query(models.User).filter(models.User.email == author_id).first()
     if not db_user:
-        db_user = models.User(email=author_id)
+        db_user = models.User(email=author_id, is_active=is_active)
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
@@ -175,14 +175,18 @@ def upsert_user_groups(db: Session):
     logger.debug(f"Found {len(user_groups)} users.")
     db.query(models.association_table_user_groups).delete()
 
+    # set all users to inactive
+    db.query(models.User).update({models.User.is_active: False})
     for user_email, groups in user_groups.items():
         user_email = user_email.lower()
         assert '@' in user_email, f'Invalid user email {user_email}'
         logger.info(f"email='{user_email[0:3]}...{user_email[-8:]}', {groups=}")
         db_user = db.query(models.User).filter(models.User.email == user_email).first()
         if db_user is None:
-            db_user = models.User(email=user_email)
+            db_user = models.User(email=user_email, is_active=True)
             db.add(db_user)
+        else:
+            db_user.is_active = True
         if not groups: continue  # avoid hanging in for x in None:
         for group in groups:
             db_group = create_or_get_group(db, group)

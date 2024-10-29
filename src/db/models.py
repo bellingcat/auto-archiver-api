@@ -65,7 +65,7 @@ class User(Base):
     __tablename__ = "users"
 
     email = Column(String, primary_key=True, index=True)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
 
     archives = relationship("Archive", back_populates="author")
     groups = relationship("Group", back_populates="users", secondary=association_table_user_groups)
