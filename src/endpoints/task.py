@@ -9,6 +9,7 @@ from web.security import get_token_or_user_auth
 from db import schemas
 from core.logging import log_error
 from worker.main import celery
+from utils.mics import custom_jsonable_encoder
 
 
 task_router = APIRouter(prefix="/task", tags=["Async task operations"])
@@ -30,7 +31,7 @@ def get_status(task_id, email=Depends(get_token_or_user_auth)) -> schemas.TaskRe
             "status": task.status,
             "result": task.result
         }
-        return JSONResponse(jsonable_encoder(response, exclude_unset=True))
+        return JSONResponse(jsonable_encoder(response, exclude_unset=True, custom_encoder={bytes: custom_jsonable_encoder}))
 
     except Exception as e:
         log_error(e)
