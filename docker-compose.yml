@@ -18,7 +18,7 @@ services:
     <<: *base-setup
     ports:
       - "127.0.0.1:8004:8000"
-    command: uvicorn web:app --host 0.0.0.0 --reload
+    command: uvicorn web:app --factory --host 0.0.0.0 --reload
     volumes:
       - ./src:/app
     depends_on:
