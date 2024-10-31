@@ -7,13 +7,47 @@ users:
     - spaceship
   jerry@example.com:
     - the-jerrys-club
-  birdman@example.com:
+  summer@herself.com:
+  badyemail.com:
 
 domains:
   example.com:
     - animated-characters
+  birdy.com:
+    - animated-characters
+    - this-does-not-exist
+
 
 orchestrators:
   spaceship: tests/orchestration.test.yaml
   interdimensional: tests/orchestration.test.yaml
   default: tests/orchestration.test.yaml
+
+groups:
+  spaceship:
+    description: "The spaceship crew"
+    orchestrator: tests/orchestration.test.yaml
+    orchestrator_sheet: tests/orchestration.test.yaml
+    permissions:
+      read: ["all"]
+      active_sheets: -1
+      monthly_urls: all
+      monthly_mbs: all
+  interdimensional:
+    description: "Interdimensional travelers"
+    orchestrator: tests/orchestration.test.yaml
+    orchestrator_sheet: tests/orchestration.test.yaml
+    permissions:
+      read: ["interdimensional", "animated-characters"]
+      active_sheets: 5
+      monthly_urls: 1000
+      monthly_mbs: 1000
+  animated-characters:
+    description: "Animated characters"
+    orchestrator: tests/orchestration.test.yaml
+    orchestrator_sheet: tests/orchestration.test.yaml
+    permissions:
+      read: ["animated-characters"]
+      active_sheets: -1
+      monthly_urls: all
+      monthly_mbs: all

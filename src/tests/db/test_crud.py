@@ -300,8 +300,11 @@ def test_is_active_user(test_data, db_session):
     assert crud.is_active_user(db_session, "") == False
     assert crud.is_active_user(db_session, "example.com") == False
     assert crud.is_active_user(db_session, "unknown@example.com") == True
+    assert crud.is_active_user(db_session, "ANYONE@example.com") == True
+    assert crud.is_active_user(db_session, "ANYONE@birdy.com") == True
     assert crud.is_active_user(db_session, "rick@example.com") == True
     assert crud.is_active_user(db_session, "RICK@example.com") == True
+    assert crud.is_active_user(db_session, "summer@herself.com") == True
     assert crud.is_active_user(db_session, "rick@not-in-groups.com") == False
 
 
@@ -317,6 +320,7 @@ def test_is_user_in_group(test_data, db_session):
         ("rick@example.com", "spaceship", True),
         ("rick@example.com", "SPACESHIP", False),
         ("RICK@example.com", "interdimensional", True),
+        ("rick@example.com", "animated-characters", True),
         ("rick@example.com", "the-jerrys-club", False),
 
         ("morty@example.com", "spaceship", True),
@@ -325,17 +329,22 @@ def test_is_user_in_group(test_data, db_session):
 
         ("jerry@example.com", "spaceship", False),
         ("jerry@example.com", "interdimensional", False),
-        ("jerry@example.com", "the-jerrys-club", True),
+        ("jerry@example.com", "the-jerrys-club", False), # group not in 'groups'
 
         ("rick@example.com", "animated-characters", True),
         ("morty@example.com", "animated-characters", True),
         ("jerry@example.com", "animated-characters", True),
+        ("ANYONE@example.com", "animated-characters", True),
+        ("ANYONE@birdy.com", "animated-characters", True),
+
+        ("summer@herself.com",  "animated-characters", False),
 
         ("rick@example.com", "", False),
         ("", "spaceship", False),
         ("BADEMAILexample.com", "spaceship", False),
     ]
     for email, group, expected in test_pairs:
+        print(f"{email} in {group} == {expected}")
         assert crud.is_user_in_group(db_session, group, email) == expected
 
 
@@ -362,22 +371,29 @@ def test_create_or_get_user(test_data, db_session):
     assert db_session.query(models.User).count() == 6
 
 
-def test_get_group(test_data, db_session):
+def test_upsert_group(test_data, db_session):
     from db import crud
 
     assert db_session.query(models.Group).count() == 3
 
-    assert (g1 := crud.create_or_get_group(db_session, "spaceship")) is not None
+    repeatable_params = ["desc 1", "orch.yaml", "sheet.yaml", {"read": ["all"]}, ["example.com"]]
+
+    assert (g1 := crud.upsert_group(db_session, "spaceship", *repeatable_params)) is not None
     assert g1.id == "spaceship"
+    assert g1.description == "desc 1"
+    assert g1.orchestrator == "orch.yaml"
+    assert g1.orchestrator_sheet == "sheet.yaml"
+    assert g1.permissions == {"read": ["all"]}
+    assert g1.domains == ["example.com"]
     assert len(g1.users) == 2
     assert [u.email for u in g1.users] == ["rick@example.com", "morty@example.com"]
 
-    assert (g2 := crud.create_or_get_group(db_session, "the-jerrys-club")) is not None
-    assert g2.id == "the-jerrys-club"
+    assert (g2 := crud.upsert_group(db_session, "interdimensional", *repeatable_params)) is not None
+    assert g2.id == "interdimensional"
     assert len(g2.users) == 1
-    assert g2.users[0].email == "jerry@example.com"
+    assert [u.email for u in g2.users] == ["rick@example.com"]
 
-    assert (g3 := crud.create_or_get_group(db_session, "this-is-a-new-group")) is not None
+    assert (g3 := crud.upsert_group(db_session, "this-is-a-new-group", *repeatable_params)) is not None
     assert g3.id == "this-is-a-new-group"
     assert len(g3.users) == 0
 

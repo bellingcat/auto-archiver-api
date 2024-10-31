@@ -74,6 +74,11 @@ class Group(Base):
     __tablename__ = "groups"
 
     id = Column(String, primary_key=True, index=True)
+    description = Column(String, default=None)
+    orchestrator = Column(String, default=None)
+    orchestrator_sheet = Column(String, default=None)
+    permissions = Column(JSON, default=None)
+    domains = Column(JSON, default=[])
 
     archives = relationship("Archive", back_populates="group")
     users = relationship("User", back_populates="groups", secondary=association_table_user_groups)
