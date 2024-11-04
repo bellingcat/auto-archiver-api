@@ -38,7 +38,7 @@ def test_search_by_url(client_with_auth, db_session):
     assert response.status_code == 200
     assert response.json() == []
 
-    from db import crud
+    from db import crud, schemas
     for i in range(11):
         crud.create_task(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com", group_id=None), [], [])
         #NB: this insertion is too fast for the ordering to be correct as they are within the same second
@@ -49,6 +49,7 @@ def test_search_by_url(client_with_auth, db_session):
     assert "url-456-0" in [i["id"] for i in j]
     assert "url-456-9" in [i["id"] for i in j]
     assert "url-456-10" not in [i["id"] for i in j]
+    assert j[0].keys() == schemas.ArchiveResult.model_fields.keys()
 
     response = client_with_auth.get("/url/search?url=https://example.com&limit=5")
     assert response.status_code == 200
@@ -76,7 +77,7 @@ def test_latest(client_with_auth, db_session):
     assert response.status_code == 200
     assert response.json() == []
 
-    from db import crud
+    from db import crud, schemas
     for i in range(11):
         crud.create_task(db_session, ArchiveCreate(id=f"latest-456-{i}", url="https://example.com", result={}, public=True, author_id="morty@example.com" if i < 10 else "rick@example.com", group_id=None), [], [])
         #NB: this insertion is too fast for the ordering to be correct as they are within the same second
@@ -90,6 +91,7 @@ def test_latest(client_with_auth, db_session):
     assert "latest-456-0" in [i["id"] for i in j]
     assert "latest-456-9" in [i["id"] for i in j]
     assert "latest-456-10" not in [i["id"] for i in j]
+    assert j[0].keys() == schemas.ArchiveResult.model_fields.keys()
 
     response = client_with_auth.get("/url/latest?limit=5")
     assert response.status_code == 200
@@ -109,21 +111,16 @@ def test_lookup(client_with_auth, db_session):
     assert response.status_code == 404
     assert response.json() == {"detail": "Archive not found"}
 
-    from db import crud
+    from db import crud, schemas
     crud.create_task(db_session, ArchiveCreate(id="lookup-123-456-789", url="https://example.com", result={}, public=True, author_id="rick@example.com", group_id=None), [], [])
 
     response = client_with_auth.get("/url/lookup-123-456-789")
     assert response.status_code == 200
     j = response.json()
+    assert j.keys() == schemas.ArchiveResult.model_fields.keys()
     assert j["id"] == "lookup-123-456-789"
     assert j["url"] == "https://example.com"
     assert j["result"] == {}
-    assert j["public"] == True
-    assert j["author_id"] == "rick@example.com"
-    assert j["group_id"] == None
-    assert j["tags"] == []
-    assert j["updated_at"] == None
-    assert j["rearchive"] == True
 
 
 def test_delete_task_unauthenticated(client, test_no_auth):

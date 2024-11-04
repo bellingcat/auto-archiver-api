@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import cache
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy import Column, or_, func
@@ -9,11 +10,13 @@ from shared.settings import get_settings
 from . import models, schemas
 import yaml
 
-DOMAIN_GROUPS = {}
-DOMAIN_GROUPS_LOADED = False
 DATABASE_QUERY_LIMIT = get_settings().DATABASE_QUERY_LIMIT
 
 # --------------- TASK = Archive
+
+
+def get_limit(user_limit: int):
+    return max(1, min(user_limit, DATABASE_QUERY_LIMIT))
 
 
 def get_archive(db: Session, id: str, email: str):
@@ -40,12 +43,12 @@ def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, lim
         query = query.filter(models.Archive.created_at > archived_after)
     if archived_before:
         query = query.filter(models.Archive.created_at < archived_before)
-    return query.order_by(models.Archive.created_at.desc()).offset(skip).limit(min(limit, DATABASE_QUERY_LIMIT)).all()
+    return query.order_by(models.Archive.created_at.desc()).offset(skip).limit(get_limit(limit)).all()
 
 
 def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
     email = email.lower()
-    return base_query(db).filter(models.Archive.author_id == email).order_by(models.Archive.created_at.desc()).offset(skip).limit(min(limit, DATABASE_QUERY_LIMIT)).all()
+    return base_query(db).filter(models.Archive.author_id == email).order_by(models.Archive.created_at.desc()).offset(skip).limit(get_limit(limit)).all()
 
 
 def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]):
@@ -74,8 +77,10 @@ def count_archives(db: Session):
 def count_archive_urls(db: Session):
     return db.query(func.count(models.ArchiveUrl.url)).scalar()
 
+
 def count_users(db: Session):
     return db.query(func.count(models.User.email)).scalar()
+
 
 def count_by_user_since(db: Session, seconds_delta: int = 15):
     time_threshold = datetime.now() - timedelta(seconds=seconds_delta)
@@ -87,10 +92,10 @@ def count_by_user_since(db: Session, seconds_delta: int = 15):
 
 
 def base_query(db: Session):
-    # TODO: allow only some fields to be returned, for example author should remain hidden
+    # NOTE: load_only is for optimization and not obfuscation, use .with_entities() if needed
     return db.query(models.Archive)\
-        .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result))\
-        .filter(models.Archive.deleted == False)
+        .filter(models.Archive.deleted == False)\
+        .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result))
 
 # --------------- TAG
 
@@ -104,9 +109,17 @@ def create_tag(db: Session, tag: str):
         db.refresh(db_tag)
     return db_tag
 
+
 def is_active_user(db: Session, email: str) -> bool:
     email = email.lower()
-    return len(email) and db.query(models.User).filter(models.User.email == email).count() > 0
+    if not email or not len(email) or "@" not in email: return False
+    domain = email.split('@')[1]
+
+    explicitly_active = db.query(models.User).filter(models.User.email == email, models.User.is_active == True).first() is not None
+    if explicitly_active: return True
+
+    return db.query(models.Group).filter(models.Group.domains.contains(domain)).first() is not None
+
 
 def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
     if email == ALLOW_ANY_EMAIL: return True
@@ -114,45 +127,69 @@ def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
 
 
 def get_user_groups(db: Session, email: str):
+    """
+    given an email retrieves the user groups from the DB and then the email-domain groups from a global variable, the email does not need to belong to an existing user. User does not need to be active.
+    """
+    if not email or not len(email) or "@" not in email: return []
     email = email.lower()
-    if "@" not in email: return []
-    global DOMAIN_GROUPS, DOMAIN_GROUPS_LOADED
-    if not DOMAIN_GROUPS_LOADED: upsert_user_groups(db)
-    # given an email retrieves the user groups from the DB and then the email-domain groups from a global variable
-    groups = db.query(models.association_table_user_groups).filter_by(user_id=email).with_entities(Column("group_id")).all()
-    user_level_groups = [g[0] for g in groups]
-    domain_level_groups = DOMAIN_GROUPS.get(email.split('@')[1], [])
-    logger.success(f"EMAIL {email} has {user_level_groups=} and {domain_level_groups=}")
-    return list(set(user_level_groups) | set(domain_level_groups))
+
+    # get user groups
+    user_groups = db.query(models.association_table_user_groups).filter_by(user_id=email).with_entities(Column("group_id")).all()
+    user_level_groups = [g[0] for g in user_groups]
+
+    # get domain groups
+    domain = email.split('@')[1]
+    domain_level_groups = db.query(models.Group.id).filter(models.Group.domains.contains(domain)).with_entities(Column("id")).all()
+    domain_level_groups = [g[0] for g in domain_level_groups]
+
+    # combine and return
+    return list(set(user_level_groups + domain_level_groups))
 
 
 # --------------- INIT User-Groups
 
 
-def create_or_get_user(db: Session, author_id: str):
+def create_or_get_user(db: Session, author_id: str, is_active: bool = models.User.is_active.default.arg) -> models.User:
     if type(author_id) == str: author_id = author_id.lower()
     db_user = db.query(models.User).filter(models.User.email == author_id).first()
     if not db_user:
-        db_user = models.User(email=author_id)
+        db_user = models.User(email=author_id, is_active=is_active)
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
     return db_user
 
 
-@cache
-def create_or_get_group(db: Session, group_name: str) -> models.Group:
+def upsert_group(db: Session, group_name: str, description: str, orchestrator: str, orchestrator_sheet: str, permissions: dict, domains: list) -> models.Group:
     db_group = db.query(models.Group).filter(models.Group.id == group_name).first()
     if db_group is None:
-        db_group = models.Group(id=group_name)
+        db_group = models.Group(id=group_name, description=description, orchestrator=orchestrator, orchestrator_sheet=orchestrator_sheet, permissions=permissions, domains=domains)
         db.add(db_group)
-        db.commit()
-        db.refresh(db_group)
+    else:
+        db_group.description = description
+        db_group.orchestrator = orchestrator
+        db_group.orchestrator_sheet = orchestrator_sheet
+        db_group.permissions = permissions
+        db_group.domains = domains
+    db.commit()
+    db.refresh(db_group)
     return db_group
 
 
+def upsert_user(db: Session, email: str, active: bool):
+    db_user = db.query(models.User).filter(models.User.email == email).first()
+    if db_user is None:
+        db_user = models.User(email=email, is_active=active)
+        db.add(db_user)
+    else:
+        db_user.is_active = active
+    db.commit()
+    return db_user
+
+
 def upsert_user_groups(db: Session):
-    global DOMAIN_GROUPS, DOMAIN_GROUPS_LOADED
+    def display_email_pii(email: str):
+        return f"'{email[0:3]}...@{email.split('@')[1]}'"
     """
     reads the user_groups yaml file and inserts any new users, groups, 
     along with new participation of users in groups
@@ -167,28 +204,56 @@ def upsert_user_groups(db: Session):
     except Exception as e:
         logger.error(f"could not open user groups filename {filename}: {e}")
         raise e
-    # updating domain->groups access
-    DOMAIN_GROUPS = user_groups_yaml.get("domains", {})
 
-    # upserting in DB
-    user_groups = user_groups_yaml.get("users", {})
-    logger.debug(f"Found {len(user_groups)} users.")
+    # delete all user-groups relationships
     db.query(models.association_table_user_groups).delete()
 
-    for user_email, groups in user_groups.items():
-        user_email = user_email.lower()
-        assert '@' in user_email, f'Invalid user email {user_email}'
-        logger.info(f"email='{user_email[0:3]}...{user_email[-8:]}', {groups=}")
-        db_user = db.query(models.User).filter(models.User.email == user_email).first()
-        if db_user is None:
-            db_user = models.User(email=user_email)
-            db.add(db_user)
-        if not groups: continue  # avoid hanging in for x in None:
-        for group in groups:
-            db_group = create_or_get_group(db, group)
-            db_group.users.append(db_user)
+    # set all users to inactive
+    db.query(models.User).update({models.User.is_active: False})
+
+    # create a map of group_id -> domains and another of domain -> groups
+    group_domains = defaultdict(set)
+    domain_groups = defaultdict(list)
+    for domain, explicit_groups in user_groups_yaml.get("domains", {}).items():
+        domain_groups[domain] = list(set(explicit_groups))
+        for group in explicit_groups:
+            group_domains[group].add(domain)
+
+    # upsert groups and save a map of groupid -> dbobject
+    for group_id, g in user_groups_yaml.get("groups", {}).items():
+        upsert_group(db, group_id, g["description"], g["orchestrator"], g["orchestrator_sheet"], g["permissions"], list(group_domains.get(group_id, [])))
+    db_groups: dict[str, models.Group] = {g.id: g for g in db.query(models.Group).all()}
+
+    # integrity checks
+    for group_in_domains in group_domains:
+        if group_in_domains not in db_groups:
+            logger.error(f"[CONFIG] Group '{group_in_domains}' does not exist in the database: domains setting will not work.")
+        if group_in_domains not in user_groups_yaml.get("groups", {}):
+            logger.error(f"[CONFIG] Group '{group_in_domains}' does not exist in the config file: domains setting will not work.")
+
+    # reinsert users in their EXPLICITLY DEFINED groups
+    # domain groups are check live, as there may be new users that are not explicitly registered but belong to a domain
+    for email, explicit_groups in user_groups_yaml.get("users", {}).items():
+        explicit_groups = explicit_groups or []
+        email = email.lower().strip()
+        if '@' not in email:
+            logger.error(f'[CONFIG] Invalid user email {email}, skipping.')
+            continue
+
+        logger.info(f"{display_email_pii(email)} => {explicit_groups}")
+
+        # upsert active user
+        db_user = upsert_user(db, email, active=True)
+
+        # connect users to groups
+        for group_id in explicit_groups:
+            if group_id not in db_groups:
+                logger.error(f"[CONFIG] Group {group_id} does not exist in config file, skipping for email={display_email_pii(email)}.")
+                continue
+            db_groups[group_id].users.append(db_user)
 
     db.commit()
     count_user_groups = db.query(models.association_table_user_groups).count()
-    logger.success(f"Completed refresh, now: {count_user_groups} user-groups relationships.")
-    DOMAIN_GROUPS_LOADED = True
+    count_groups = db.query(func.count(models.Group.id)).scalar()
+    
+    logger.success(f"[CONFIG] DONE: [users={count_users(db)}, groups={count_groups}, explicit user groups={count_user_groups}].")

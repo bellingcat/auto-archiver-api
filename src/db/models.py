@@ -65,7 +65,7 @@ class User(Base):
     __tablename__ = "users"
 
     email = Column(String, primary_key=True, index=True)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
 
     archives = relationship("Archive", back_populates="author")
     groups = relationship("Group", back_populates="users", secondary=association_table_user_groups)
@@ -74,6 +74,11 @@ class Group(Base):
     __tablename__ = "groups"
 
     id = Column(String, primary_key=True, index=True)
+    description = Column(String, default=None)
+    orchestrator = Column(String, default=None)
+    orchestrator_sheet = Column(String, default=None)
+    permissions = Column(JSON, default=None)
+    domains = Column(JSON, default=[])
 
     archives = relationship("Archive", back_populates="group")
     users = relationship("User", back_populates="groups", secondary=association_table_user_groups)

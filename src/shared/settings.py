@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     API_BEARER_TOKEN: Annotated[str, Len(min_length=20)]
     ALLOWED_ORIGINS: Annotated[set[str], Len(min_length=1)]
     CHROME_APP_IDS: Annotated[set[Annotated[str, Len(min_length=10)]], Len(min_length=1)]
+    #TODO: deprecate blocklist
     BLOCKED_EMAILS: Annotated[Set[str], Len(min_length=0)] = set()
 
 @lru_cache

@@ -46,8 +46,9 @@ orchestrators:
 check https://alembic.sqlalchemy.org/en/latest/tutorial.html#the-migration-environment
 
 * create migrations with `alembic revision -m "create account table"`
-* migrate to most recent with `alembic upgrade head`
-* downgrade with `alembic downgrade -1`
+* if running in the normal pipenv environment use `PIPENV_DOTENV_LOCATION=.env.alembic pipenv run` followed by:
+  * migrate to most recent with `alembic upgrade head`
+  * downgrade with `alembic downgrade -1`
 
 ## Release
 Update `main.py:VERSION`.

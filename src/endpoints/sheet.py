@@ -12,8 +12,8 @@ from worker.main import create_sheet_task
 sheet_router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"])
 
 
-@sheet_router.post("/archive", status_code=201, summary="Submit a Google Sheet archive request, starts a sheet archiving task.", response_model=schemas.Task, response_description="task_id for the archiving task.")
-def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_token_or_user_auth)):
+@sheet_router.post("/archive", status_code=201, summary="Submit a Google Sheet archive request, starts a sheet archiving task.", response_description="task_id for the archiving task.")
+def archive_sheet(sheet:schemas.SubmitSheet, email = Depends(get_token_or_user_auth)) -> schemas.Task:
     logger.info(f"SHEET TASK for {sheet=}")
     if email == ALLOW_ANY_EMAIL:
         email = sheet.author_id or "api-endpoint"

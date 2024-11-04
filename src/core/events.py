@@ -23,8 +23,9 @@ async def lifespan(app: FastAPI):
     # disabling uvicorn logger since we use loguru in logging_middleware
     logging.getLogger("uvicorn.access").disabled = True
     asyncio.create_task(redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL, get_settings().CELERY_BROKER_URL))
-    asyncio.create_task(refresh_user_groups())
     asyncio.create_task(repeat_measure_regular_metrics())
+    with get_db() as db:
+        crud.upsert_user_groups(db)
 
     yield  # separates startup from shutdown instructions
 
@@ -33,11 +34,6 @@ async def lifespan(app: FastAPI):
 
 
 # CRON JOBS
-
-@repeat_every(seconds=60 * 60)  # 1 hour
-async def refresh_user_groups():
-    with get_db() as db:
-        crud.upsert_user_groups(db)
 
 
 @repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS)
