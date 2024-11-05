@@ -36,8 +36,26 @@ async def test_get_token_or_user_auth_with_user():
 @pytest.mark.asyncio
 async def test_get_user_auth(m1):
     from web.security import get_user_auth
-    bad_user = HTTPAuthorizationCredentials(scheme="ipsum", credentials="valid-and-good")
-    assert await get_user_auth(bad_user) == "summer@example.com"
+    good_user = HTTPAuthorizationCredentials(scheme="ipsum", credentials="valid-and-good")
+    assert await get_user_auth(good_user) == "summer@example.com"
+
+
+@patch("web.security.authenticate_user", return_value=(True, "summer@example.com"))
+@pytest.mark.asyncio
+async def test_get_active_user_auth_inactive(m1, db_session):
+    from web.security import get_active_user_auth
+
+    # inactive at first
+    creds = HTTPAuthorizationCredentials(scheme="ipsum", credentials="valid-and-good")
+    with pytest.raises(HTTPException):
+        await get_active_user_auth(creds)
+
+    from db import models
+    db_session.add(models.User(email="summer@example.com", is_active=True))
+    db_session.commit()
+    assert await get_active_user_auth(creds) == "summer@example.com"
+
+
 
 
 @patch("web.security.secure_compare", return_value=False)

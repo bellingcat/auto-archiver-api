@@ -58,14 +58,11 @@ async def get_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bear
 
 async def get_active_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bearer_security)):
     # validates Bearer token and Active User status
-    try: 
-        email = await get_user_auth(credentials)
-        with get_db() as db:
-            if crud.is_active_user(db, email):
-                return email
-        raise HTTPException(status_code=403, detail="User is not active")
-    except HTTPException as e:
-        raise e
+    email = await get_user_auth(credentials)
+    with get_db() as db:
+        if crud.is_active_user(db, email):
+            return email
+    raise HTTPException(status_code=403, detail="User is not active")
 
 
 def authenticate_user(access_token):
