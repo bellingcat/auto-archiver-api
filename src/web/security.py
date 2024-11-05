@@ -4,6 +4,8 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from core.config import ALLOW_ANY_EMAIL
 from shared.settings import get_settings
+from db.database import get_db
+from db import crud
 
 settings = get_settings()
 bearer_security = HTTPBearer()
@@ -54,6 +56,18 @@ async def get_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bear
     )
 
 
+async def get_active_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bearer_security)):
+    # validates Bearer token and Active User status
+    try: 
+        email = await get_user_auth(credentials)
+        with get_db() as db:
+            if crud.is_active_user(db, email):
+                return email
+        raise HTTPException(status_code=403, detail="User is not active")
+    except HTTPException as e:
+        raise e
+
+
 def authenticate_user(access_token):
     # https://cloud.google.com/docs/authentication/token-types#access
     if type(access_token) != str or len(access_token) < 10: return False, "invalid access_token"
@@ -69,7 +83,7 @@ def authenticate_user(access_token):
             return False, f"email '{j.get('email')}' not verified"
         if int(j.get("expires_in", -1)) <= 0:
             return False, "Token expired"
-        return True, j.get('email')
+        return True, j.get('email').lower()
     except Exception as e:
         logger.warning(f"AUTH EXCEPTION occurred: {e}")
         return False, "exception occurred"

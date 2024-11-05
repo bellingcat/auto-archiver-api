@@ -101,10 +101,16 @@ def test_favicon(client_with_auth):
     assert r.headers["content-type"] == "image/vnd.microsoft.icon"
 
 
+def test_endpoint_test_prometheus_no_auth(client, test_no_auth):
+    test_no_auth(client.get, "/metrics")
+
+def test_endpoint_test_prometheus_no_user_auth(client_with_auth, test_no_auth):
+    test_no_auth(client_with_auth.get, "/metrics")
+
 @pytest.mark.asyncio
-async def test_prometheus_metrics(test_data, client_with_auth, get_settings):
+async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     # before metrics calculation
-    r = client_with_auth.get("/metrics")
+    r = client_with_token.get("/metrics")
     assert r.status_code == 200
     assert r.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
     assert "disk_utilization" in r.text
@@ -116,7 +122,7 @@ async def test_prometheus_metrics(test_data, client_with_auth, get_settings):
     # after metrics calculation
     from utils.metrics import measure_regular_metrics
     await measure_regular_metrics(get_settings.DATABASE_PATH, 60 * 60 * 24 * 31 * 12 * 100)
-    r2 = client_with_auth.get("/metrics")
+    r2 = client_with_token.get("/metrics")
     assert 'disk_utilization{type="used"}' in r2.text
     assert 'disk_utilization{type="free"}' in r2.text
     assert 'disk_utilization{type="database"}' in r2.text
@@ -130,7 +136,7 @@ async def test_prometheus_metrics(test_data, client_with_auth, get_settings):
     # 30s window, should not change the gauges nor the total in the counters
     from utils.metrics import measure_regular_metrics
     await measure_regular_metrics(get_settings.DATABASE_PATH, 30)
-    r3 = client_with_auth.get("/metrics")
+    r3 = client_with_token.get("/metrics")
     assert 'database_metrics{query="count_archives"} 100.0' in r3.text
     assert 'database_metrics{query="count_archive_urls"} 1000.0' in r3.text
     assert 'database_metrics{query="count_users"} 4.0' in r3.text

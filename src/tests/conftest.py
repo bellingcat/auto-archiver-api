@@ -16,6 +16,7 @@ def mock_logger_add():
 def get_settings():
     return Settings(_env_file=".env.test")
 
+
 @pytest.fixture(autouse=True)
 def mock_settings():
     with patch('shared.settings.Settings', return_value=Settings(_env_file=".env.test")) as mock_settings:
@@ -26,7 +27,7 @@ def mock_settings():
 def test_db(get_settings: Settings):
     from db.database import make_engine
     from db import models
-    
+
     make_engine.cache_clear()
     engine = make_engine(get_settings.DATABASE_PATH)
 
@@ -72,16 +73,29 @@ def client(app):
 
 @pytest.fixture()
 def app_with_auth(app):
-    from web.security import get_token_or_user_auth, get_user_auth, token_api_key_auth
+    from web.security import get_token_or_user_auth, get_user_auth, get_active_user_auth
     app.dependency_overrides[get_token_or_user_auth] = lambda: "rick@example.com"
     app.dependency_overrides[get_user_auth] = lambda: "morty@example.com"
-    app.dependency_overrides[token_api_key_auth] = lambda: "jerry@example.com"
+    app.dependency_overrides[get_active_user_auth] = lambda: "morty@example.com"
     return app
 
 
 @pytest.fixture()
 def client_with_auth(app_with_auth):
     client = TestClient(app_with_auth)
+    return client
+
+
+@pytest.fixture()
+def app_with_token(app):
+    from web.security import token_api_key_auth
+    app.dependency_overrides[token_api_key_auth] = lambda: "jerry@example.com"
+    return app
+
+
+@pytest.fixture()
+def client_with_token(app_with_token):
+    client = TestClient(app_with_token)
     return client
 
 

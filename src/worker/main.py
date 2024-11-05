@@ -64,11 +64,13 @@ def create_sheet_task(self, sheet_json: str):
     sheet.tags.add("gsheet")
     logger.info(f"SHEET START {sheet=}")
 
+    #TODO: should this check live here?
     if (em := is_group_invalid_for_user(sheet.public, sheet.group_id, sheet.author_id)):
         return {"error": em}
 
     config = Config()
     # TODO: use choose_orchestrator and overwrite the feeder
+    # TODO: drop sheet_name and use only sheet_id (new endpoints/models)
     config.parse(use_cli=False, yaml_config_filename=get_settings().SHEET_ORCHESTRATION_YAML, overwrite_configs={"configurations": {"gsheet_feeder": {"sheet": sheet.sheet_name, "sheet_id": sheet.sheet_id, "header": sheet.header}}})
     orchestrator = ArchivingOrchestrator(config)
 
@@ -78,6 +80,7 @@ def create_sheet_task(self, sheet_json: str):
             logger.error("Got empty result from feeder, an internal error must have occurred.")
             continue
         try:
+            #TODO: remove public from sheet in new refactor
             insert_result_into_db(result, sheet.tags, sheet.public, sheet.group_id, sheet.author_id, models.generate_uuid())
             stats["archived"] += 1
         except exc.IntegrityError as e:

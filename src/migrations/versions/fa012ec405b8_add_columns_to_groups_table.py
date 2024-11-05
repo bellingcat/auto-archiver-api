@@ -35,8 +35,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-        op.drop_column('groups', 'description')
-        op.drop_column('groups', 'orchestrator')
-        op.drop_column('groups', 'orchestrator_sheet')
-        op.drop_column('groups', 'permissions')
-        op.drop_column('groups', 'domains')
+    conn = op.get_bind()
+    inspector = Inspector.from_engine(conn)
+    columns = [col['name'] for col in inspector.get_columns('groups')]
+
+    column_names = ['description', 'orchestrator', 'orchestrator_sheet', 'permissions', 'domains']
+    for column_name in column_names:
+        if column_name in columns:
+            op.drop_column('groups', column_name)

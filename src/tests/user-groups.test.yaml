@@ -33,6 +33,7 @@ groups:
       active_sheets: -1
       monthly_urls: all
       monthly_mbs: all
+      alowed_frequency: "hourly"
   interdimensional:
     description: "Interdimensional travelers"
     orchestrator: tests/orchestration.test.yaml
@@ -42,12 +43,14 @@ groups:
       active_sheets: 5
       monthly_urls: 1000
       monthly_mbs: 1000
+      alowed_frequency: "hourly"
   animated-characters:
     description: "Animated characters"
     orchestrator: tests/orchestration.test.yaml
     orchestrator_sheet: tests/orchestration.test.yaml
     permissions:
       read: ["animated-characters"]
-      active_sheets: -1
-      monthly_urls: all
-      monthly_mbs: all
+      active_sheets: 1
+      monthly_urls: 2
+      monthly_mbs: 10
+      alowed_frequency: "daily"
