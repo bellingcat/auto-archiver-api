@@ -9,7 +9,7 @@ from web.security import get_token_or_user_auth
 from db import schemas
 from core.logging import log_error
 from worker.main import celery
-from utils.mics import custom_jsonable_encoder
+from utils.misc import custom_jsonable_encoder
 
 
 task_router = APIRouter(prefix="/task", tags=["Async task operations"])
