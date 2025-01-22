@@ -62,7 +62,7 @@ class UserState:
     def in_group(self, group_id: str) -> bool:
         return group_id in self.user_groups_names
 
-    def has_quota_sheet(self) -> bool:
+    def has_quota_monthly_sheets(self) -> bool:
         """
         checks if a user has reached their sheet quota
         """

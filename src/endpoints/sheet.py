@@ -24,7 +24,7 @@ def create_sheet(
     if not user.in_group(sheet.group_id):
         raise HTTPException(status_code=403, detail="User does not have access to this group.")
 
-    if not user.has_quota_sheet():
+    if not user.has_quota_monthly_sheets():
         raise HTTPException(status_code=429, detail="User has reached their sheet quota.")
     
     if not user.is_sheet_frequency_allowed(sheet.frequency):
