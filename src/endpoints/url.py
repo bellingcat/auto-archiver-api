@@ -8,7 +8,7 @@ from web.security import get_user_auth, get_token_or_user_auth
 from sqlalchemy.orm import Session
 
 from db import crud, schemas
-from db.database import get_db_dependency
+from db.database import get_db, get_db_dependency
 
 from worker.main import create_archive_task
 
@@ -16,14 +16,28 @@ url_router = APIRouter(prefix="/url", tags=["Single URL operations"])
 
 
 @url_router.post("/archive", status_code=201, summary="Submit a single URL archive request, starts an archiving task.", response_description="task_id for the archiving task, will match the archive id.")
-def archive_url(archive: schemas.ArchiveCreate, email=Depends(get_token_or_user_auth)) -> schemas.Task:
-    archive.author_id = email
-    url = archive.url
-    logger.info(f"new {archive.public=} task for {email=} and {archive.group_id=}: {url}")
-    if type(url) != str or len(url) <= 5:
-        raise HTTPException(status_code=422, detail=f"Invalid URL received: {url}")
-    logger.info("creating task")
-    task = create_archive_task.delay(archive.model_dump_json())
+def archive_url(
+    archive: schemas.ArchiveTrigger,
+    email=Depends(get_token_or_user_auth)
+) -> schemas.Task:
+    logger.info(f"new {archive.public=} task for {email=} and {archive.group_id=}: {archive.url}")
+
+    # TODO: implement quota
+
+    if archive.group_id:
+        with get_db() as db:
+            if not crud.is_user_in_group(db, email, archive.group_id):
+                raise HTTPException(status_code=403, detail="User does not have access to this group.")
+
+    # TODO: deprecate ArchiveCreate
+    backwards_compatible_archive = schemas.ArchiveCreate(
+        url=archive.url,
+        author_id=email,
+        group_id=archive.group_id,
+        public=archive.public,
+    )
+
+    task = create_archive_task.delay(backwards_compatible_archive.model_dump_json())
     task_response = schemas.Task(id=task.id)
     return JSONResponse(task_response.model_dump(), status_code=201)
 

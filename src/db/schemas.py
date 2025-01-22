@@ -1,3 +1,5 @@
+from typing import Annotated
+from annotated_types import Len
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 
@@ -105,3 +107,10 @@ class SheetResponse(SheetAdd):
     stats: dict | None
     last_archived_at: datetime | None
     created_at: datetime
+
+
+class ArchiveTrigger(BaseModel):
+    url: Annotated[str, Len(min_length=5)]
+    public: bool = True
+    group_id: Annotated[str, Len(min_length=1)] | None = None
+    tags: set[Tag] | None = set()

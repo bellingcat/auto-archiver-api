@@ -10,11 +10,13 @@ def test_archive_url_unauthenticated(client, test_no_auth):
 
 @patch("worker.main.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
 def test_archive_url(m1, client_with_auth):
+    # url is too short
     response = client_with_auth.post("/url/archive", json={"url": "bad"})
     assert response.status_code == 422
-    assert response.json() == {'detail': 'Invalid URL received: bad'}
+    assert response.json()["detail"][0]["msg"] == 'String should have at least 5 characters'
     m1.assert_not_called()
 
+    # valid request
     response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
     assert response.status_code == 201
     assert response.json() == {'id': '123-456-789'}
@@ -22,6 +24,20 @@ def test_archive_url(m1, client_with_auth):
     m1.assert_called_once()
     called_val = m1.call_args.args[0]
     assert json.loads(called_val) == {"id": None, "url": "https://example.com", "result": None, "public": True, "author_id": "rick@example.com", "group_id": None, "tags": [], "rearchive": True}
+
+    # user is not in group
+    response = client_with_auth.post("/url/archive", json={"url": "https://example.com", "group_id": "new-group"})
+    assert response.status_code == 403
+    assert response.json()["detail"] == "User does not have access to this group."
+
+    # user is in group
+    response = client_with_auth.post("/url/archive", json={"url": "https://example.com", "group_id": "spaceship"})
+    assert response.status_code == 201
+    assert response.json() == {'id': '123-456-789'}
+
+    assert m1.call_count == 2
+    called_val = m1.call_args.args[0]
+    assert json.loads(called_val)["group_id"] == "spaceship"
 
 
 def test_search_by_url_unauthenticated(client, test_no_auth):

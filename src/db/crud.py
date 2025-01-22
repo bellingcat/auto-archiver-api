@@ -1,11 +1,12 @@
 from collections import defaultdict
-from functools import cache
+from functools import lru_cache
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy import Column, or_, func
 from loguru import logger
 from datetime import datetime, timedelta
 
 from core.config import ALLOW_ANY_EMAIL
+from db.database import get_db
 from shared.settings import get_settings
 from . import models, schemas
 import yaml
@@ -23,7 +24,7 @@ def get_archive(db: Session, id: str, email: str):
     email = email.lower()
     query = base_query(db).filter(models.Archive.id == id)
     if email != ALLOW_ANY_EMAIL:
-        groups = get_user_groups(db, email)
+        groups = get_user_groups(email)
         query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
     return query.first()
 
@@ -33,7 +34,7 @@ def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, lim
     query = base_query(db)
     if email != ALLOW_ANY_EMAIL:
         email = email.lower()
-        groups = get_user_groups(db, email)
+        groups = get_user_groups(email)
         query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
     if absolute_search:
         query = query.filter(models.Archive.url == url)
@@ -121,71 +122,36 @@ def is_active_user(db: Session, email: str) -> bool:
     return db.query(models.Group).filter(models.Group.domains.contains(domain)).first() is not None
 
 
-def is_user_in_group(db: Session, group_name: str, email: str) -> models.Group:
+def is_user_in_group(db: Session, email: str, group_name: str) -> models.Group:
     if email == ALLOW_ANY_EMAIL: return True
-    return len(group_name) and len(email) and group_name in get_user_groups(db, email)
+    return len(group_name) and len(email) and group_name in get_user_groups(email)
 
 
-#TODO: maybe this can be cached? what about the db session?
-def get_user_groups(db: Session, email: str) -> list[str]:
+@lru_cache
+def get_user_groups(email: str) -> list[str]:
     """
     given an email retrieves the user groups from the DB and then the email-domain groups from a global variable, the email does not need to belong to an existing user. User does not need to be active.
     """
     if not email or not len(email) or "@" not in email: return []
     email = email.lower()
 
-    # get user groups
-    user_groups = db.query(models.association_table_user_groups).filter_by(user_id=email).with_entities(Column("group_id")).all()
-    user_level_groups_names = [g[0] for g in user_groups]
+    with get_db() as db:
+        # get user groups
+        user_groups = db.query(models.association_table_user_groups).filter_by(user_id=email).with_entities(Column("group_id")).all()
+        user_level_groups_names = [g[0] for g in user_groups]
 
-    # get domain groups
-    domain = email.split('@')[1]
-    domain_level_groups = db.query(models.Group.id).filter(models.Group.domains.contains(domain)).with_entities(Column("id")).all()
-    domain_level_groups_names = [g[0] for g in domain_level_groups]
+        # get domain groups
+        domain = email.split('@')[1]
+        domain_level_groups = db.query(models.Group.id).filter(models.Group.domains.contains(domain)).with_entities(Column("id")).all()
+        domain_level_groups_names = [g[0] for g in domain_level_groups]
 
-    return list(set(user_level_groups_names + domain_level_groups_names))
-
-
-# --------------- SHEET
-
-def has_quota_sheet(db: Session, email: str, user_groups_names: list[str]) -> bool:
-    """
-    checks if a user has reached their sheet quota
-    """
-    user_sheets = db.query(models.Sheet).filter(models.Sheet.author_id == email).count()
-
-    user_groups = db.query(models.Group).filter(models.Group.id.in_(user_groups_names)).all()
-
-    quota = 0
-    for group in user_groups:
-        active_sheets = group.permissions.get("active_sheets", 0)
-        if active_sheets == -1: return True
-        quota = max(quota, active_sheets)
-    return user_sheets < quota
-
-
-def create_sheet(db: Session, sheet_id: str, sheet_name: str, email: str, group_id: str, frequency: str):
-    db_sheet = models.Sheet(id=sheet_id, name=sheet_name, author_id=email, group_id=group_id, frequency=frequency)
-    db.add(db_sheet)
-    db.commit()
-    db.refresh(db_sheet)
-    return db_sheet
-
-def get_user_sheets(db: Session, email: str) -> list[models.Sheet]:
-    return db.query(models.Sheet).filter(models.Sheet.author_id == email).order_by(models.Sheet.last_archived_at.desc()).all()
-
-def get_user_sheet(db: Session, email: str, sheet_id: str) -> models.Sheet:
-    return db.query(models.Sheet).filter(models.Sheet.author_id == email, models.Sheet.id == sheet_id).first()
-
-def delete_sheet(db: Session, sheet_id: str, email: str) -> bool:
-    db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id, models.Sheet.author_id == email).first()
-    if db_sheet:
-        db.delete(db_sheet)
-        db.commit()
-    return db_sheet is not None
+        return list(set(user_level_groups_names + domain_level_groups_names))
 
 
 # --------------- INIT User-Groups
+
+def get_group(db: Session, group_name: str) -> models.Group:
+    return db.query(models.Group).filter(models.Group.id == group_name).first()
 
 
 def create_or_get_user(db: Session, author_id: str, is_active: bool = models.User.is_active.default.arg) -> models.User:
@@ -296,3 +262,28 @@ def upsert_user_groups(db: Session):
     count_groups = db.query(func.count(models.Group.id)).scalar()
 
     logger.success(f"[CONFIG] DONE: [users={count_users(db)}, groups={count_groups}, explicit user groups={count_user_groups}].")
+
+
+# --------------- SHEET
+def create_sheet(db: Session, sheet_id: str, sheet_name: str, email: str, group_id: str, frequency: str):
+    db_sheet = models.Sheet(id=sheet_id, name=sheet_name, author_id=email, group_id=group_id, frequency=frequency)
+    db.add(db_sheet)
+    db.commit()
+    db.refresh(db_sheet)
+    return db_sheet
+
+
+def get_user_sheet(db: Session, email: str, sheet_id: str) -> models.Sheet:
+    return db.query(models.Sheet).filter(models.Sheet.author_id == email, models.Sheet.id == sheet_id).first()
+
+
+def get_user_sheets(db: Session, email: str) -> list[models.Sheet]:
+    return db.query(models.Sheet).filter(models.Sheet.author_id == email).order_by(models.Sheet.last_archived_at.desc()).all()
+
+
+def delete_sheet(db: Session, sheet_id: str, email: str) -> bool:
+    db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id, models.Sheet.author_id == email).first()
+    if db_sheet:
+        db.delete(db_sheet)
+        db.commit()
+    return db_sheet is not None

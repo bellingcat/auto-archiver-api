@@ -40,6 +40,12 @@ def test_data(db_session):
             archive.urls.append(models.ArchiveUrl(url=f"https://example-{i}.com/{j}", key=f"media_{j}"))
         db_session.add(archive)
 
+    # creates a sheet for each user
+    for i, email in enumerate(authors):
+        db_session.add(models.Sheet(id=f"sheet-{i}", name=f"sheet-{i}", author_id=email, group_id=None, frequency="daily"))
+        if email == "rick@example.com":
+            db_session.add(models.Sheet(id=f"sheet-{i}-2", name=f"sheet-{i}-2", author_id=email, group_id="spaceship", frequency="hourly"))
+
     db_session.commit()
 
     assert db_session.query(models.Archive).count() == 100
@@ -253,6 +259,7 @@ def test_count_archive_urls(test_data, db_session):
     assert crud.count_archives(db_session) == 99
     assert crud.count_archive_urls(db_session) == 999
 
+
 def test_count_users(test_data, db_session):
     from db import crud
 
@@ -260,6 +267,7 @@ def test_count_users(test_data, db_session):
     db_session.query(models.User).filter(models.User.email == "rick@example.com").delete()
     db_session.commit()
     assert crud.count_users(db_session) == 3
+
 
 def test_count_by_users_since(test_data, db_session):
     from db import crud
@@ -293,6 +301,7 @@ def test_create_tag(db_session):
     assert second_tag is not None
     assert second_tag.id == "tag-102"
     assert db_session.query(models.Tag).count() == 2
+
 
 def test_is_active_user(test_data, db_session):
     from db import crud
@@ -329,7 +338,7 @@ def test_is_user_in_group(test_data, db_session):
 
         ("jerry@example.com", "spaceship", False),
         ("jerry@example.com", "interdimensional", False),
-        ("jerry@example.com", "the-jerrys-club", False), # group not in 'groups'
+        ("jerry@example.com", "the-jerrys-club", False),  # group not in 'groups'
 
         ("rick@example.com", "animated-characters", True),
         ("morty@example.com", "animated-characters", True),
@@ -337,7 +346,7 @@ def test_is_user_in_group(test_data, db_session):
         ("ANYONE@example.com", "animated-characters", True),
         ("ANYONE@birdy.com", "animated-characters", True),
 
-        ("summer@herself.com",  "animated-characters", False),
+        ("summer@herself.com", "animated-characters", False),
 
         ("rick@example.com", "", False),
         ("", "spaceship", False),
@@ -345,7 +354,16 @@ def test_is_user_in_group(test_data, db_session):
     ]
     for email, group, expected in test_pairs:
         print(f"{email} in {group} == {expected}")
-        assert crud.is_user_in_group(db_session, group, email) == expected
+        assert crud.is_user_in_group(db_session, email, group) == expected
+
+
+def test_get_group(test_data, db_session):
+    from db import crud
+
+    assert crud.get_group(db_session, "spaceship") is not None
+    assert crud.get_group(db_session, "interdimensional") is not None
+    assert crud.get_group(db_session, "animated-characters") is not None
+    assert crud.get_group(db_session, "non-existant!@#!%!") is None
 
 
 def test_create_or_get_user(test_data, db_session):
@@ -403,13 +421,12 @@ def test_upsert_group(test_data, db_session):
 def test_upsert_user_groups(db_session):
     from db import crud
 
-    @patch('db.crud.get_settings', new = lambda: bad_setings)
+    @patch('db.crud.get_settings', new=lambda: bad_setings)
     def test_missing_yaml(db_session):
         with pytest.raises(FileNotFoundError):
             crud.upsert_user_groups(db_session)
 
-
-    @patch('db.crud.get_settings', new = lambda: bad_setings)
+    @patch('db.crud.get_settings', new=lambda: bad_setings)
     def test_broken_yaml(db_session):
         with pytest.raises(yaml.YAMLError):
             crud.upsert_user_groups(db_session)
@@ -421,3 +438,53 @@ def test_upsert_user_groups(db_session):
 
     bad_setings.USER_GROUPS_FILENAME = "tests/user-groups.test.broken.yaml"
     test_broken_yaml(db_session)
+
+
+def test_create_sheet(db_session):
+    from db import crud
+
+    assert db_session.query(models.Sheet).count() == 0
+
+    s = crud.create_sheet(db_session, "sheet-id-123", "sheet name", "email@example.com", "group-id", "hourly")
+    assert s is not None
+    assert s.id == "sheet-id-123"
+    assert s.name == "sheet name"
+    assert s.author_id == "email@example.com"
+    assert s.group_id == "group-id"
+    assert s.frequency == "hourly"
+
+    assert db_session.query(models.Sheet).count() == 1
+
+    # duplicate id
+    import sqlalchemy
+    with pytest.raises(sqlalchemy.exc.IntegrityError):
+        crud.create_sheet(db_session, "sheet-id-123", "I thought this was another sheet", "email", "group-id", "hourly")
+
+
+def test_get_user_sheet(test_data, db_session):
+    from db import crud
+
+    assert crud.get_user_sheet(db_session, "", "sheet-0") is None
+    assert crud.get_user_sheet(db_session, "morty@example.com", "sheet-0") is None
+
+    assert crud.get_user_sheet(db_session, "rick@example.com", "sheet-0") is not None
+    assert crud.get_user_sheet(db_session, "rick@example.com", "sheet-0-2") is not None
+    assert crud.get_user_sheet(db_session, "morty@example.com", "sheet-1") is not None
+
+
+def test_get_user_sheets(test_data, db_session):
+    from db import crud
+
+    assert len(crud.get_user_sheets(db_session, "")) == 0
+    rick_sheets = crud.get_user_sheets(db_session, "rick@example.com")
+    assert len(rick_sheets) == 2
+    assert [s.id for s in rick_sheets] == ["sheet-0", "sheet-0-2"]
+    assert len(crud.get_user_sheets(db_session, "morty@example.com")) == 1
+
+def test_delete_sheet(test_data, db_session):
+    from db import crud
+
+    assert crud.delete_sheet(db_session, "sheet-0", "") == False
+    assert crud.delete_sheet(db_session, "sheet-0", "rick@example.com") == True
+    assert crud.delete_sheet(db_session, "sheet-0", "rick@example.com") == False
+

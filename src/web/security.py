@@ -6,6 +6,7 @@ from core.config import ALLOW_ANY_EMAIL
 from shared.settings import get_settings
 from db.database import get_db
 from db import crud
+from db.user_state import UserState
 
 settings = get_settings()
 bearer_security = HTTPBearer()
@@ -84,3 +85,8 @@ def authenticate_user(access_token):
     except Exception as e:
         logger.warning(f"AUTH EXCEPTION occurred: {e}")
         return False, "exception occurred"
+
+
+def get_active_user_state(email=Depends(get_active_user_auth)):
+    with get_db() as db:
+        return UserState(db, email, active=True)

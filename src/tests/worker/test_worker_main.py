@@ -122,14 +122,6 @@ class Test_create_sheet_task():
 
         assert db_session.query(models.Archive).filter(models.Archive.url == self.URL).count() == 0
 
-    @patch("worker.main.is_group_invalid_for_user", return_value="Access denied")
-    def test_error_access(self, m_insert, worker_init, db_session):
-        from worker.main import create_sheet_task
-
-        res = create_sheet_task(self.sheet.model_dump_json())
-        assert "error" in res
-        assert res["error"] == "Access denied"
-
 
 def test_choose_orchestrator(worker_init):
     from worker.main import choose_orchestrator

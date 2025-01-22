@@ -1,4 +1,5 @@
 
+from functools import lru_cache
 import traceback, yaml, datetime
 from typing import List, Set
 
@@ -30,6 +31,7 @@ Rdis = redis.Redis.from_url(celery.conf.broker_url)
 def create_archive_task(self, archive_json: str):
     archive = schemas.ArchiveCreate.model_validate_json(archive_json)
     logger.info(f"Archiving {archive.url=} {archive.tags=} {archive.public=} {archive.group_id=} {archive.author_id=}")
+    #TODO: move group checks out of here
     invalid = is_group_invalid_for_user(archive.public, archive.group_id, archive.author_id)
     if invalid:
         raise Exception(invalid)  # marks task FAILED, saves the Exception as result
@@ -63,10 +65,6 @@ def create_sheet_task(self, sheet_json: str):
     sheet = schemas.SubmitSheet.model_validate_json(sheet_json)
     sheet.tags.add("gsheet")
     logger.info(f"SHEET START {sheet=}")
-
-    #TODO: should this check live here?
-    if (em := is_group_invalid_for_user(sheet.public, sheet.group_id, sheet.author_id)):
-        return {"error": em}
 
     config = Config()
     # TODO: use choose_orchestrator and overwrite the feeder
@@ -161,7 +159,7 @@ def is_group_invalid_for_user(public: bool, group_id: str, author_id: str):
     
     # otherwise group must match
     with get_db() as session:
-        if not crud.is_user_in_group(session, group_id, author_id):
+        if not crud.is_user_in_group(session, author_id, group_id):
             logger.error(em := f"User {author_id} is not part of {group_id}, no permission")
             return em
     return False
@@ -220,3 +218,13 @@ def at_start(sender, **kwargs):
     ORCHESTRATORS = {}
     load_orchestrators()
     logger.info("Orchestrators loaded successfully.")
+
+@lru_cache
+def get_url_orchestrator(group_name):
+    with get_db() as db:
+        group = crud.get_group(db, group_name)
+        assert group, f"Group {group_name} not found"
+        
+        # config = Config()
+        # config.parse(use_cli=False, yaml_config_filename=group.orchestrator_sheet)
+        # return ArchivingOrchestrator(config)

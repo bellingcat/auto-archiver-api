@@ -23,6 +23,8 @@ orchestrators:
   interdimensional: tests/orchestration.test.yaml
   default: tests/orchestration.test.yaml
 
+default_orchestrator: tests/orchestration.test.yaml
+
 groups:
   spaceship:
     description: "The spaceship crew"
@@ -31,9 +33,9 @@ groups:
     permissions:
       read: ["all"]
       active_sheets: -1
-      monthly_urls: all
-      monthly_mbs: all
-      alowed_frequency: "hourly"
+      monthly_urls: -1
+      monthly_mbs: -1
+      allowed_frequency: "hourly"
   interdimensional:
     description: "Interdimensional travelers"
     orchestrator: tests/orchestration.test.yaml
@@ -43,7 +45,7 @@ groups:
       active_sheets: 5
       monthly_urls: 1000
       monthly_mbs: 1000
-      alowed_frequency: "hourly"
+      allowed_frequency: "hourly"
   animated-characters:
     description: "Animated characters"
     orchestrator: tests/orchestration.test.yaml
@@ -53,4 +55,4 @@ groups:
       active_sheets: 1
       monthly_urls: 2
       monthly_mbs: 10
-      alowed_frequency: "daily"
+      allowed_frequency: "daily"

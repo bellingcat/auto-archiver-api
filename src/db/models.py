@@ -87,7 +87,7 @@ class Group(Base):
     description = Column(String, default=None)
     orchestrator = Column(String, default=None)
     orchestrator_sheet = Column(String, default=None)
-    permissions = Column(JSON, default=None)
+    permissions = Column(JSON, default={})
     domains = Column(JSON, default=[])
 
     archives = relationship("Archive", back_populates="group")

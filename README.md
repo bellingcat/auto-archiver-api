@@ -21,6 +21,8 @@ orchestration must be from the console(?)
 * turn off VPNs if connection to docker is not working
 
 ## User management
+TODO: update description and example
+- users/domains/groups
 Copy [example.user-groups.yaml](src/example.user-groups.yaml) into a new file and set the environment variable `USER_GROUPS_FILENAME` to that filename (defaults to `user-groups.yaml`).
 
 This file contains 2 parts user-groups specifications. Each user can archive URLs publicly, privately, or privately for a group so long as they are declared as part of that group. In the example bellow `email1` has 2 groups while `email3` has none. 

@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from web.security import token_api_key_auth, get_active_user_auth
+from db.user_state import UserState
+from web.security import token_api_key_auth, get_active_user_auth, get_active_user_state
 from db import schemas, crud
 from db.database import get_db_dependency
 from worker.main import create_sheet_task
@@ -16,19 +17,21 @@ sheet_router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"]
 @sheet_router.post("/create", status_code=201, summary="Store a new Google Sheet for regular archiving.")
 def create_sheet(
     sheet: schemas.SheetAdd,
-    email=Depends(get_active_user_auth),
+    user: UserState = Depends(get_active_user_state),
     db: Session = Depends(get_db_dependency),
 ) -> schemas.SheetResponse:
-    user_groups_names = crud.get_user_groups(db, email)
 
-    if sheet.group_id not in user_groups_names:
+    if not user.in_group(sheet.group_id):
         raise HTTPException(status_code=403, detail="User does not have access to this group.")
 
-    if not crud.has_quota_sheet(db, email, user_groups_names):
+    if not user.has_quota_sheet():
         raise HTTPException(status_code=429, detail="User has reached their sheet quota.")
+    
+    if not user.is_sheet_frequency_allowed(sheet.frequency):
+        raise HTTPException(status_code=422, detail=f"Invalid frequency: {sheet.frequency}. Must be one of {user.allowed_frequencies}")
 
     try:
-        return crud.create_sheet(db, sheet.id, sheet.name, email, sheet.group_id, sheet.frequency)
+        return crud.create_sheet(db, sheet.id, sheet.name, user.email, sheet.group_id, sheet.frequency)
     except exc.IntegrityError as e:
         raise HTTPException(status_code=400, detail="Sheet with this ID already exists.") from e
 
@@ -56,22 +59,30 @@ def delete_sheet(
 @sheet_router.post("/{id}/archive", status_code=201, summary="Trigger an archiving task for a GSheet you own.", response_description="task_id for the archiving task.")
 def archive_user_sheet(
     id: str,
-    email=Depends(get_active_user_auth),
+    user: UserState = Depends(get_active_user_state),
     db: Session = Depends(get_db_dependency),
 ) -> schemas.Task:
+    
+    #TODO: are we enabling manual triggers?
+    # if not user.can_manually_trigger():
+    #     raise HTTPException(status_code=429, detail="User cannot manually trigger archiving tasks.")
 
-    sheet = crud.get_user_sheet(db, email, sheet_id=id)
+    sheet = crud.get_user_sheet(db, user.email, sheet_id=id)
     if not sheet:
         raise HTTPException(status_code=403, detail="No access to this sheet.")
 
-    task = create_sheet_task.delay(schemas.SubmitSheet(sheet_id=id, author_id=email, group=sheet.group_id).model_dump_json())
+    # TODO: what happens if user is taken out of group after sheet is created? this should be checked in a cronjob that notifies the user
+    if not user.in_group(sheet.group_id):
+        raise HTTPException(status_code=403, detail="User does not have access to this group.")
+
+    task = create_sheet_task.delay(schemas.SubmitSheet(sheet_id=id, author_id=user.email, group=sheet.group_id).model_dump_json())
 
     return JSONResponse({"id": task.id}, status_code=201)
 
 
 @sheet_router.post("/archive", status_code=201, summary="Trigger an archiving task for any GSheet with an API token.", response_description="task_id for the archiving task.")
 def archive_sheet(
-    sheet: schemas.SubmitSheet, #TODO: replace with simpler model
+    sheet: schemas.SubmitSheet,  # TODO: replace with simpler model
     auth=Depends(token_api_key_auth)
 ) -> schemas.Task:
     sheet.author_id = sheet.author_id or "api-endpoint"

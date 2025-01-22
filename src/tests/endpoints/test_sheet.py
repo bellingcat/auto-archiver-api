@@ -15,7 +15,7 @@ def test_endpoints_no_auth(client, test_no_auth):
     test_no_auth(client.post, "/sheet/archive")
 
 
-def test_create_sheet_endpoint(app_with_auth):
+def test_create_sheet_endpoint(app_with_auth, db_session):
     client_with_auth = TestClient(app_with_auth)
     good_data = {
         "id": "123-sheet-id",
@@ -53,13 +53,23 @@ def test_create_sheet_endpoint(app_with_auth):
     assert response.status_code == 403
     assert response.json() == {"detail": "User does not have access to this group."}
 
-    # bad quota
+    # switch to jerry who's got less quota/permissions
+    from web.security import get_active_user_state
+    from db.user_state import UserState
+    app_with_auth.dependency_overrides[get_active_user_state] = lambda: UserState(db_session, "jerry@example.com", active=True)
+    client_jerry = TestClient(app_with_auth)
+
+    # frequency not allowed
     jerry_data = good_data.copy()
     jerry_data["group_id"] = "animated-characters"
+    jerry_data["frequency"] = "hourly"
     jerry_data["id"] = "jerry-sheet-id"
-    from web.security import get_active_user_auth
-    app_with_auth.dependency_overrides[get_active_user_auth] = lambda: "jerry@example.com"
-    client_jerry = TestClient(app_with_auth)
+    response = client_jerry.post("/sheet/create", json=jerry_data)
+    assert response.status_code == 422
+    assert "Invalid frequency: hourly" in response.json()["detail"]
+    jerry_data["frequency"] = "daily"
+
+    # success for the first sheet, bad quota on second
     response = client_jerry.post("/sheet/create", json=jerry_data)
     assert response.status_code == 201
 
@@ -144,12 +154,6 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
     assert response.json() == {"id": "456-sheet-id", "deleted": False}
 
 
-# def test_archive_user_sheet_endpoint(client_with_auth):
-#     response = client_with_auth.post("/sheet/123-sheet-id/archive")
-#     assert response.status_code == 201
-#     assert "id" in response.json()
-
-
 class TestArchiveUserSheetEndpoint:
     def test_token_auth(self, client_with_token, test_no_auth):
         test_no_auth(client_with_token.post, "/sheet/123-sheet-id/archive")
@@ -176,6 +180,14 @@ class TestArchiveUserSheetEndpoint:
         assert r.status_code == 201
         assert r.json() == {"id": "123-taskid"}
         m1.assert_called_once()
+
+    def test_user_not_in_group(self, client_with_auth, db_session):
+        from db import models
+        db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="interdimensional", frequency="hourly"))
+        db_session.commit()
+        r = client_with_auth.post("/sheet/123-sheet-id/archive")
+        assert r.status_code == 403
+        assert r.json() == {"detail": "User does not have access to this group."}
 
 
 class TestTokenArchiveEndpoint:

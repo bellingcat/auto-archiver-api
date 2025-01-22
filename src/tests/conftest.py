@@ -2,6 +2,7 @@ import os
 from fastapi.testclient import TestClient
 import pytest
 from unittest.mock import patch
+from db.user_state import UserState
 from shared.settings import Settings
 
 
@@ -27,7 +28,9 @@ def mock_settings():
 def test_db(get_settings: Settings):
     from db.database import make_engine
     from db import models
+    from db.crud import get_user_groups
 
+    get_user_groups.cache_clear()
     make_engine.cache_clear()
     engine = make_engine(get_settings.DATABASE_PATH)
 
@@ -72,11 +75,12 @@ def client(app):
 
 
 @pytest.fixture()
-def app_with_auth(app):
-    from web.security import get_token_or_user_auth, get_user_auth, get_active_user_auth
+def app_with_auth(app, db_session):
+    from web.security import get_token_or_user_auth, get_user_auth, get_active_user_auth, get_active_user_state
     app.dependency_overrides[get_token_or_user_auth] = lambda: "rick@example.com"
     app.dependency_overrides[get_user_auth] = lambda: "morty@example.com"
     app.dependency_overrides[get_active_user_auth] = lambda: "morty@example.com"
+    app.dependency_overrides[get_active_user_state] = lambda: UserState(db_session, "morty@example.com", active=True)
     return app
 
 
