@@ -56,13 +56,13 @@ def search_by_url(
 def latest(skip: int = 0, limit: int = 25, db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)) -> list[schemas.ArchiveResult]:
     return crud.search_archives_by_email(db, email, skip=skip, limit=limit)
 
-
-@url_router.get("/{id}", summary="Fetch a single URL archive by the associated id.")
-def lookup(id, db: Session = Depends(get_db_dependency), email=Depends(get_token_or_user_auth)) -> schemas.ArchiveResult:
-    archive = crud.get_archive(db, id, email)
-    if archive is None:
-        raise HTTPException(status_code=404, detail="Archive not found")
-    return archive
+# TODO: find out where/if this is used, tests are also disabled
+# @url_router.get("/{id}", summary="Fetch a single URL archive by the associated id.")
+# def lookup(id, db: Session = Depends(get_db_dependency), email=Depends(get_token_or_user_auth)) -> schemas.ArchiveResult:
+#     archive = crud.get_archive(db, id, email)
+#     if archive is None:
+#         raise HTTPException(status_code=404, detail="Archive not found")
+#     return archive
 
 
 @url_router.delete("/{id}", summary="Delete a single URL archive by id.")

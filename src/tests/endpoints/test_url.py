@@ -122,21 +122,22 @@ def test_lookup_unauthenticated(client, test_no_auth):
     test_no_auth(client.get, "/url/123-456-789")
 
 
-def test_lookup(client_with_auth, db_session):
-    response = client_with_auth.get("/url/lookup-123-456-789")
-    assert response.status_code == 404
-    assert response.json() == {"detail": "Archive not found"}
+# # TODO: find out where/if this is used, tests are also disabled
+# def test_lookup(client_with_auth, db_session):
+#     response = client_with_auth.get("/url/lookup-123-456-789")
+#     assert response.status_code == 404
+#     assert response.json() == {"detail": "Archive not found"}
 
-    from db import crud, schemas
-    crud.create_task(db_session, ArchiveCreate(id="lookup-123-456-789", url="https://example.com", result={}, public=True, author_id="rick@example.com", group_id=None), [], [])
+#     from db import crud, schemas
+#     crud.create_task(db_session, ArchiveCreate(id="lookup-123-456-789", url="https://example.com", result={}, public=True, author_id="rick@example.com", group_id=None), [], [])
 
-    response = client_with_auth.get("/url/lookup-123-456-789")
-    assert response.status_code == 200
-    j = response.json()
-    assert j.keys() == schemas.ArchiveResult.model_fields.keys()
-    assert j["id"] == "lookup-123-456-789"
-    assert j["url"] == "https://example.com"
-    assert j["result"] == {}
+#     response = client_with_auth.get("/url/lookup-123-456-789")
+#     assert response.status_code == 200
+#     j = response.json()
+#     assert j.keys() == schemas.ArchiveResult.model_fields.keys()
+#     assert j["id"] == "lookup-123-456-789"
+#     assert j["url"] == "https://example.com"
+#     assert j["result"] == {}
 
 
 def test_delete_task_unauthenticated(client, test_no_auth):
