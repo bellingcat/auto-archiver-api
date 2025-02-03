@@ -19,7 +19,7 @@ depends_on = None
 
 def upgrade() -> None:
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     columns = [col['name'] for col in inspector.get_columns('archives')]
 
     if 'sheet_id' not in columns:
@@ -30,7 +30,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     foreign_keys = [fk['name'] for fk in inspector.get_foreign_keys('archives')]
     columns = [col['name'] for col in inspector.get_columns('archives')]
 

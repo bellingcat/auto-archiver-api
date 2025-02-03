@@ -19,7 +19,7 @@ depends_on = None
 
 def upgrade() -> None:
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     columns = [col['name'] for col in inspector.get_columns('groups')]
 
     if 'description' not in columns:
@@ -36,7 +36,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     columns = [col['name'] for col in inspector.get_columns('groups')]
 
     column_names = ['description', 'orchestrator', 'orchestrator_sheet', 'permissions', 'domains']
