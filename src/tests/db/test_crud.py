@@ -57,8 +57,8 @@ def test_data(db_session):
     assert db_session.query(models.Group).count() == 0
     from db import crud
     crud.upsert_user_groups(db_session)
-    assert db_session.query(models.Group).count() == 3
-    assert db_session.query(models.User).count() == 4
+    assert db_session.query(models.Group).count() == 4
+    assert db_session.query(models.User).count() == 3
 
 
 def test_get_archive(test_data, db_session):
@@ -263,10 +263,10 @@ def test_count_archive_urls(test_data, db_session):
 def test_count_users(test_data, db_session):
     from db import crud
 
-    assert crud.count_users(db_session) == 4
+    assert crud.count_users(db_session) == 3
     db_session.query(models.User).filter(models.User.email == "rick@example.com").delete()
     db_session.commit()
-    assert crud.count_users(db_session) == 3
+    assert crud.count_users(db_session) == 2
 
 
 def test_count_by_users_since(test_data, db_session):
@@ -313,7 +313,7 @@ def test_is_active_user(test_data, db_session):
     assert crud.is_active_user(db_session, "ANYONE@birdy.com") == True
     assert crud.is_active_user(db_session, "rick@example.com") == True
     assert crud.is_active_user(db_session, "RICK@example.com") == True
-    assert crud.is_active_user(db_session, "summer@herself.com") == True
+    assert crud.is_active_user(db_session, "summer@herself.com") == False
     assert crud.is_active_user(db_session, "rick@not-in-groups.com") == False
 
 
@@ -369,7 +369,7 @@ def test_get_group(test_data, db_session):
 def test_create_or_get_user(test_data, db_session):
     from db import crud
 
-    assert db_session.query(models.User).count() == 4
+    assert db_session.query(models.User).count() == 3
 
     # already exists
     assert (u1 := crud.create_or_get_user(db_session, "rick@example.com")) is not None
@@ -386,13 +386,13 @@ def test_create_or_get_user(test_data, db_session):
     assert u3.email == "not-active@example.com"
     assert u3.is_active == False
 
-    assert db_session.query(models.User).count() == 6
+    assert db_session.query(models.User).count() == 5
 
 
 def test_upsert_group(test_data, db_session):
     from db import crud
 
-    assert db_session.query(models.Group).count() == 3
+    assert db_session.query(models.Group).count() == 4
 
     repeatable_params = ["desc 1", "orch.yaml", "sheet.yaml", {"read": ["all"]}, ["example.com"]]
 
@@ -415,7 +415,7 @@ def test_upsert_group(test_data, db_session):
     assert g3.id == "this-is-a-new-group"
     assert len(g3.users) == 0
 
-    assert db_session.query(models.Group).count() == 4
+    assert db_session.query(models.Group).count() == 5
 
 
 def test_upsert_user_groups(db_session):

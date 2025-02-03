@@ -49,8 +49,8 @@ def get_user_groups(
         "groups": user.user_groups_names,
         "allowedFrequencies": list(user.allowed_frequencies),
         "sheet_quota": user.sheet_quota,
-        "monthly_urls": user.monthly_urls,
-        "monthly_mbs": user.monthly_mbs,
+        "max_monthly_urls": user.max_monthly_urls, #TODO
+        "max_monthly_mbs": user.max_monthly_mbs, # TODO
         #TODO: should this return 
     })
 

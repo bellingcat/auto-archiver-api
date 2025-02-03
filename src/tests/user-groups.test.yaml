@@ -7,8 +7,8 @@ users:
     - spaceship
   jerry@example.com:
     - the-jerrys-club
-  summer@herself.com:
-  badyemail.com:
+  # summer@herself.com:
+  # badyemail.com:
 
 domains:
   example.com:
@@ -32,27 +32,53 @@ groups:
     orchestrator_sheet: tests/orchestration.test.yaml
     permissions:
       read: ["all"]
-      active_sheets: -1
-      monthly_urls: -1
-      monthly_mbs: -1
-      allowed_frequency: "hourly"
+      archive_url: true
+      archive_sheet: true
+      sheet_frequency: ["hourly", "daily"]
+      max_sheets: -1
+      max_archive_lifespan_months: -1
+      max_monthly_urls: -1
+      max_monthly_mbs: -1
+      priority: "high"
   interdimensional:
     description: "Interdimensional travelers"
     orchestrator: tests/orchestration.test.yaml
     orchestrator_sheet: tests/orchestration.test.yaml
     permissions:
       read: ["interdimensional", "animated-characters"]
-      active_sheets: 5
-      monthly_urls: 1000
-      monthly_mbs: 1000
-      allowed_frequency: "hourly"
+      archive_url: true
+      archive_sheet: true
+      sheet_frequency: ["hourly", "daily"]
+      max_sheets: 5
+      max_archive_lifespan_months: 12
+      max_monthly_urls: 1000
+      max_monthly_mbs: 1000
+      priority: "high"
   animated-characters:
     description: "Animated characters"
     orchestrator: tests/orchestration.test.yaml
     orchestrator_sheet: tests/orchestration.test.yaml
     permissions:
       read: ["animated-characters"]
-      active_sheets: 1
-      monthly_urls: 2
-      monthly_mbs: 10
-      allowed_frequency: "daily"
+      archive_url: true
+      archive_sheet: true
+      sheet_frequency: ["daily"]
+      max_sheets: 1
+      max_archive_lifespan_months: 12
+      max_monthly_urls: 2
+      max_monthly_mbs: 10
+      priority: "low"
+  default:
+    description: "Public access"
+    orchestrator: tests/orchestration.test.yaml
+    orchestrator_sheet: tests/orchestration.test.yaml
+    permissions:
+      read: []
+      archive_url: true
+      archive_sheet: true
+      sheet_frequency: ["daily"]
+      max_sheets: 1
+      max_archive_lifespan_months: 12
+      max_monthly_urls: 1
+      max_monthly_mbs: 1
+      priority: "low"

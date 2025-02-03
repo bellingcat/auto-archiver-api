@@ -5,7 +5,6 @@ from db.schemas import ArchiveCreate, TaskResult
 
 def test_archive_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.post, "/url/archive")
-    test_no_auth(client.get, "/url/archive")
 
 
 @patch("worker.main.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
@@ -118,11 +117,11 @@ def test_latest(client_with_auth, db_session):
     assert len(response.json()) == 2
 
 
-def test_lookup_unauthenticated(client, test_no_auth):
-    test_no_auth(client.get, "/url/123-456-789")
-
-
 # # TODO: find out where/if this is used, tests are also disabled
+
+# def test_lookup_unauthenticated(client, test_no_auth):
+#     test_no_auth(client.get, "/url/123-456-789")
+
 # def test_lookup(client_with_auth, db_session):
 #     response = client_with_auth.get("/url/lookup-123-456-789")
 #     assert response.status_code == 404

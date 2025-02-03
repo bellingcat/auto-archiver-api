@@ -32,14 +32,12 @@ class UserState:
 
     @property
     def allowed_frequencies(self):
-        if not hasattr(self, '_allowed_frequencies'):
-            self._allowed_frequencies = set()
+        if not hasattr(self, '_sheet_frequency'):
+            self._sheet_frequency = set()
             for group in self.user_groups:
                 if not group.permissions: continue
-                self._allowed_frequencies.add(group.permissions.get("allowed_frequency", None))
-            if "hourly" in self._allowed_frequencies:
-                self._allowed_frequencies.add("daily")
-        return self._allowed_frequencies
+                self._sheet_frequency.update(group.permissions.get("sheet_frequency", None))
+        return self._sheet_frequency
 
     @property
     def sheet_quota(self):
@@ -51,11 +49,11 @@ class UserState:
             self._sheet_quota = 0
             for group in self.user_groups:
                 if not group.permissions: continue
-                active_sheets = group.permissions.get("active_sheets", 0)
-                if active_sheets == -1:
+                max_sheets = group.permissions.get("max_sheets", 0)
+                if max_sheets == -1:
                     self._sheet_quota = -1
                     return self._sheet_quota
-                self._sheet_quota = max(self._sheet_quota, active_sheets)
+                self._sheet_quota = max(self._sheet_quota, max_sheets)
 
         return self._sheet_quota
 
@@ -72,16 +70,16 @@ class UserState:
 
         return user_sheets < self.sheet_quota
 
-    def has_quota_monthly_urls(self) -> bool:
+    def has_quota_max_monthly_urls(self) -> bool:
         """
         checks if a user has reached their monthly url quota
         """
         quota = 0
         for group in self.user_groups:
             if not group.permissions: continue
-            monthly_urls = group.permissions.get("monthly_urls", 0)
-            if monthly_urls == -1: return True
-            quota = max(quota, monthly_urls)
+            max_monthly_urls = group.permissions.get("max_monthly_urls", 0)
+            if max_monthly_urls == -1: return True
+            quota = max(quota, max_monthly_urls)
 
         current_month = datetime.now().month
         current_year = datetime.now().year
@@ -93,16 +91,16 @@ class UserState:
 
         return user_urls < quota
 
-    def has_quota_monthly_mbs(self) -> bool:
+    def has_quota_max_monthly_mbs(self) -> bool:
         """
         checks if a user has reached their monthly mb quota
         """
         quota = 0
         for group in self.user_groups:
             if not group.permissions: continue
-            monthly_mbs = group.permissions.get("monthly_mbs", 0)
-            if monthly_mbs == -1: return True
-            quota = max(quota, monthly_mbs)
+            max_monthly_mbs = group.permissions.get("max_monthly_mbs", 0)
+            if max_monthly_mbs == -1: return True
+            quota = max(quota, max_monthly_mbs)
 
         current_month = datetime.now().month
         current_year = datetime.now().year

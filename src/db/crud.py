@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from core.config import ALLOW_ANY_EMAIL
 from db.database import get_db
 from shared.settings import get_settings
+from shared.user_groups import UserGroups
 from . import models, schemas
 import yaml
 
@@ -202,13 +203,7 @@ def upsert_user_groups(db: Session):
     logger.debug("Updating user-groups configuration.")
     filename = get_settings().USER_GROUPS_FILENAME
 
-    # read yaml safely
-    try:
-        with open(filename) as inf:
-            user_groups_yaml = yaml.safe_load(inf)
-    except Exception as e:
-        logger.error(f"could not open user groups filename {filename}: {e}")
-        raise e
+    ug = UserGroups(filename)
 
     # delete all user-groups relationships
     db.query(models.association_table_user_groups).delete()
@@ -219,33 +214,26 @@ def upsert_user_groups(db: Session):
     # create a map of group_id -> domains and another of domain -> groups
     group_domains = defaultdict(set)
     domain_groups = defaultdict(list)
-    for domain, explicit_groups in user_groups_yaml.get("domains", {}).items():
+    for domain, explicit_groups in ug.domains.items():
         domain_groups[domain] = list(set(explicit_groups))
         for group in explicit_groups:
             group_domains[group].add(domain)
-
+    import json
     # upsert groups and save a map of groupid -> dbobject
-    for group_id, g in user_groups_yaml.get("groups", {}).items():
-        upsert_group(db, group_id, g["description"], g["orchestrator"], g["orchestrator_sheet"], g["permissions"], list(group_domains.get(group_id, [])))
+    for group_id, g in ug.groups.items():
+        upsert_group(db, group_id, g.description, g.orchestrator, g.orchestrator_sheet, json.loads(g.permissions.model_dump_json()), list(group_domains.get(group_id, [])))
     db_groups: dict[str, models.Group] = {g.id: g for g in db.query(models.Group).all()}
 
     # integrity checks
     for group_in_domains in group_domains:
         if group_in_domains not in db_groups:
             logger.error(f"[CONFIG] Group '{group_in_domains}' does not exist in the database: domains setting will not work.")
-        if group_in_domains not in user_groups_yaml.get("groups", {}):
-            logger.error(f"[CONFIG] Group '{group_in_domains}' does not exist in the config file: domains setting will not work.")
 
     # reinsert users in their EXPLICITLY DEFINED groups
     # domain groups are check live, as there may be new users that are not explicitly registered but belong to a domain
-    for email, explicit_groups in user_groups_yaml.get("users", {}).items():
+    for email, explicit_groups in ug.users.items():
         explicit_groups = explicit_groups or []
-        email = email.lower().strip()
-        if '@' not in email:
-            logger.error(f'[CONFIG] Invalid user email {email}, skipping.')
-            continue
-
-        logger.info(f"{display_email_pii(email)} => {explicit_groups}")
+        logger.info(f"EXPLICIT {display_email_pii(email)} => {explicit_groups}")
 
         # upsert active user
         db_user = upsert_user(db, email, active=True)

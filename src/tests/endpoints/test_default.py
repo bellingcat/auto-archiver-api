@@ -128,7 +128,7 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     assert 'disk_utilization{type="database"}' in r2.text
     assert 'database_metrics{query="count_archives"} 100.0' in r2.text
     assert 'database_metrics{query="count_archive_urls"} 1000.0' in r2.text
-    assert 'database_metrics{query="count_users"} 4.0' in r2.text
+    assert 'database_metrics{query="count_users"} 3.0' in r2.text
     assert 'database_metrics_counter_total{query="count_by_user",user="rick@example.com"} 34.0' in r2.text
     assert 'database_metrics_counter_total{query="count_by_user",user="morty@example.com"} 33.0' in r2.text
     assert 'database_metrics_counter_total{query="count_by_user",user="jerry@example.com"} 33.0' in r2.text
@@ -139,7 +139,7 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     r3 = client_with_token.get("/metrics")
     assert 'database_metrics{query="count_archives"} 100.0' in r3.text
     assert 'database_metrics{query="count_archive_urls"} 1000.0' in r3.text
-    assert 'database_metrics{query="count_users"} 4.0' in r3.text
+    assert 'database_metrics{query="count_users"} 3.0' in r3.text
     assert 'database_metrics_counter_total{query="count_by_user",user="rick@example.com"} 34.0' in r3.text
     assert 'database_metrics_counter_total{query="count_by_user",user="morty@example.com"} 33.0' in r3.text
     assert 'database_metrics_counter_total{query="count_by_user",user="jerry@example.com"} 33.0' in r3.text

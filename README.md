@@ -3,6 +3,55 @@
 An api that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps and enables CORS, everything runs on docker but development can be done without docker (except for redis).
 
 
+## User, Domains, Groups, and permissions management
+there are 2 ways to access the API
+1. via an API token which has full control/privileges to archive/search
+2. via a Google Auth token which goes through the user access model
+
+#### User access model
+The permissions are defined solely via the `user-groups.yaml` file
+- users belong to groups which determine their access level/quotas/orchestration setup
+  - users are assigned to groups explicitly (via email)
+  - users are assigned to groups implicitly (via email domains)
+    - domains are associated to groups
+  - users that are not explicitly or implicitly in the system belong to the `default` group, restrict their permissions if you do not wish them to be able to search/archive
+  - if a user is assigned to one group which is not explicitly defined, a warning will be thrown, it may be necessary to do that if you discontinue a given group but the database still has entries for it and so
+- groups determine
+  - which orchestrator to use for single URL archives and for spreadsheet archives
+  - a set of permissions
+    - `read` can be [`all`], [] or a comma separated list of group names, meaning people in this group can access either all, none, or those belonging to explicitly listed groups.
+      - the group itself must be included in the list, otherwise the user cannot search archives of that group
+    - `archive_url` a boolean that enables the user to archive links in this group
+    - `archive_sheet` a boolean that enables the user to archive spreadsheets
+    - `sheet_frequency` a list of options for the sheet archiving frequency, currently max permissions is `["hourly", "daily"]`
+    - `max_sheets` defines the maximum amount of spreadsheets someone can have in total (`-1` means no limit)
+    - `max_archive_lifespan_months` defines the lifespan of an archive before being deleted from S3, users will be notified 1 month in advance with instructions to download TODO
+    - `monthly_urls` how many total URLs someone can archive per month (`-1` means no limit)
+    - `monthly_mbs` how many MBs of data someone can archive per month (`-1` means no limit)
+    - `priority` one of `high` or `low`, this will be used to give archiving priority
+  - group names are all lower-case
+
+
+To figure out:
+- workshop participants should be able to test this. `public`
+- how can people bring their own storage/api keys?
+- how to implement lifespan of archives? 6 months lifespan example. they should expect a way to download all archives locally.
+- how to deactivate unused sheets and notify?
+- how to mark URLs for deletion, and then do a hard delete?
+- what actions can people take:
+  - URL (P=needs permission, O=open)
+    - P archive
+    - P search
+    - O find own links
+    - DISABLED find by id
+    - P delete archive (soft)
+  - Sheets
+    - P create a new sheet
+    - O get my sheets
+    - O delete a sheet
+    - P archive a sheet now
+
+
 ## Development
 http://localhost:8004
 
