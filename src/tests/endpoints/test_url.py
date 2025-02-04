@@ -38,24 +38,24 @@ def test_archive_url(m1, client_with_auth):
     called_val = m1.call_args.args[0]
     assert json.loads(called_val)["group_id"] == "spaceship"
 
-def test_archive_url_quotas(client_with_auth):
+@patch("endpoints.url.UserState")
+def test_archive_url_quotas(m1, client_with_auth):
     m_user_state = MagicMock()
+    m1.return_value = m_user_state
 
     # misses on monthly URLs quota
     m_user_state.has_quota_max_monthly_urls.return_value = False
-    with patch("endpoints.url.UserState", return_value=m_user_state):
-        response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
-        assert response.status_code == 429
-        assert response.json()["detail"] == "User has reached their monthly URL quota."
+    response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
+    assert response.status_code == 429
+    assert response.json()["detail"] == "User has reached their monthly URL quota."
     m_user_state.has_quota_max_monthly_urls.assert_called_once()
 
     # misses on monthly MBs quota
     m_user_state.has_quota_max_monthly_urls.return_value = True
     m_user_state.has_quota_max_monthly_mbs.return_value = False
-    with patch("endpoints.url.UserState", return_value=m_user_state):
-        response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
-        assert response.status_code == 429
-        assert response.json()["detail"] == "User has reached their monthly MB quota."
+    response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
+    assert response.status_code == 429
+    assert response.json()["detail"] == "User has reached their monthly MB quota."
     m_user_state.has_quota_max_monthly_mbs.assert_called_once()
 
 @patch("worker.main.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
@@ -67,8 +67,7 @@ def test_archive_url_with_api_token(m1, client_with_token):
 def test_search_by_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.get, "/url/search")
 
-
-def test_search_by_url(client_with_auth, db_session):
+def test_search_by_url(client_with_auth, client_with_token, db_session):
     # tests the search endpoint, including through some db data for the endpoint params
     response = client_with_auth.get("/url/search")
     assert response.status_code == 422
@@ -106,6 +105,20 @@ def test_search_by_url(client_with_auth, db_session):
     response = client_with_auth.get("/url/search?url=https://example.com&archived_after=2010-01-01")
     assert response.status_code == 200
     assert len(response.json()) == 10
+
+    # API token will also work
+    response = client_with_token.get("/url/search?url=https://example.com&archived_after=2010-01-01")
+    assert response.status_code == 200
+    assert len(response.json()) == 10
+
+@patch("endpoints.url.UserState")
+def test_search_no_read_access(mock_user_state, client_with_auth):
+    mock_user_state.return_value.read = False
+    mock_user_state.return_value.read_public = False
+
+    response = client_with_auth.get("/url/search?url=https://example.com")
+    assert response.status_code == 403
+    assert response.json() == {"detail": "User does not have read access."}
 
 
 def test_delete_task_unauthenticated(client, test_no_auth):
