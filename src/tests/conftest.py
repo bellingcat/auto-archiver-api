@@ -2,6 +2,7 @@ import os
 from fastapi.testclient import TestClient
 import pytest
 from unittest.mock import patch
+from core.config import ALLOW_ANY_EMAIL
 from db.user_state import UserState
 from shared.settings import Settings
 
@@ -91,8 +92,9 @@ def client_with_auth(app_with_auth):
 
 @pytest.fixture()
 def app_with_token(app):
-    from web.security import token_api_key_auth
-    app.dependency_overrides[token_api_key_auth] = lambda: "jerry@example.com"
+    from web.security import token_api_key_auth,get_token_or_user_auth
+    app.dependency_overrides[token_api_key_auth] = lambda: ALLOW_ANY_EMAIL
+    app.dependency_overrides[get_token_or_user_auth] = lambda: ALLOW_ANY_EMAIL
     return app
 
 

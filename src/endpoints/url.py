@@ -33,7 +33,7 @@ def archive_url(
             raise HTTPException(status_code=429, detail="User has reached their monthly MB quota.")
         if archive.group_id and not user.in_group(archive.group_id):
             raise HTTPException(status_code=403, detail="User does not have access to this group.")
-
+    
     # TODO: deprecate ArchiveCreate
     backwards_compatible_archive = schemas.ArchiveCreate(
         url=archive.url,

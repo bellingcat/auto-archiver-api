@@ -73,12 +73,12 @@ groups:
     orchestrator: tests/orchestration.test.yaml
     orchestrator_sheet: tests/orchestration.test.yaml
     permissions:
-      read: []
+      # read: []
       archive_url: true
-      archive_sheet: false
-      sheet_frequency: []
-      max_sheets: 0
-      max_archive_lifespan_months: 12
-      max_monthly_urls: 10
-      max_monthly_mbs: 50
+      # archive_sheet: false
+      # sheet_frequency: []
+      # max_sheets: 0
+      # max_archive_lifespan_months: 12
+      max_monthly_urls: 1
+      # max_monthly_mbs: 50
       priority: "low"

@@ -1,5 +1,5 @@
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from db.schemas import ArchiveCreate, TaskResult
 
@@ -38,6 +38,31 @@ def test_archive_url(m1, client_with_auth):
     called_val = m1.call_args.args[0]
     assert json.loads(called_val)["group_id"] == "spaceship"
 
+def test_archive_url_quotas(client_with_auth):
+    m_user_state = MagicMock()
+
+    # misses on monthly URLs quota
+    m_user_state.has_quota_max_monthly_urls.return_value = False
+    with patch("endpoints.url.UserState", return_value=m_user_state):
+        response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
+        assert response.status_code == 429
+        assert response.json()["detail"] == "User has reached their monthly URL quota."
+    m_user_state.has_quota_max_monthly_urls.assert_called_once()
+
+    # misses on monthly MBs quota
+    m_user_state.has_quota_max_monthly_urls.return_value = True
+    m_user_state.has_quota_max_monthly_mbs.return_value = False
+    with patch("endpoints.url.UserState", return_value=m_user_state):
+        response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
+        assert response.status_code == 429
+        assert response.json()["detail"] == "User has reached their monthly MB quota."
+    m_user_state.has_quota_max_monthly_mbs.assert_called_once()
+
+@patch("worker.main.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
+def test_archive_url_with_api_token(m1, client_with_token):
+    response = client_with_token.post("/url/archive", json={"url": "https://example.com"})
+    assert response.status_code == 201
+    assert response.json() == {'id': '123-456-789'}
 
 def test_search_by_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.get, "/url/search")
