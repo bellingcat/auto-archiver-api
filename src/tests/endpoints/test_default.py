@@ -5,7 +5,6 @@ from core.config import VERSION
 from tests.db.test_crud import test_data
 
 
-
 def test_endpoint_home(client_with_auth):
     r = client_with_auth.get("/")
     assert r.status_code == 200
@@ -55,6 +54,7 @@ def test_endpoint_active_true_user(client_with_auth):
     assert r.status_code == 200
     assert r.json() == {"active": True}
 
+
 def test_endpoint_active_false_user(app):
     from web.security import get_user_auth
 
@@ -64,30 +64,6 @@ def test_endpoint_active_false_user(app):
 
     assert r.status_code == 200
     assert r.json() == {"active": False}
-
-
-def test_endpoint_groups_no_auth(client, test_no_auth):
-    test_no_auth(client.get, "/groups")
-
-
-def test_endpoint_groups_rick_and_morty(client_with_auth):
-    r = client_with_auth.get("/groups")
-    assert r.status_code == 200
-    assert len(j := r.json()) == 2
-    assert 'animated-characters' in j
-    assert 'spaceship' in j
-
-
-@patch("endpoints.default.crud.get_user_groups", return_value=["group1", "group2"])
-def test_endpoint_groups(m1, app):
-    from web.security import get_user_auth
-    app.dependency_overrides[get_user_auth] = lambda: True
-    client = TestClient(app)
-
-    r = client.get("/groups")
-
-    assert r.status_code == 200
-    assert r.json() == ["group1", "group2"]
 
 
 def test_no_serve_local_archive_by_default(client_with_auth):
@@ -104,8 +80,10 @@ def test_favicon(client_with_auth):
 def test_endpoint_test_prometheus_no_auth(client, test_no_auth):
     test_no_auth(client.get, "/metrics")
 
+
 def test_endpoint_test_prometheus_no_user_auth(client_with_auth, test_no_auth):
     test_no_auth(client_with_auth.get, "/metrics")
+
 
 @pytest.mark.asyncio
 async def test_prometheus_metrics(test_data, client_with_token, get_settings):

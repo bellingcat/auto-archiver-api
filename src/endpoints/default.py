@@ -40,13 +40,8 @@ async def active(
     return {"active": user.active}
 
 
-@default_router.get("/groups", deprecated=True)  # DEPRECATED, only used by extension
-def get_user_groups(email=Depends(get_user_auth)) -> list[str]:
-    return crud.get_user_groups(email)
-
-
 @default_router.get("/permissions")
-def get_user_groups(
+def get_user_permissions(
     user: UserState = Depends(get_user_state),
 ) -> Dict[str, GroupPermissions]:
     return user.permissions
