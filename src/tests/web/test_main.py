@@ -17,12 +17,12 @@ def test_alembic(db_session):
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
     alembic.config.main(argv=['--raiseerr', 'downgrade', 'base'])
 
-@patch("endpoints.default.crud.get_user_groups", side_effect=Exception('mocked error'))
+@patch("endpoints.default.crud.soft_delete_task", side_effect=Exception('mocked error'))
 def test_logging_middleware(m1, client_with_auth):
     from utils.metrics import EXCEPTION_COUNTER
     assert len(EXCEPTION_COUNTER.collect()[0].samples) == 0
     with pytest.raises(Exception, match="mocked error"):
-        client_with_auth.get("/groups")
+        client_with_auth.delete("/url/123")
     # creates one empty and one from above
     assert len(EXCEPTION_COUNTER.collect()[0].samples) == 2
     

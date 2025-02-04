@@ -79,7 +79,7 @@ def app_with_auth(app, db_session):
     from web.security import get_token_or_user_auth, get_user_auth, get_user_state
     app.dependency_overrides[get_token_or_user_auth] = lambda: "rick@example.com"
     app.dependency_overrides[get_user_auth] = lambda: "morty@example.com"
-    app.dependency_overrides[get_user_state] = lambda: UserState(db_session, "morty@example.com")
+    app.dependency_overrides[get_user_state] = lambda: UserState(db_session, "MORTY@example.com")
     return app
 
 

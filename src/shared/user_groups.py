@@ -32,6 +32,7 @@ class UserGroups:
 
 class GroupPermissions(BaseModel):
     read: Set[str] | bool = Field(default_factory=list)
+    read_public: bool = False
     archive_url: bool = False
     archive_sheet: bool = False
     sheet_frequency: Set[str] = Field(default_factory=list)
@@ -49,8 +50,7 @@ class GroupPermissions(BaseModel):
 
     @field_validator('sheet_frequency', mode='before')
     def validate_sheet_frequency(cls, v):
-        if not v:
-            raise ValueError("sheet_frequency should have at least one value.")
+        if not v: return []
         allowed = ["daily", "hourly"]
         for k in v:
             if k not in allowed:

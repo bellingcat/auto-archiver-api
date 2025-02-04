@@ -48,7 +48,7 @@ async def get_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bear
     # validates the Bearer token in the case that it requires it
     valid_user, info = authenticate_user(credentials.credentials)
     if valid_user:
-        return info
+        return info.lower()
     logger.debug(f"TOKEN FAILURE: {valid_user=} {info=}")
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

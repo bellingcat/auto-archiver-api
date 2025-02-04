@@ -22,7 +22,6 @@ def get_limit(user_limit: int):
 
 
 def get_archive(db: Session, id: str, email: str):
-    email = email.lower()
     query = base_query(db).filter(models.Archive.id == id)
     if email != ALLOW_ANY_EMAIL:
         groups = get_user_groups(email)
@@ -34,7 +33,6 @@ def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, lim
     # searches for partial URLs, if email is * no ownership filtering happens
     query = base_query(db)
     if email != ALLOW_ANY_EMAIL:
-        email = email.lower()
         groups = get_user_groups(email)
         query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
     if absolute_search:
@@ -49,7 +47,6 @@ def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, lim
 
 
 def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
-    email = email.lower()
     return base_query(db).filter(models.Archive.author_id == email).order_by(models.Archive.created_at.desc()).offset(skip).limit(get_limit(limit)).all()
 
 
@@ -123,7 +120,6 @@ def get_user_groups(email: str) -> list[str]:
     given an email retrieves the user groups from the DB and then the email-domain groups from a global variable, the email does not need to belong to an existing user. 
     """
     if not email or not len(email) or "@" not in email: return []
-    email = email.lower()
 
     with get_db() as db:
         # get user groups
@@ -172,6 +168,7 @@ def upsert_group(db: Session, group_name: str, description: str, orchestrator: s
 
 
 def upsert_user(db: Session, email: str):
+    email = email.lower()
     db_user = db.query(models.User).filter(models.User.email == email).first()
     if db_user is None:
         db_user = models.User(email=email)

@@ -15,7 +15,7 @@ class UserState:
 
     def __init__(self, db: Session, email: str):
         self.db = db
-        self.email = email
+        self.email = email.lower()
 
     @property
     def permissions(self) -> Dict[str, GroupPermissions]:
@@ -26,6 +26,7 @@ class UserState:
             self._permissions = {}
             self._permissions["all"] = GroupPermissions(
                 read=self.read,
+                read_public=self.read_public,
                 archive_url=self.archive_url,
                 archive_sheet=self.archive_sheet,
             )
@@ -64,6 +65,20 @@ class UserState:
                 else:
                     self._read.update(group.permissions.get("read", []))
         return self._read
+
+    @property
+    def read_public(self) -> bool:
+        """
+        Read public permission
+        """
+        if not hasattr(self, '_read_public'):
+            self._read_public = False
+            for group in self.user_groups:
+                if not group.permissions: continue
+                if group.permissions.get("read_public", False):
+                    self._read_public = True
+                    return self._read_public
+        return self._read_public
 
     @property
     def archive_url(self) -> bool:
@@ -126,7 +141,7 @@ class UserState:
         A user is active if they can read/archive anything
         """
         if not hasattr(self, '_active'):
-            self._active = bool(self.read or self.archive_url or self.archive_sheet)
+            self._active = bool(self.read or self.read_public or self.archive_url or self.archive_sheet)
         return self._active
 
     def in_group(self, group_id: str) -> bool:
