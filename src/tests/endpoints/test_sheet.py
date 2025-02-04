@@ -54,9 +54,9 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     assert response.json() == {"detail": "User does not have access to this group."}
 
     # switch to jerry who's got less quota/permissions
-    from web.security import get_active_user_state
+    from web.security import get_user_state
     from db.user_state import UserState
-    app_with_auth.dependency_overrides[get_active_user_state] = lambda: UserState(db_session, "jerry@example.com", active=True)
+    app_with_auth.dependency_overrides[get_user_state] = lambda: UserState(db_session, "jerry@example.com")
     client_jerry = TestClient(app_with_auth)
 
     # frequency not allowed

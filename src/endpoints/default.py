@@ -1,4 +1,5 @@
 
+from typing import Dict
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
@@ -8,7 +9,8 @@ from core.logging import log_error
 from db import crud, schemas
 from db.database import get_db_dependency
 from db.user_state import UserState
-from web.security import get_user_auth, bearer_security, get_active_user_state
+from web.security import get_user_auth, bearer_security, get_user_state
+from shared.user_groups import GroupPermissions
 
 default_router = APIRouter()
 
@@ -32,27 +34,22 @@ async def health():
 
 @default_router.get("/user/active", summary="Check if the user is active and can use the tool.")
 # TODO: reorder db dependencies to after auth
-async def active(db: Session = Depends(get_db_dependency), email=Depends(get_user_auth)) -> schemas.ActiveUser:
-    return {"active": crud.is_active_user(db, email)}
+async def active(
+    user: UserState = Depends(get_user_state),
+) -> schemas.ActiveUser:
+    return {"active": user.active}
 
 
-@default_router.get("/groups")
+@default_router.get("/groups", deprecated=True)  # DEPRECATED, only used by extension
 def get_user_groups(email=Depends(get_user_auth)) -> list[str]:
     return crud.get_user_groups(email)
 
 
 @default_router.get("/permissions")
 def get_user_groups(
-        user: UserState = Depends(get_active_user_state),
-) -> list[str]:
-    return JSONResponse({
-        "groups": user.user_groups_names,
-        "allowedFrequencies": list(user.allowed_frequencies),
-        "sheet_quota": user.sheet_quota,
-        "max_monthly_urls": user.max_monthly_urls, #TODO
-        "max_monthly_mbs": user.max_monthly_mbs, # TODO
-        #TODO: should this return 
-    })
+    user: UserState = Depends(get_user_state),
+) -> Dict[str, GroupPermissions]:
+    return user.permissions
 
 
 @default_router.get('/favicon.ico', include_in_schema=False)

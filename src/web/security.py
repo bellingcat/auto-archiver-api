@@ -57,15 +57,6 @@ async def get_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bear
     )
 
 
-async def get_active_user_auth(credentials: HTTPAuthorizationCredentials = Depends(bearer_security)):
-    # validates Bearer token and Active User status
-    email = await get_user_auth(credentials)
-    with get_db() as db:
-        if crud.is_active_user(db, email):
-            return email
-    raise HTTPException(status_code=403, detail="User is not active")
-
-
 def authenticate_user(access_token):
     # https://cloud.google.com/docs/authentication/token-types#access
     if type(access_token) != str or len(access_token) < 10: return False, "invalid access_token"
@@ -87,6 +78,6 @@ def authenticate_user(access_token):
         return False, "exception occurred"
 
 
-def get_active_user_state(email=Depends(get_active_user_auth)):
+def get_user_state(email=Depends(get_user_auth)):
     with get_db() as db:
-        return UserState(db, email, active=True)
+        return UserState(db, email)

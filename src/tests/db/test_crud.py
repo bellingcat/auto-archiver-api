@@ -303,20 +303,6 @@ def test_create_tag(db_session):
     assert db_session.query(models.Tag).count() == 2
 
 
-def test_is_active_user(test_data, db_session):
-    from db import crud
-
-    assert crud.is_active_user(db_session, "") == False
-    assert crud.is_active_user(db_session, "example.com") == False
-    assert crud.is_active_user(db_session, "unknown@example.com") == True
-    assert crud.is_active_user(db_session, "ANYONE@example.com") == True
-    assert crud.is_active_user(db_session, "ANYONE@birdy.com") == True
-    assert crud.is_active_user(db_session, "rick@example.com") == True
-    assert crud.is_active_user(db_session, "RICK@example.com") == True
-    assert crud.is_active_user(db_session, "summer@herself.com") == False
-    assert crud.is_active_user(db_session, "rick@not-in-groups.com") == False
-
-
 def test_is_user_in_group(test_data, db_session):
     from db import crud
     from core.config import ALLOW_ANY_EMAIL
@@ -363,7 +349,7 @@ def test_get_group(test_data, db_session):
     assert crud.get_group(db_session, "spaceship") is not None
     assert crud.get_group(db_session, "interdimensional") is not None
     assert crud.get_group(db_session, "animated-characters") is not None
-    assert crud.get_group(db_session, "non-existant!@#!%!") is None
+    assert crud.get_group(db_session, "non-existent!@#!%!") is None
 
 
 def test_create_or_get_user(test_data, db_session):
@@ -374,19 +360,12 @@ def test_create_or_get_user(test_data, db_session):
     # already exists
     assert (u1 := crud.create_or_get_user(db_session, "rick@example.com")) is not None
     assert u1.email == "rick@example.com"
-    assert u1.is_active == True
 
-    # new active
-    assert (u2 := crud.create_or_get_user(db_session, "beth@example.com", is_active=True)) is not None
+    # new user
+    assert (u2 := crud.create_or_get_user(db_session, "beth@example.com")) is not None
     assert u2.email == "beth@example.com"
-    assert u2.is_active == True
 
-    # new not active
-    assert (u3 := crud.create_or_get_user(db_session, "not-active@example.com")) is not None
-    assert u3.email == "not-active@example.com"
-    assert u3.is_active == False
-
-    assert db_session.query(models.User).count() == 5
+    assert db_session.query(models.User).count() == 4
 
 
 def test_upsert_group(test_data, db_session):

@@ -73,7 +73,6 @@ class User(Base):
     __tablename__ = "users"
 
     email = Column(String, primary_key=True, index=True)
-    is_active = Column(Boolean, default=False)
 
     archives = relationship("Archive", back_populates="author")
     sheets = relationship("Sheet", back_populates="author")

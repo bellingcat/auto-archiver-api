@@ -6,7 +6,7 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from db.user_state import UserState
-from web.security import token_api_key_auth, get_active_user_auth, get_active_user_state
+from web.security import token_api_key_auth, get_user_auth, get_user_state
 from db import schemas, crud
 from db.database import get_db_dependency
 from worker.main import create_sheet_task
@@ -17,7 +17,7 @@ sheet_router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"]
 @sheet_router.post("/create", status_code=201, summary="Store a new Google Sheet for regular archiving.")
 def create_sheet(
     sheet: schemas.SheetAdd,
-    user: UserState = Depends(get_active_user_state),
+    user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
 ) -> schemas.SheetResponse:
 
@@ -28,7 +28,7 @@ def create_sheet(
         raise HTTPException(status_code=429, detail="User has reached their sheet quota.")
     
     if not user.is_sheet_frequency_allowed(sheet.frequency):
-        raise HTTPException(status_code=422, detail=f"Invalid frequency: {sheet.frequency}. Must be one of {user.allowed_frequencies}")
+        raise HTTPException(status_code=422, detail=f"Invalid frequency: {sheet.frequency}. Must be one of {user.sheet_frequency}")
 
     try:
         return crud.create_sheet(db, sheet.id, sheet.name, user.email, sheet.group_id, sheet.frequency)
@@ -38,7 +38,7 @@ def create_sheet(
 
 @sheet_router.get("/mine", status_code=200, summary="Get the authenticated user's Google Sheets.")
 def get_user_sheets(
-    email=Depends(get_active_user_auth),
+    email=Depends(get_user_auth),
     db: Session = Depends(get_db_dependency)
 ) -> list[schemas.SheetResponse]:
     return crud.get_user_sheets(db, email)
@@ -47,7 +47,7 @@ def get_user_sheets(
 @sheet_router.delete("/{id}", summary="Delete a Google Sheet by ID.")
 def delete_sheet(
     id: str,
-    email=Depends(get_active_user_auth),
+    email=Depends(get_user_auth),
     db: Session = Depends(get_db_dependency),
 ) -> schemas.TaskDelete:
     return JSONResponse({
@@ -59,7 +59,7 @@ def delete_sheet(
 @sheet_router.post("/{id}/archive", status_code=201, summary="Trigger an archiving task for a GSheet you own.", response_description="task_id for the archiving task.")
 def archive_user_sheet(
     id: str,
-    user: UserState = Depends(get_active_user_state),
+    user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
 ) -> schemas.Task:
     

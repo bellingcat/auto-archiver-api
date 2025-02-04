@@ -31,7 +31,7 @@ class UserGroups:
 
 
 class GroupPermissions(BaseModel):
-    read: Set[str] = Field(default_factory=list)
+    read: Set[str] | bool = Field(default_factory=list)
     archive_url: bool = False
     archive_sheet: bool = False
     sheet_frequency: Set[str] = Field(default_factory=list)

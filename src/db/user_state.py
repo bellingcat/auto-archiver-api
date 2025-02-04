@@ -1,9 +1,11 @@
 
+from typing import Dict, Set
 import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from db import crud, models
 from datetime import datetime
+from shared.user_groups import GroupPermissions
 
 
 class UserState:
@@ -11,10 +13,26 @@ class UserState:
     Manage a user's state and permissions
     """
 
-    def __init__(self, db: Session, email: str, active=False):
+    def __init__(self, db: Session, email: str):
         self.db = db
         self.email = email
-        self.active = active
+
+    @property
+    def permissions(self) -> Dict[str, GroupPermissions]:
+        """
+        Returns a dict of all group permissions and a special {"all": read/archive_url/archive_sheet} key
+        """
+        if not hasattr(self, '_permissions'):
+            self._permissions = {}
+            self._permissions["all"] = GroupPermissions(
+                read=self.read,
+                archive_url=self.archive_url,
+                archive_sheet=self.archive_sheet,
+            )
+            for group in self.user_groups:
+                if not group.permissions: continue
+                self._permissions[group.id] = GroupPermissions(**group.permissions)
+        return self._permissions
 
     @property
     def user_groups_names(self):
@@ -31,7 +49,52 @@ class UserState:
         return self._user_groups
 
     @property
-    def allowed_frequencies(self):
+    def read(self) -> Set[str] | bool:
+        """
+        Read can be a list of group names or True, if all can be read.
+        """
+        if not hasattr(self, '_read'):
+            self._read = set()
+            for group in self.user_groups:
+                if not group.permissions: continue
+                group_read_permissions = group.permissions.get("read", [])
+                if "all" in group_read_permissions:
+                    self._read = True
+                    return self._read
+                else:
+                    self._read.update(group.permissions.get("read", []))
+        return self._read
+
+    @property
+    def archive_url(self) -> bool:
+        """
+        Archive URL permission
+        """
+        if not hasattr(self, '_archive_url'):
+            self._archive_url = False
+            for group in self.user_groups:
+                if not group.permissions: continue
+                if group.permissions.get("archive_url", False):
+                    self._archive_url = True
+                    return self._archive_url
+        return self._archive_url
+
+    @property
+    def archive_sheet(self) -> bool:
+        """
+        Archive sheet permission
+        """
+        if not hasattr(self, '_archive_sheet'):
+            self._archive_sheet = False
+            for group in self.user_groups:
+                if not group.permissions: continue
+                if group.permissions.get("archive_sheet", False):
+                    self._archive_sheet = True
+                    return self._archive_sheet
+        return self._archive_sheet
+
+    @property
+    def sheet_frequency(self):
         if not hasattr(self, '_sheet_frequency'):
             self._sheet_frequency = set()
             for group in self.user_groups:
@@ -40,22 +103,31 @@ class UserState:
         return self._sheet_frequency
 
     @property
-    def sheet_quota(self):
+    def max_sheets(self):
         """
         infer the user's sheet quota from the groups
         -1 means unlimited
         """
-        if not hasattr(self, '_sheet_quota'):
-            self._sheet_quota = 0
+        if not hasattr(self, '_max_sheets'):
+            self._max_sheets = 0
             for group in self.user_groups:
                 if not group.permissions: continue
                 max_sheets = group.permissions.get("max_sheets", 0)
                 if max_sheets == -1:
-                    self._sheet_quota = -1
-                    return self._sheet_quota
-                self._sheet_quota = max(self._sheet_quota, max_sheets)
+                    self._max_sheets = -1
+                    return self._max_sheets
+                self._max_sheets = max(self._max_sheets, max_sheets)
 
-        return self._sheet_quota
+        return self._max_sheets
+
+    @property
+    def active(self) -> bool:
+        """
+        A user is active if they can read/archive anything
+        """
+        if not hasattr(self, '_active'):
+            self._active = bool(self.read or self.archive_url or self.archive_sheet)
+        return self._active
 
     def in_group(self, group_id: str) -> bool:
         return group_id in self.user_groups_names
@@ -64,11 +136,11 @@ class UserState:
         """
         checks if a user has reached their sheet quota
         """
-        if self.sheet_quota == -1: return True
+        if self.max_sheets == -1: return True
 
         user_sheets = self.db.query(models.Sheet).filter(models.Sheet.author_id == self.email).count()
 
-        return user_sheets < self.sheet_quota
+        return user_sheets < self.max_sheets
 
     def has_quota_max_monthly_urls(self) -> bool:
         """
@@ -137,4 +209,4 @@ class UserState:
         """
         checks if a user is allowed to create a sheet with this frequency
         """
-        return frequency in self.allowed_frequencies
+        return frequency in self.sheet_frequency
