@@ -118,24 +118,6 @@ class UserState:
         return self._sheet_frequency
 
     @property
-    def max_sheets(self):
-        """
-        infer the user's sheet quota from the groups
-        -1 means unlimited
-        """
-        if not hasattr(self, '_max_sheets'):
-            self._max_sheets = 0
-            for group in self.user_groups:
-                if not group.permissions: continue
-                max_sheets = group.permissions.get("max_sheets", 0)
-                if max_sheets == -1:
-                    self._max_sheets = -1
-                    return self._max_sheets
-                self._max_sheets = max(self._max_sheets, max_sheets)
-
-        return self._max_sheets
-
-    @property
     def active(self) -> bool:
         """
         A user is active if they can read/archive anything
@@ -147,15 +129,19 @@ class UserState:
     def in_group(self, group_id: str) -> bool:
         return group_id in self.user_groups_names
 
-    def has_quota_monthly_sheets(self) -> bool:
+    def has_quota_monthly_sheets(self, group_id: str) -> bool:
         """
-        checks if a user has reached their sheet quota
+        checks if a user has reached their sheet quota for a given group
         """
-        if self.max_sheets == -1: return True
+        if group_id not in self.permissions: 
+            return False
 
-        user_sheets = self.db.query(models.Sheet).filter(models.Sheet.author_id == self.email).count()
-
-        return user_sheets < self.max_sheets
+        user_sheets = self.db.query(models.Sheet).filter(models.Sheet.author_id == self.email, models.Sheet.group_id == group_id).count()
+        
+        sheet_quota = self.permissions[group_id].max_sheets
+        if sheet_quota == -1: 
+            return True
+        return user_sheets < sheet_quota
 
     def has_quota_max_monthly_urls(self) -> bool:
         """
@@ -210,18 +196,20 @@ class UserState:
         user_mbs = int(user_bytes / 1024 / 1024)
         return user_mbs < quota
 
-    # def can_manually_trigger(self) -> bool:
-    #     """
-    #     checks if a user is allowed to manually trigger a sheet
-    #     """
-    #     for group in self.user_groups:
-    #         if not group.permissions: continue
-    #         if group.permissions.get("manual_trigger", False):
-    #             return True
-    #     return False
+    def can_manually_trigger(self, group_id:str) -> bool:
+        """
+        checks if a user is allowed to manually trigger a sheet
+        """
+        if group_id not in self.permissions: 
+            return False
+        
+        return self.permissions[group_id].manually_trigger_sheet
 
-    def is_sheet_frequency_allowed(self, frequency: str) -> bool:
+    def is_sheet_frequency_allowed(self, group_id:str, frequency: str) -> bool:
         """
-        checks if a user is allowed to create a sheet with this frequency
+        checks if a user is allowed to create a sheet with this frequency for this group
         """
-        return frequency in self.sheet_frequency
+        if group_id not in self.permissions: 
+            return False
+        
+        return frequency in self.permissions[group_id].sheet_frequency

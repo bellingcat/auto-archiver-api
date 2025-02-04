@@ -84,7 +84,7 @@ class TaskDelete(Task):
     deleted: bool
 
 
-class ActiveUser(BaseModel):
+class ActiveUser(BaseModel):    
     active: bool
 
 
@@ -93,13 +93,6 @@ class SheetAdd(BaseModel):
     name: str
     group_id: str
     frequency: str
-
-    @field_validator('frequency')
-    def validate_frequency(cls, v):
-        valid_frequencies = {"hourly", "daily"}
-        if v not in {"hourly", "daily"}:
-            raise ValueError(f"Invalid frequency: {v}. Must be one of {valid_frequencies}.")
-        return v
 
 
 class SheetResponse(SheetAdd):

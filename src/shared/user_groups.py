@@ -35,6 +35,7 @@ class GroupPermissions(BaseModel):
     read_public: bool = False
     archive_url: bool = False
     archive_sheet: bool = False
+    manually_trigger_sheet: bool = False
     sheet_frequency: Set[str] = Field(default_factory=list)
     max_sheets: int = 0
     max_archive_lifespan_months: int = 12
@@ -85,7 +86,8 @@ class UserGroupModel(BaseModel):
                 raise ValueError(f"Invalid user, it should be an address: {email}")
             if not v[email]:
                 raise ValueError(f"User {email} has no explicitly listed groups, only include them here if they should be in a group.")
-        return {k.lower().strip(): list(set([g.lower().strip() for g in v])) for k, v in v.items()}
+        # all users belong to the default group
+        return {k.lower().strip(): list(set(["default"] + [g.lower().strip() for g in v])) for k, v in v.items()}
 
     @field_validator('domains', mode='before')
     @classmethod

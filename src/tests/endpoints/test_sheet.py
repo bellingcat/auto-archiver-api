@@ -37,14 +37,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     # already exists
     response = client_with_auth.post("/sheet/create", json=good_data)
     assert response.status_code == 400
-    assert response.json() == {"detail": "Sheet with this ID already exists."}
-
-    # bad frequency
-    bad_data = good_data.copy()
-    bad_data["frequency"] = "every hour"
-    response = client_with_auth.post("/sheet/create", json=bad_data)
-    assert response.status_code == 422
-    assert "Value error, Invalid frequency: every hour. Must be one of" in response.json()["detail"][0]["msg"]
+    assert response.json() == {"detail": "Sheet with this ID is already being archived."}
 
     # bad group
     bad_data = good_data.copy()
@@ -66,16 +59,16 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     jerry_data["id"] = "jerry-sheet-id"
     response = client_jerry.post("/sheet/create", json=jerry_data)
     assert response.status_code == 422
-    assert "Invalid frequency: hourly" in response.json()["detail"]
-    jerry_data["frequency"] = "daily"
+    assert response.json() == {"detail": "Invalid frequency selected for this group."}
 
+    jerry_data["frequency"] = "daily"
     # success for the first sheet, bad quota on second
     response = client_jerry.post("/sheet/create", json=jerry_data)
     assert response.status_code == 201
 
     response = client_jerry.post("/sheet/create", json=jerry_data)
     assert response.status_code == 429
-    assert response.json() == {"detail": "User has reached their sheet quota."}
+    assert response.json() == {"detail": "User has reached their sheet quota for this group."}
 
 
 def test_get_user_sheets_endpoint(client_with_auth, db_session):
@@ -155,6 +148,16 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
 
 
 class TestArchiveUserSheetEndpoint:
+    @patch("worker.main.create_sheet_task.delay", return_value=TaskResult(id="123-taskid", status="PENDING", result=""))
+    def test_normal_flow(self, m1, client_with_auth, db_session):
+        from db import models
+        db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="spaceship", frequency="hourly"))
+        db_session.commit()
+        r = client_with_auth.post("/sheet/123-sheet-id/archive")
+        assert r.status_code == 201
+        assert r.json() == {"id": "123-taskid"}
+        m1.assert_called_once()
+
     def test_token_auth(self, client_with_token, test_no_auth):
         test_no_auth(client_with_token.post, "/sheet/123-sheet-id/archive")
 
@@ -171,16 +174,6 @@ class TestArchiveUserSheetEndpoint:
         assert r.status_code == 403
         assert r.json() == {"detail": "No access to this sheet."}
 
-    @patch("worker.main.create_sheet_task.delay", return_value=TaskResult(id="123-taskid", status="PENDING", result=""))
-    def test_normal_flow(self, m1, client_with_auth, db_session):
-        from db import models
-        db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="spaceship", frequency="hourly"))
-        db_session.commit()
-        r = client_with_auth.post("/sheet/123-sheet-id/archive")
-        assert r.status_code == 201
-        assert r.json() == {"id": "123-taskid"}
-        m1.assert_called_once()
-
     def test_user_not_in_group(self, client_with_auth, db_session):
         from db import models
         db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="interdimensional", frequency="hourly"))
@@ -188,6 +181,14 @@ class TestArchiveUserSheetEndpoint:
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
         assert r.status_code == 403
         assert r.json() == {"detail": "User does not have access to this group."}
+
+    def test_user_cannot_manually_trigger(self, client_with_auth, db_session):
+        from db import models
+        db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="default", frequency="hourly"))
+        db_session.commit()
+        r = client_with_auth.post("/sheet/123-sheet-id/archive")
+        assert r.status_code == 429
+        assert r.json() == {"detail": "User cannot manually trigger sheet archiving in this group."}
 
 
 class TestTokenArchiveEndpoint:

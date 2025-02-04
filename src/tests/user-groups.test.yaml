@@ -34,6 +34,7 @@ groups:
       read: ["all"]
       archive_url: true
       archive_sheet: true
+      manually_trigger_sheet: true
       sheet_frequency: ["hourly", "daily"]
       max_sheets: -1
       max_archive_lifespan_months: -1
@@ -48,6 +49,7 @@ groups:
       read: ["interdimensional", "animated-characters"]
       archive_url: true
       archive_sheet: true
+      manually_trigger_sheet: true
       sheet_frequency: ["hourly", "daily"]
       max_sheets: 5
       max_archive_lifespan_months: 12
@@ -75,6 +77,7 @@ groups:
     permissions:
       # read: []
       archive_url: true
+      # manually_trigger_sheet: false
       # archive_sheet: false
       # sheet_frequency: []
       # max_sheets: 0
