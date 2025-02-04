@@ -33,14 +33,14 @@ async def health():
 
 
 @default_router.get("/user/active", summary="Check if the user is active and can use the tool.")
-# TODO: reorder db dependencies to after auth
 async def active(
     user: UserState = Depends(get_user_state),
 ) -> schemas.ActiveUser:
     return {"active": user.active}
 
 
-@default_router.get("/permissions")
+# TODO: test
+@default_router.get("/user/permissions", summary="Get the user's global 'all' permissions and the permissions for each group they belong to.")
 def get_user_permissions(
     user: UserState = Depends(get_user_state),
 ) -> Dict[str, GroupPermissions]:
