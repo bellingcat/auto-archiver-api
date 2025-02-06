@@ -65,14 +65,6 @@ class GroupPermissions(BaseModel):
             raise ValueError("priority must be either 'low' or 'high'.")
         return v
 
-    @field_validator('read', mode='before')
-    def validate_priority(cls, v):
-        if type(v) == list:
-            if "default" in v:
-                raise ValueError("The 'default' group is not used for archive permissions, please remove it.")
-        return v
-
-
 class GroupModel(BaseModel):
     description: str
     orchestrator: str
