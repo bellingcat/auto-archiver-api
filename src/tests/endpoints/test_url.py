@@ -7,36 +7,67 @@ def test_archive_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.post, "/url/archive")
 
 
+@patch("endpoints.url.UserState")
 @patch("worker.main.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
-def test_archive_url(m1, client_with_auth):
+def test_archive_url(m1, m2, client_with_auth):
+    m_user_state = MagicMock()
+    m2.return_value = m_user_state
+
     # url is too short
     response = client_with_auth.post("/url/archive", json={"url": "bad"})
     assert response.status_code == 422
     assert response.json()["detail"][0]["msg"] == 'String should have at least 5 characters'
     m1.assert_not_called()
 
+    # url is invalid
+    response = client_with_auth.post("/url/archive", json={"url": "example.com"})
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid URL received."
+
     # valid request
+    m_user_state.has_quota_max_monthly_urls.return_value = True
+    m_user_state.has_quota_max_monthly_mbs.return_value = True
     response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
     assert response.status_code == 201
     assert response.json() == {'id': '123-456-789'}
-
     m1.assert_called_once()
     called_val = m1.call_args.args[0]
-    assert json.loads(called_val) == {"id": None, "url": "https://example.com", "result": None, "public": True, "author_id": "rick@example.com", "group_id": None, "tags": [], "rearchive": True}
+    assert json.loads(called_val) == {"id": None, "url": "https://example.com", "result": None, "public": True, "author_id": "rick@example.com", "group_id": None, "tags": [], "rearchive": True, "sheet_id":None}
+    m_user_state.has_quota_max_monthly_urls.assert_called_once()
+    m_user_state.has_quota_max_monthly_mbs.assert_called_once()
 
     # user is not in group
+    m_user_state.in_group.return_value = False
     response = client_with_auth.post("/url/archive", json={"url": "https://example.com", "group_id": "new-group"})
     assert response.status_code == 403
     assert response.json()["detail"] == "User does not have access to this group."
+    m_user_state.in_group.assert_called_once_with("new-group")
 
     # user is in group
+    m_user_state.in_group.return_value = True
     response = client_with_auth.post("/url/archive", json={"url": "https://example.com", "group_id": "spaceship"})
     assert response.status_code == 201
     assert response.json() == {'id': '123-456-789'}
-
     assert m1.call_count == 2
     called_val = m1.call_args.args[0]
     assert json.loads(called_val)["group_id"] == "spaceship"
+    m_user_state.in_group.assert_called_with("spaceship")
+
+    # user is over monthly URL quota
+    m_user_state.has_quota_max_monthly_urls.return_value = False
+    m_user_state.has_quota_max_monthly_mbs.return_value = True
+    response = client_with_auth.post("/url/archive", json={"url": "https://example.com", "group_id": "spaceship"})
+    assert response.status_code == 429
+    assert response.json()["detail"] == "User has reached their monthly URL quota."
+    m_user_state.has_quota_max_monthly_urls.assert_called_with("spaceship")
+
+    # user is over monthly MB quota
+    m_user_state.has_quota_max_monthly_urls.return_value = True
+    m_user_state.has_quota_max_monthly_mbs.return_value = False
+    response = client_with_auth.post("/url/archive", json={"url": "https://example.com", "group_id": "spacesuit"})
+    assert response.status_code == 429
+    assert response.json()["detail"] == "User has reached their monthly MB quota."
+    m_user_state.has_quota_max_monthly_mbs.assert_called_with("spacesuit")
 
 @patch("endpoints.url.UserState")
 def test_archive_url_quotas(m1, client_with_auth):

@@ -29,6 +29,11 @@ class UserState:
                 read_public=self.read_public,
                 archive_url=self.archive_url,
                 archive_sheet=self.archive_sheet,
+                # below are relevant only for /url endpoints
+                max_archive_lifespan_months=self.max_archive_lifespan_months,
+                max_monthly_urls=self.max_monthly_urls,
+                max_monthly_mbs=self.max_monthly_mbs,
+                priority=self.priority
             )
             for group in self.user_groups:
                 if not group.permissions: continue
@@ -118,6 +123,34 @@ class UserState:
         return self._sheet_frequency
 
     @property
+    def max_archive_lifespan_months(self) -> int:
+        if not hasattr(self, '_max_archive_lifespan_months'):
+            self._max_archive_lifespan_months = self._helper_for_grouping_max_numerical_permissions("max_archive_lifespan_months")
+        return self._max_archive_lifespan_months
+    
+    @property
+    def max_monthly_urls(self) -> int:
+        if not hasattr(self, '_max_monthly_urls'):
+            self._max_monthly_urls = self._helper_for_grouping_max_numerical_permissions("max_monthly_urls")
+        return self._max_monthly_urls
+
+    @property
+    def max_monthly_mbs(self) -> int:
+        if not hasattr(self, '_max_monthly_mbs'):
+            self._max_monthly_mbs = self._helper_for_grouping_max_numerical_permissions("max_monthly_mbs")
+        return self._max_monthly_mbs
+
+    @property
+    def priority(self) -> str:
+        if not hasattr(self, '_priority'):
+            self._priority = "low"
+            for group in self.user_groups:
+                if not group.permissions: continue
+                if group.permissions.get("priority", "low") == "high":
+                    self._priority = "high"
+        return self._priority
+
+    @property
     def active(self) -> bool:
         """
         A user is active if they can read/archive anything
@@ -125,34 +158,114 @@ class UserState:
         if not hasattr(self, '_active'):
             self._active = bool(self.read or self.read_public or self.archive_url or self.archive_sheet)
         return self._active
+    
+    def _helper_for_grouping_max_numerical_permissions(self, permission_name: str) -> int:
+        """
+        Iterates one of the numerical permissions where -1 means no restrictions and returns either -1 or the maximum value, defaults according to GroupPermissions
+        """
+        default = GroupPermissions.model_fields[permission_name].default
+        max_value = default
+        for group in self.user_groups:
+            if not group.permissions: continue
+            group_value = group.permissions.get(permission_name, default)
+            if group_value == -1:
+                max_value = -1
+                return max_value
+            max_value = max(max_value, group_value)
+        return max_value
 
     def in_group(self, group_id: str) -> bool:
         return group_id in self.user_groups_names
+
+    def usage(self) -> Dict:
+        """
+        returns the monthly quotas for the URLs/MBs and the totals for Sheets
+        """
+        current_month = datetime.now().month
+        current_year = datetime.now().year
+
+        # find and sum all user sheets over this month
+        user_sheets = self.db.query(
+            models.Sheet.group_id,
+            func.count(models.Sheet.id).label('sheet_count')
+        ).filter(models.Sheet.author_id == self.email).group_by(models.Sheet.group_id).all()
+
+        sheets_by_group = {sheet.group_id: sheet.sheet_count for sheet in user_sheets}
+
+        # find and sum all user urls over this month
+        urls_by_group = self.db.query(
+            models.Archive.group_id,
+            func.count(models.Archive.id).label('url_count'),
+            func.coalesce(func.sum(
+                func.coalesce(
+                    func.cast(
+                        func.json_extract(models.Archive.result, '$.metadata.total_bytes'),
+                        sqlalchemy.Integer
+                    ), 0
+                )
+            ), 0).label('total_bytes')
+        ).filter(
+            models.Archive.author_id == self.email,
+            func.extract('month', models.Archive.created_at) == current_month,
+            func.extract('year', models.Archive.created_at) == current_year
+        ).group_by(models.Archive.group_id).all()
+
+        # merge the two queries
+        usage_by_group = {
+            (url.group_id or ""): {
+                "monthly_urls": url.url_count,
+                "monthly_mbs": int(url.total_bytes / 1024 / 1024),
+                "total_sheets": 0
+            }
+            for url in urls_by_group
+        }
+        for group_id, sheet_count in sheets_by_group.items():
+            group_id = group_id or ""
+            if group_id in usage_by_group:
+                usage_by_group[group_id]["total_sheets"] = sheet_count
+            else:
+                usage_by_group[group_id] = {
+                    "monthly_urls": 0,
+                    "monthly_mbs": 0,
+                    "total_sheets": sheet_count
+                }
+
+        # calculate totals
+        total_sheets = sum([sheet.sheet_count for sheet in user_sheets])
+        total_bytes = sum([url.total_bytes for url in urls_by_group])
+        total_urls = sum([url.url_count for url in urls_by_group])
+
+        return {
+            "total_sheets": total_sheets,
+            "monthly_urls": total_urls,
+            "monthly_mbs": int(total_bytes / 1024 / 1024),
+            "groups": usage_by_group
+        }
 
     def has_quota_monthly_sheets(self, group_id: str) -> bool:
         """
         checks if a user has reached their sheet quota for a given group
         """
-        if group_id not in self.permissions: 
+        if group_id not in self.permissions:
             return False
 
         user_sheets = self.db.query(models.Sheet).filter(models.Sheet.author_id == self.email, models.Sheet.group_id == group_id).count()
-        
+
         sheet_quota = self.permissions[group_id].max_sheets
-        if sheet_quota == -1: 
+        if sheet_quota == -1:
             return True
         return user_sheets < sheet_quota
 
-    def has_quota_max_monthly_urls(self) -> bool:
+    def has_quota_max_monthly_urls(self, group_id:str) -> bool:
         """
-        checks if a user has reached their monthly url quota
+        checks if a user has reached their monthly url quota for a group, if global then group should be empty string
         """
         quota = 0
-        for group in self.user_groups:
-            if not group.permissions: continue
-            max_monthly_urls = group.permissions.get("max_monthly_urls", 0)
-            if max_monthly_urls == -1: return True
-            quota = max(quota, max_monthly_urls)
+        if not group_id:
+            quota = self.max_monthly_urls
+        else:
+            if group_id not in self.permissions: return False
+            quota = self.permissions[group_id].max_monthly_urls
 
         current_month = datetime.now().month
         current_year = datetime.now().year
@@ -164,16 +277,16 @@ class UserState:
 
         return user_urls < quota
 
-    def has_quota_max_monthly_mbs(self) -> bool:
+    def has_quota_max_monthly_mbs(self, group_id:str) -> bool:
         """
-        checks if a user has reached their monthly mb quota
+        checks if a user has reached their monthly MBs quota for a group, if global then group should be empty string
         """
         quota = 0
-        for group in self.user_groups:
-            if not group.permissions: continue
-            max_monthly_mbs = group.permissions.get("max_monthly_mbs", 0)
-            if max_monthly_mbs == -1: return True
-            quota = max(quota, max_monthly_mbs)
+        if not group_id:
+            quota = self.max_monthly_mbs
+        else:
+            if group_id not in self.permissions: return False
+            quota = self.permissions[group_id].max_monthly_mbs
 
         current_month = datetime.now().month
         current_year = datetime.now().year
@@ -196,20 +309,20 @@ class UserState:
         user_mbs = int(user_bytes / 1024 / 1024)
         return user_mbs < quota
 
-    def can_manually_trigger(self, group_id:str) -> bool:
+    def can_manually_trigger(self, group_id: str) -> bool:
         """
         checks if a user is allowed to manually trigger a sheet
         """
-        if group_id not in self.permissions: 
+        if group_id not in self.permissions:
             return False
-        
+
         return self.permissions[group_id].manually_trigger_sheet
 
-    def is_sheet_frequency_allowed(self, group_id:str, frequency: str) -> bool:
+    def is_sheet_frequency_allowed(self, group_id: str, frequency: str) -> bool:
         """
         checks if a user is allowed to create a sheet with this frequency for this group
         """
-        if group_id not in self.permissions: 
+        if group_id not in self.permissions:
             return False
-        
+
         return frequency in self.permissions[group_id].sheet_frequency

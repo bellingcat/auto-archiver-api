@@ -3,7 +3,7 @@ from functools import lru_cache
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy import Column, or_, func
 from loguru import logger
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from core.config import ALLOW_ANY_EMAIL
 from db.database import get_db
@@ -51,7 +51,7 @@ def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int 
 
 
 def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]):
-    db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id)
+    db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id, sheet_id=task.sheet_id)
     db_task.tags = tags
     db_task.urls = urls
     db.add(db_task)
@@ -246,8 +246,15 @@ def get_user_sheet(db: Session, email: str, sheet_id: str) -> models.Sheet:
 
 
 def get_user_sheets(db: Session, email: str) -> list[models.Sheet]:
-    return db.query(models.Sheet).filter(models.Sheet.author_id == email).order_by(models.Sheet.last_archived_at.desc()).all()
+    return db.query(models.Sheet).filter(models.Sheet.author_id == email).order_by(models.Sheet.last_url_archived_at.desc()).all()
 
+def update_sheet_last_url_archived_at(db: Session, sheet_id: str):
+    db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id).first()
+    if db_sheet:
+        db_sheet.last_url_archived_at = datetime.now()
+        db.commit()
+        return True
+    return False
 
 def delete_sheet(db: Session, sheet_id: str, email: str) -> bool:
     db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id, models.Sheet.author_id == email).first()

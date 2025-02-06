@@ -1,6 +1,6 @@
 from typing import Annotated
 from annotated_types import Len
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from datetime import datetime
 
 
@@ -21,6 +21,7 @@ class ArchiveCreate(BaseModel):
     group_id: str | None = None
     tags: set[Tag] | None = set()
     rearchive: bool = True
+    sheet_id: str | None = None
     # urls: list = []
 
 
@@ -97,9 +98,8 @@ class SheetAdd(BaseModel):
 
 class SheetResponse(SheetAdd):
     author_id: str
-    stats: dict | None
-    last_archived_at: datetime | None
     created_at: datetime
+    last_url_archived_at: datetime | None
 
 
 class ArchiveTrigger(BaseModel):

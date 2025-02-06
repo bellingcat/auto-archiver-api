@@ -25,16 +25,15 @@ association_table_user_groups = Table(
     Column("group_id", ForeignKey("groups.id")),
 )
 
+
 # data model tables
-
-
 class Archive(Base):
     __tablename__ = "archives"
 
     id = Column(String, primary_key=True, index=True)
     url = Column(String, index=True)
     result = Column(JSON, default=None)
-    public = Column(Boolean, default=True)  # if public=false, access to group and author
+    public = Column(Boolean, default=True)  # if public=false, access by group and author
     deleted = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -102,8 +101,9 @@ class Sheet(Base):
     author_id = Column(String, ForeignKey("users.email"))
     group_id = Column(String, ForeignKey("groups.id"), doc="Group ID, user must be in a group to create a sheet.")
     frequency = Column(String, default="daily", doc="Frequency of archiving: hourly, daily, weekly.")
+    # TODO: stats is not needed, is it?
     stats = Column(JSON, default={}, doc="Sheet statistics like total links, total rows, ...")
-    last_archived_at = Column(DateTime(timezone=True), server_default=func.now(), doc="Last time a new link was archived.")
+    last_url_archived_at = Column(DateTime(timezone=True), server_default=func.now(), doc="Last time a new link was archived.")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

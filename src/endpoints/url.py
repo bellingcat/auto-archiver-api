@@ -13,6 +13,7 @@ from db import crud, schemas
 from db.database import get_db_dependency
 
 from worker.main import create_archive_task
+from urllib.parse import urlparse
 
 url_router = APIRouter(prefix="/url", tags=["Single URL operations"])
 
@@ -25,14 +26,18 @@ def archive_url(
 ) -> schemas.Task:
     logger.info(f"new {archive.public=} task for {email=} and {archive.group_id=}: {archive.url}")
 
+    parsed_url = urlparse(archive.url)
+    if not all([parsed_url.scheme, parsed_url.netloc]):
+        raise HTTPException(status_code=400, detail="Invalid URL received.")
+
     if email != ALLOW_ANY_EMAIL:
         user = UserState(db, email)
-        if not user.has_quota_max_monthly_urls():
-            raise HTTPException(status_code=429, detail="User has reached their monthly URL quota.")
-        if not user.has_quota_max_monthly_mbs():
-            raise HTTPException(status_code=429, detail="User has reached their monthly MB quota.")
         if archive.group_id and not user.in_group(archive.group_id):
             raise HTTPException(status_code=403, detail="User does not have access to this group.")
+        if not user.has_quota_max_monthly_urls(archive.group_id):
+            raise HTTPException(status_code=429, detail="User has reached their monthly URL quota.")
+        if not user.has_quota_max_monthly_mbs(archive.group_id):
+            raise HTTPException(status_code=429, detail="User has reached their monthly MB quota.")
     
     # TODO: deprecate ArchiveCreate
     backwards_compatible_archive = schemas.ArchiveCreate(

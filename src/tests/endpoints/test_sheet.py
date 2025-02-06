@@ -29,8 +29,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     assert response.status_code == 201
     j = response.json()
     assert datetime.fromisoformat(j.pop("created_at"))
-    assert datetime.fromisoformat(j.pop("last_archived_at"))
-    assert j.pop("stats") == {}
+    assert datetime.fromisoformat(j.pop("last_url_archived_at"))
     assert j.pop("author_id") == 'morty@example.com'
     assert j == good_data
 
@@ -95,16 +94,15 @@ def test_get_user_sheets_endpoint(client_with_auth, db_session):
     assert isinstance(r, list)
     assert len(r) == 2
     assert datetime.fromisoformat(r[0].pop("created_at"))
-    assert datetime.fromisoformat(r[0].pop("last_archived_at"))
+    assert datetime.fromisoformat(r[0].pop("last_url_archived_at"))
     assert datetime.fromisoformat(r[1].pop("created_at"))
-    assert datetime.fromisoformat(r[1].pop("last_archived_at"))
+    assert datetime.fromisoformat(r[1].pop("last_url_archived_at"))
     assert r[0] == {
         'id': '123',
         'author_id': 'morty@example.com',
         'frequency': 'hourly',
         'group_id': 'spaceship',
         'name': 'Test Sheet 1',
-        'stats': {},
     }
     assert r[1] == {
         'id': '456',
@@ -112,7 +110,6 @@ def test_get_user_sheets_endpoint(client_with_auth, db_session):
         'frequency': 'daily',
         'group_id': 'interdimensional',
         'name': 'Test Sheet 2',
-        'stats': {},
     }
 
 

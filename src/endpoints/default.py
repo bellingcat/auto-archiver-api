@@ -39,12 +39,20 @@ async def active(
     return {"active": user.active}
 
 
-# TODO: test
 @default_router.get("/user/permissions", summary="Get the user's global 'all' permissions and the permissions for each group they belong to.")
 def get_user_permissions(
     user: UserState = Depends(get_user_state),
 ) -> Dict[str, GroupPermissions]:
     return user.permissions
+
+@default_router.get("/user/usage", summary="Get the user's monthly URLs/MBs usage along with the total active sheets, breakdown by group.")
+def get_user_usage(
+    user: UserState = Depends(get_user_state),
+):
+    if not user.active:
+        raise HTTPException(status_code=403, detail="User is not active.")
+    return user.usage()
+    
 
 
 @default_router.get('/favicon.ico', include_in_schema=False)
