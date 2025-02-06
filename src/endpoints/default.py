@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from core.config import VERSION, BREAKING_CHANGES
 from core.logging import log_error
-from db import crud, schemas
+from db import crud
+from db.schemas import ActiveUser, UsageResponse
 from db.database import get_db_dependency
 from db.user_state import UserState
 from web.security import get_user_auth, bearer_security, get_user_state
@@ -35,7 +36,7 @@ async def health():
 @default_router.get("/user/active", summary="Check if the user is active and can use the tool.")
 async def active(
     user: UserState = Depends(get_user_state),
-) -> schemas.ActiveUser:
+) -> ActiveUser:
     return {"active": user.active}
 
 
@@ -48,7 +49,7 @@ def get_user_permissions(
 @default_router.get("/user/usage", summary="Get the user's monthly URLs/MBs usage along with the total active sheets, breakdown by group.")
 def get_user_usage(
     user: UserState = Depends(get_user_state),
-):
+) -> UsageResponse:
     if not user.active:
         raise HTTPException(status_code=403, detail="User is not active.")
     return user.usage()
@@ -56,5 +57,5 @@ def get_user_usage(
 
 
 @default_router.get('/favicon.ico', include_in_schema=False)
-async def favicon():
+async def favicon() -> FileResponse:
     return FileResponse("static/favicon.ico")

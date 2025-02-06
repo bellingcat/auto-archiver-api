@@ -107,3 +107,11 @@ class ArchiveTrigger(BaseModel):
     public: bool = True
     group_id: Annotated[str, Len(min_length=1)] | None = None
     tags: set[Tag] | None = set()
+
+class Usage(BaseModel):
+    monthly_urls: int = 0
+    monthly_mbs: int = 0
+    total_sheets: int = 0
+
+class UsageResponse(Usage):
+    groups: dict[str, Usage]

@@ -6,6 +6,7 @@ from sqlalchemy import func
 from db import crud, models
 from datetime import datetime
 from shared.user_groups import GroupPermissions
+from db.schemas import Usage, UsageResponse
 
 
 class UserState:
@@ -127,7 +128,7 @@ class UserState:
         if not hasattr(self, '_max_archive_lifespan_months'):
             self._max_archive_lifespan_months = self._helper_for_grouping_max_numerical_permissions("max_archive_lifespan_months")
         return self._max_archive_lifespan_months
-    
+
     @property
     def max_monthly_urls(self) -> int:
         if not hasattr(self, '_max_monthly_urls'):
@@ -158,7 +159,7 @@ class UserState:
         if not hasattr(self, '_active'):
             self._active = bool(self.read or self.read_public or self.archive_url or self.archive_sheet)
         return self._active
-    
+
     def _helper_for_grouping_max_numerical_permissions(self, permission_name: str) -> int:
         """
         Iterates one of the numerical permissions where -1 means no restrictions and returns either -1 or the maximum value, defaults according to GroupPermissions
@@ -211,36 +212,29 @@ class UserState:
         ).group_by(models.Archive.group_id).all()
 
         # merge the two queries
-        usage_by_group = {
-            (url.group_id or ""): {
-                "monthly_urls": url.url_count,
-                "monthly_mbs": int(url.total_bytes / 1024 / 1024),
-                "total_sheets": 0
-            }
+        usage_by_group: Dict[str, Usage] = {
+            (url.group_id or ""):
+            Usage(monthly_urls=url.url_count, monthly_mbs=int(url.total_bytes / 1024 / 1024))
             for url in urls_by_group
         }
         for group_id, sheet_count in sheets_by_group.items():
             group_id = group_id or ""
             if group_id in usage_by_group:
-                usage_by_group[group_id]["total_sheets"] = sheet_count
+                usage_by_group[group_id].total_sheets = sheet_count
             else:
-                usage_by_group[group_id] = {
-                    "monthly_urls": 0,
-                    "monthly_mbs": 0,
-                    "total_sheets": sheet_count
-                }
+                usage_by_group[group_id] = Usage(total_sheets=sheet_count)
 
         # calculate totals
         total_sheets = sum([sheet.sheet_count for sheet in user_sheets])
         total_bytes = sum([url.total_bytes for url in urls_by_group])
         total_urls = sum([url.url_count for url in urls_by_group])
 
-        return {
-            "total_sheets": total_sheets,
-            "monthly_urls": total_urls,
-            "monthly_mbs": int(total_bytes / 1024 / 1024),
-            "groups": usage_by_group
-        }
+        return UsageResponse(
+            monthly_urls=total_urls,
+            monthly_mbs=int(total_bytes / 1024 / 1024),
+            total_sheets=total_sheets,
+            groups=usage_by_group
+        )
 
     def has_quota_monthly_sheets(self, group_id: str) -> bool:
         """
@@ -256,7 +250,7 @@ class UserState:
             return True
         return user_sheets < sheet_quota
 
-    def has_quota_max_monthly_urls(self, group_id:str) -> bool:
+    def has_quota_max_monthly_urls(self, group_id: str) -> bool:
         """
         checks if a user has reached their monthly url quota for a group, if global then group should be empty string
         """
@@ -277,7 +271,7 @@ class UserState:
 
         return user_urls < quota
 
-    def has_quota_max_monthly_mbs(self, group_id:str) -> bool:
+    def has_quota_max_monthly_mbs(self, group_id: str) -> bool:
         """
         checks if a user has reached their monthly MBs quota for a group, if global then group should be empty string
         """
