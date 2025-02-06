@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 import pytest
 from core.config import VERSION
@@ -49,21 +49,26 @@ def test_endpoint_active_no_auth(client, test_no_auth):
     test_no_auth(client.get, "/user/active")
 
 
-def test_endpoint_active_true_user(client_with_auth):
-    r = client_with_auth.get("/user/active")
-    assert r.status_code == 200
-    assert r.json() == {"active": True}
+def test_endpoint_active(app):
+    m_user_state = MagicMock()
 
-
-def test_endpoint_active_false_user(app):
-    from web.security import get_user_auth
-
-    app.dependency_overrides[get_user_auth] = lambda: "morty@not-recognized-group.com"
+    from web.security import get_user_state
+    app.dependency_overrides[get_user_state] = lambda: m_user_state
+    
+    # inactive user
+    m_user_state.active = False
     client = TestClient(app)
     r = client.get("/user/active")
-
     assert r.status_code == 200
     assert r.json() == {"active": False}
+
+    # active user
+    m_user_state.active = True
+    client = TestClient(app)
+    r = client.get("/user/active")
+    assert r.status_code == 200
+    assert r.json() == {"active": True}
+    
 
 
 def test_no_serve_local_archive_by_default(client_with_auth):

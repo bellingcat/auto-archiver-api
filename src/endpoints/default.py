@@ -8,7 +8,6 @@ from core.config import VERSION, BREAKING_CHANGES
 from core.logging import log_error
 from db import crud
 from db.schemas import ActiveUser, UsageResponse
-from db.database import get_db_dependency
 from db.user_state import UserState
 from web.security import get_user_auth, bearer_security, get_user_state
 from shared.user_groups import GroupPermissions
