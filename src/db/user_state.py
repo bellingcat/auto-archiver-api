@@ -44,7 +44,7 @@ class UserState:
     @property
     def user_groups_names(self):
         if not hasattr(self, '_user_groups_names'):
-            self._user_groups_names = crud.get_user_groups(self.email)
+            self._user_groups_names = crud.get_user_groups(self.email) + ["default"]
         return self._user_groups_names
 
     @property
