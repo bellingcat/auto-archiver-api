@@ -17,7 +17,7 @@ default_router = APIRouter()
 
 @default_router.get("/")
 async def home(request: Request):
-    # TODO: maybe split into 2 routes: one non authenticated and one authenticated for the groups info only
+    # TODO: maybe split into 2 routes: one non authenticated and one authenticated for the groups info only, necessary only for the extension
     status = {"version": VERSION, "breakingChanges": BREAKING_CHANGES}
     try:
         email = await get_user_auth(await bearer_security(request))

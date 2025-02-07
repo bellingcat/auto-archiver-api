@@ -67,7 +67,6 @@ def archive_user_sheet(
     if not sheet:
         raise HTTPException(status_code=403, detail="No access to this sheet.")
 
-    # TODO: what happens if user is taken out of group after sheet is created? this should be checked in a cronjob that notifies the user
     if not user.in_group(sheet.group_id):
         raise HTTPException(status_code=403, detail="User does not have access to this group.")
 

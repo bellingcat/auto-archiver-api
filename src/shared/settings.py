@@ -14,9 +14,15 @@ class Settings(BaseSettings):
     USER_GROUPS_FILENAME: str = "user-groups.yaml"
     SHEET_ORCHESTRATION_YAML : str = "secrets/orchestration-sheet.yaml"
     
+    # cronjobs
+    CRON_ARCHIVE_SHEETS: bool = False
+
 	# database
     DATABASE_PATH: str
     DATABASE_QUERY_LIMIT: int = 100
+    @property
+    def ASYNC_DATABASE_PATH(self) -> str:
+        return self.DATABASE_PATH.replace("sqlite://", "sqlite+aiosqlite://")
 
     # redis
     CELERY_BROKER_URL: str = "redis://localhost:6379"
@@ -30,7 +36,7 @@ class Settings(BaseSettings):
     API_BEARER_TOKEN: Annotated[str, Len(min_length=20)]
     ALLOWED_ORIGINS: Annotated[set[str], Len(min_length=1)]
     CHROME_APP_IDS: Annotated[set[Annotated[str, Len(min_length=10)]], Len(min_length=1)]
-    #TODO: deprecate blocklist
+    #TODO: deprecate blocklist?
     BLOCKED_EMAILS: Annotated[Set[str], Len(min_length=0)] = set()
 
 @lru_cache

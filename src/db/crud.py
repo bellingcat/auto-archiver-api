@@ -1,16 +1,17 @@
 from collections import defaultdict
 from functools import lru_cache
 from sqlalchemy.orm import Session, load_only
-from sqlalchemy import Column, or_, func
+from sqlalchemy import Column, or_, func, select
 from loguru import logger
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from core.config import ALLOW_ANY_EMAIL
 from db.database import get_db
 from shared.settings import get_settings
 from shared.user_groups import UserGroups
+from utils.misc import fnv1a_hash_mod
 from . import models, schemas
-import yaml
+from sqlalchemy.ext.asyncio import AsyncSession
 
 DATABASE_QUERY_LIMIT = get_settings().DATABASE_QUERY_LIMIT
 
@@ -248,6 +249,18 @@ def get_user_sheet(db: Session, email: str, sheet_id: str) -> models.Sheet:
 def get_user_sheets(db: Session, email: str) -> list[models.Sheet]:
     return db.query(models.Sheet).filter(models.Sheet.author_id == email).order_by(models.Sheet.last_url_archived_at.desc()).all()
 
+
+
+async def get_sheets_by_id_hash(db: AsyncSession, frequency: str, modulo: str, id_hash: str) -> list[models.Sheet]:
+    result = await db.execute(
+        select(models.Sheet).filter(models.Sheet.frequency == frequency)
+    )
+    filtered = []
+    for sheet in result.scalars():
+        if fnv1a_hash_mod(sheet.id, modulo) == id_hash:
+            filtered.append(sheet)
+    return filtered
+
 def update_sheet_last_url_archived_at(db: Session, sheet_id: str):
     db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id).first()
     if db_sheet:
@@ -255,6 +268,7 @@ def update_sheet_last_url_archived_at(db: Session, sheet_id: str):
         db.commit()
         return True
     return False
+
 
 def delete_sheet(db: Session, sheet_id: str, email: str) -> bool:
     db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id, models.Sheet.author_id == email).first()

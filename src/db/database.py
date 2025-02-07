@@ -2,7 +2,8 @@ from functools import lru_cache
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import sessionmaker
 from shared.settings import get_settings
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine, async_sessionmaker
 
 
 @lru_cache
@@ -34,3 +35,23 @@ def get_db_dependency():
     # to use with Depends and ensure proper session closing
     with get_db() as db:
         yield db
+
+# ASYNC connections
+
+
+async def make_async_engine(database_url: str) -> AsyncEngine:
+    engine = create_async_engine(database_url, connect_args={"check_same_thread": False})
+    return engine
+
+
+async def make_async_session_local(engine: AsyncEngine) -> AsyncSession:
+    return async_sessionmaker(engine, expire_on_commit=False)
+
+
+@asynccontextmanager
+async def get_db_async():
+    engine = await make_async_engine(get_settings().ASYNC_DATABASE_PATH)
+    async_session = await make_async_session_local(engine)
+    async with async_session() as session:
+        try: yield session
+        finally: await engine.dispose()

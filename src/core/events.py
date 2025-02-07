@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 import alembic.config
 from fastapi import FastAPI
@@ -6,10 +7,11 @@ from contextlib import asynccontextmanager
 from fastapi_utils.tasks import repeat_every
 from loguru import logger
 
-from db import crud, models
-from db.database import get_db, make_engine
+from db import crud, models, schemas
+from db.database import get_db, get_db_async, make_engine
 from shared.settings import get_settings
 from utils.metrics import measure_regular_metrics, redis_subscribe_worker_exceptions
+from worker.main import create_sheet_task
 
 
 @asynccontextmanager
@@ -20,12 +22,18 @@ async def lifespan(app: FastAPI):
     engine = make_engine(get_settings().DATABASE_PATH)
     models.Base.metadata.create_all(bind=engine)
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
-    # disabling uvicorn logger since we use loguru in logging_middleware
-    logging.getLogger("uvicorn.access").disabled = True
+    logging.getLogger("uvicorn.access").disabled = True  # loguru
     asyncio.create_task(redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL, get_settings().CELERY_BROKER_URL))
     asyncio.create_task(repeat_measure_regular_metrics())
     with get_db() as db:
         crud.upsert_user_groups(db)
+
+    # setup archive cronjobs
+    if get_settings().CRON_ARCHIVE_SHEETS:
+        asyncio.create_task(archive_hourly_sheets_cronjob())
+        asyncio.create_task(archive_daily_sheets_cronjob())
+    else:
+        logger.warning("[CRON] Sheet archive cronjobs are disabled.")
 
     yield  # separates startup from shutdown instructions
 
@@ -34,8 +42,27 @@ async def lifespan(app: FastAPI):
 
 
 # CRON JOBS
-
-
-@repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS)
+@repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS, on_exception=logger.error)
 async def repeat_measure_regular_metrics():
     await measure_regular_metrics(get_settings().DATABASE_PATH, get_settings().REPEAT_COUNT_METRICS_SECONDS)
+
+
+@repeat_every(seconds=60, wait_first=120, on_exception=logger.error)
+async def archive_hourly_sheets_cronjob():
+    await archive_sheets_cronjob("hourly", 60, datetime.datetime.now().minute)
+
+
+@repeat_every(seconds=3600, wait_first=120, on_exception=logger.error)
+async def archive_daily_sheets_cronjob():
+    await archive_sheets_cronjob("daily", 24, datetime.datetime.now().hour)
+
+
+async def archive_sheets_cronjob(frequency: str, interval: int, current_time_unit: int):
+    triggered_jobs = []
+
+    async with get_db_async() as db:
+        sheets = await crud.get_sheets_by_id_hash(db, frequency, interval, current_time_unit)
+        for s in sheets:
+            task = create_sheet_task.apply_async(args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group=s.group_id).model_dump_json()])
+            triggered_jobs.append({"sheet_id": s.id, "task_id": task.id})
+    logger.info(f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")
