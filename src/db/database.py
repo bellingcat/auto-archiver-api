@@ -36,16 +36,16 @@ def get_db_dependency():
     with get_db() as db:
         yield db
 
+
+
 # ASYNC connections
-
-
 async def make_async_engine(database_url: str) -> AsyncEngine:
     engine = create_async_engine(database_url, connect_args={"check_same_thread": False})
     return engine
 
 
 async def make_async_session_local(engine: AsyncEngine) -> AsyncSession:
-    return async_sessionmaker(engine, expire_on_commit=False)
+    return async_sessionmaker(engine, expire_on_commit=False, autoflush=False, autocommit=False)
 
 
 @asynccontextmanager

@@ -21,6 +21,7 @@ fastapi-utils = "*"
 prometheus-fastapi-instrumentator = "*"
 auto-archiver = "*"
 pydantic-settings = "*"
+fastapi-mail = "*"
 
 [dev-packages]
 watchdog = "*"

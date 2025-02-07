@@ -1,5 +1,6 @@
 
 from functools import lru_cache
+from fastapi_mail import ConnectionConfig
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 from typing import Annotated, Set
@@ -16,6 +17,8 @@ class Settings(BaseSettings):
     
     # cronjobs
     CRON_ARCHIVE_SHEETS: bool = False
+    CRON_DELETE_STALE_SHEETS: bool = True
+    DELETE_STALE_SHEETS_DAYS: int = 14
 
 	# database
     DATABASE_PATH: str
@@ -38,6 +41,29 @@ class Settings(BaseSettings):
     CHROME_APP_IDS: Annotated[set[Annotated[str, Len(min_length=10)]], Len(min_length=1)]
     #TODO: deprecate blocklist?
     BLOCKED_EMAILS: Annotated[Set[str], Len(min_length=0)] = set()
+
+    # email configuration, if needed
+    MAIL_FROM: str = "noreply@bellingcat.com"
+    MAIL_FROM_NAME: str = "Bellingcat's Auto Archiver"
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_SERVER: str = ""
+    MAIL_PORT: int = 587
+    MAIL_STARTTLS: bool = False
+    MAIL_SSL_TLS: bool = True
+    @property
+    def MAIL_CONFIG(self) -> str:
+        return ConnectionConfig(
+            MAIL_FROM=self.MAIL_FROM,
+            MAIL_FROM_NAME=self.MAIL_FROM_NAME,
+            MAIL_USERNAME=self.MAIL_USERNAME,
+            MAIL_PASSWORD=self.MAIL_PASSWORD,
+            MAIL_SERVER=self.MAIL_SERVER,
+            MAIL_PORT=self.MAIL_PORT,
+            MAIL_STARTTLS=self.MAIL_STARTTLS,
+            MAIL_SSL_TLS=self.MAIL_SSL_TLS,
+        )
+
 
 @lru_cache
 def get_settings():

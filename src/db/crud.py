@@ -261,6 +261,18 @@ async def get_sheets_by_id_hash(db: AsyncSession, frequency: str, modulo: str, i
             filtered.append(sheet)
     return filtered
 
+async def delete_stale_sheets(db: AsyncSession, inactivity_days: int) -> dict:
+    time_threshold = datetime.now() - timedelta(days=inactivity_days)
+    result = await db.execute(
+        select(models.Sheet).filter(models.Sheet.last_url_archived_at < time_threshold)
+    )
+    deleted = defaultdict(list)
+    for sheet in result.scalars():
+        await db.delete(sheet)
+        deleted[sheet.author_id].append(sheet)
+        await db.commit()
+    return dict(deleted)
+
 def update_sheet_last_url_archived_at(db: Session, sheet_id: str):
     db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id).first()
     if db_sheet:

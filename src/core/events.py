@@ -12,6 +12,7 @@ from db.database import get_db, get_db_async, make_engine
 from shared.settings import get_settings
 from utils.metrics import measure_regular_metrics, redis_subscribe_worker_exceptions
 from worker.main import create_sheet_task
+from fastapi_mail import FastMail, MessageSchema, MessageType
 
 
 @asynccontextmanager
@@ -34,6 +35,11 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(archive_daily_sheets_cronjob())
     else:
         logger.warning("[CRON] Sheet archive cronjobs are disabled.")
+
+    if get_settings().CRON_DELETE_STALE_SHEETS:
+        asyncio.create_task(delete_stale_sheets())
+    else:
+        logger.warning("[CRON] Delete stale sheets cronjob is disabled.")
 
     yield  # separates startup from shutdown instructions
 
@@ -66,3 +72,39 @@ async def archive_sheets_cronjob(frequency: str, interval: int, current_time_uni
             task = create_sheet_task.apply_async(args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group=s.group_id).model_dump_json()])
             triggered_jobs.append({"sheet_id": s.id, "task_id": task.id})
     logger.info(f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")
+
+
+@repeat_every(seconds=86400, wait_first=150, on_exception=logger.error)
+async def delete_stale_sheets():
+    STALE_DAYS = get_settings().DELETE_STALE_SHEETS_DAYS
+    logger.info(f"[CRON] Deleting stale sheets older than {STALE_DAYS} days.")
+    async with get_db_async() as db:
+        user_sheets = await crud.delete_stale_sheets(db, STALE_DAYS)
+
+    if not user_sheets: return
+
+    fastmail = FastMail(get_settings().MAIL_CONFIG)
+    # notify users
+    for email in user_sheets:
+        list_of_sheets = "\n".join([f'<li><a href="https://docs.google.com/spreadsheets/d/{s.id}">{s.name}</a></li>' for s in user_sheets[email]])
+        message = MessageSchema(
+            subject="Auto Archiver: Stale Sheets Removed",
+            recipients=[email],
+            body=f"""
+            <html>
+            <body>
+                <p>Hi {email},</p>
+                <p>Your stale sheets have been removed from our system as no new URL was archived in the past {STALE_DAYS} days:</p>
+                <ul>
+                {list_of_sheets}
+                </ul>
+                <p>You can always re-add them at https://auto-archiver.bellingcat.com/.</p>
+                <p>Best,<br>The Auto Archiver team</p>
+            </body>
+            </html>
+            """,
+            subtype=MessageType.html
+        )
+        await fastmail.send_message(message)
+        logger.info(f"[CRON] Email sent to {email} about stale sheets deletion.")
+
