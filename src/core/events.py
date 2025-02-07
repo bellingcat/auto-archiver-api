@@ -6,9 +6,10 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi_utils.tasks import repeat_every
 from loguru import logger
+from sqlalchemy import text
 
 from db import crud, models, schemas
-from db.database import get_db, get_db_async, make_engine
+from db.database import get_db, get_db_async, make_engine, wal_checkpoint
 from shared.settings import get_settings
 from utils.metrics import measure_regular_metrics, redis_subscribe_worker_exceptions
 from worker.main import create_sheet_task
@@ -40,6 +41,8 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(delete_stale_sheets())
     else:
         logger.warning("[CRON] Delete stale sheets cronjob is disabled.")
+
+    wal_checkpoint()
 
     yield  # separates startup from shutdown instructions
 

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from sqlalchemy import Engine, create_engine, event
+from sqlalchemy import Engine, create_engine, event, text
 from sqlalchemy.orm import sessionmaker
 from shared.settings import get_settings
 from contextlib import asynccontextmanager, contextmanager
@@ -36,11 +36,20 @@ def get_db_dependency():
     with get_db() as db:
         yield db
 
+def wal_checkpoint():
+    # WAL checkpointing, make sure the .sqlite file receives the latest changes
+    # to be called at startup as it halts writes
+    with get_db() as db:
+        db.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
 
 
 # ASYNC connections
 async def make_async_engine(database_url: str) -> AsyncEngine:
     engine = create_async_engine(database_url, connect_args={"check_same_thread": False})
+
+    async with engine.begin() as conn:
+        await conn.run_sync(lambda sync_conn: sync_conn.execute("PRAGMA journal_mode=WAL;"))
+
     return engine
 
 
