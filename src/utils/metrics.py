@@ -8,18 +8,19 @@ import redis
 from db import crud
 from db.database import get_db
 from core.logging import log_error
+from shared.task_messaging import get_redis
 
 
 # Custom metrics
 EXCEPTION_COUNTER = Counter(
     "exceptions",
     "Number of times a certain exception has occurred.",
-    labelnames=["types"]
+    labelnames=["type"]
 )
 WORKER_EXCEPTION = Counter(
     "worker_exceptions_total",
     "Number of times a certain exception has occurred on the worker.",
-    labelnames=["types", "exception", "task", "traceback"]
+    labelnames=["type", "exception", "task", "traceback"]
 )
 DISK_UTILIZATION = Gauge(
     "disk_utilization",
@@ -38,16 +39,16 @@ DATABASE_METRICS_COUNTER = Counter(
 )
 
 
-async def redis_subscribe_worker_exceptions(REDIS_EXCEPTIONS_CHANNEL, CELERY_BROKER_URL):
+async def redis_subscribe_worker_exceptions(REDIS_EXCEPTIONS_CHANNEL):
     # Subscribe to Redis channel and increment the counter for each exception with info on the exception and task
-    Rdis = redis.Redis.from_url(CELERY_BROKER_URL)
-    PubSubExceptions = Rdis.pubsub()
+    Redis = get_redis()
+    PubSubExceptions = Redis.pubsub()
     PubSubExceptions.subscribe(REDIS_EXCEPTIONS_CHANNEL)
     while True:
         message = PubSubExceptions.get_message()
         if message and message["type"] == "message":
             data = json.loads(message["data"].decode("utf-8"))
-            WORKER_EXCEPTION.labels(types=type(data["exception"]).__name__, exception=data["exception"], task=data["task"], traceback=data["traceback"]).inc()
+            WORKER_EXCEPTION.labels(type=data["type"], exception=data["exception"], task=data["task"], traceback=data["traceback"]).inc()
         await asyncio.sleep(1)
 
 

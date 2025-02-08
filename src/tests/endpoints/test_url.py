@@ -3,13 +3,18 @@ from unittest.mock import MagicMock, patch
 
 from db.schemas import ArchiveCreate, TaskResult
 
+
 def test_archive_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.post, "/url/archive")
 
 
 @patch("endpoints.url.UserState")
-@patch("worker.main.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
-def test_archive_url(m1, m2, client_with_auth):
+@patch("endpoints.url.celery", return_value=MagicMock())
+def test_archive_url(m_celery, m2, client_with_auth):
+    m_signature = MagicMock()
+    m_signature.delay.return_value = TaskResult(id="123-456-789", status="PENDING", result="")
+    m_celery.signature.return_value = m_signature
+
     m_user_state = MagicMock()
     m2.return_value = m_user_state
 
@@ -17,7 +22,7 @@ def test_archive_url(m1, m2, client_with_auth):
     response = client_with_auth.post("/url/archive", json={"url": "bad"})
     assert response.status_code == 422
     assert response.json()["detail"][0]["msg"] == 'String should have at least 5 characters'
-    m1.assert_not_called()
+    m_celery.signature.assert_not_called()
 
     # url is invalid
     response = client_with_auth.post("/url/archive", json={"url": "example.com"})
@@ -30,9 +35,11 @@ def test_archive_url(m1, m2, client_with_auth):
     response = client_with_auth.post("/url/archive", json={"url": "https://example.com"})
     assert response.status_code == 201
     assert response.json() == {'id': '123-456-789'}
-    m1.assert_called_once()
-    called_val = m1.call_args.args[0]
-    assert json.loads(called_val) == {"id": None, "url": "https://example.com", "result": None, "public": True, "author_id": "rick@example.com", "group_id": None, "tags": [], "rearchive": True, "sheet_id":None}
+    m_celery.signature.assert_called_once()
+    m_signature.delay.assert_called_once()
+    called_val = m_celery.signature.call_args
+    assert called_val[0][0] == "create_archive_task"
+    assert json.loads(called_val[1]['args'][0]) ==  {"id": None, "url": "https://example.com", "result": None, "public": True, "author_id": "rick@example.com", "group_id": None, "tags": [], "sheet_id": None}
     m_user_state.has_quota_max_monthly_urls.assert_called_once()
     m_user_state.has_quota_max_monthly_mbs.assert_called_once()
 
@@ -48,9 +55,10 @@ def test_archive_url(m1, m2, client_with_auth):
     response = client_with_auth.post("/url/archive", json={"url": "https://example.com", "group_id": "spaceship"})
     assert response.status_code == 201
     assert response.json() == {'id': '123-456-789'}
-    assert m1.call_count == 2
-    called_val = m1.call_args.args[0]
-    assert json.loads(called_val)["group_id"] == "spaceship"
+    assert m_celery.signature.call_count == 2
+    assert m_signature.delay.call_count == 2
+    called_val = m_celery.signature.call_args
+    assert json.loads(called_val[1]['args'][0])["group_id"] == "spaceship"
     m_user_state.in_group.assert_called_with("spaceship")
 
     # user is over monthly URL quota
@@ -68,6 +76,9 @@ def test_archive_url(m1, m2, client_with_auth):
     assert response.status_code == 429
     assert response.json()["detail"] == "User has reached their monthly MB quota."
     m_user_state.has_quota_max_monthly_mbs.assert_called_with("spacesuit")
+    assert m_celery.signature.call_count == 2
+    assert m_signature.delay.call_count == 2
+
 
 @patch("endpoints.url.UserState")
 def test_archive_url_quotas(m1, client_with_auth):
@@ -89,14 +100,24 @@ def test_archive_url_quotas(m1, client_with_auth):
     assert response.json()["detail"] == "User has reached their monthly MB quota."
     m_user_state.has_quota_max_monthly_mbs.assert_called_once()
 
-@patch("worker.main.create_archive_task.delay", return_value=TaskResult(id="123-456-789", status="PENDING", result=""))
-def test_archive_url_with_api_token(m1, client_with_token):
+
+@patch("endpoints.url.celery", return_value=MagicMock())
+def test_archive_url_with_api_token(m_celery, client_with_token):
+    m_signature = MagicMock()
+    m_signature.delay.return_value = TaskResult(id="123-456-789", status="PENDING", result="")
+    m_celery.signature.return_value = m_signature
     response = client_with_token.post("/url/archive", json={"url": "https://example.com"})
     assert response.status_code == 201
     assert response.json() == {'id': '123-456-789'}
+    m_celery.signature.assert_called_once()
+    m_signature.delay.assert_called_once()
+    called_val = m_celery.signature.call_args
+    assert called_val[0][0] == "create_archive_task"
+
 
 def test_search_by_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.get, "/url/search")
+
 
 def test_search_by_url(client_with_auth, client_with_token, db_session):
     # tests the search endpoint, including through some db data for the endpoint params
@@ -111,7 +132,7 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     from db import crud, schemas
     for i in range(11):
         crud.create_task(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com", group_id=None), [], [])
-        #NB: this insertion is too fast for the ordering to be correct as they are within the same second
+        # NB: this insertion is too fast for the ordering to be correct as they are within the same second
 
     response = client_with_auth.get("/url/search?url=https://example.com")
     assert response.status_code == 200
@@ -141,6 +162,7 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     response = client_with_token.get("/url/search?url=https://example.com&archived_after=2010-01-01")
     assert response.status_code == 200
     assert len(response.json()) == 10
+
 
 @patch("endpoints.url.UserState")
 def test_search_no_read_access(mock_user_state, client_with_auth):

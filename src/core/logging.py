@@ -9,7 +9,6 @@ logger.add("logs/error_logs.log", retention="30 days", level="ERROR")
 
     
 def log_error(e: Exception, traceback_str: str = None, extra:str = ""):
-    # EXCEPTION_COUNTER.labels(type(e).__name__).inc()
     if not traceback_str: traceback_str = traceback.format_exc()
     if extra: extra = f"{extra}\n"
     logger.error(f"{extra}{e.__class__.__name__}: {e}\n{traceback_str}")
@@ -21,6 +20,6 @@ async def logging_middleware(request: Request, call_next):
         return response
     except Exception as e:
         from utils.metrics import EXCEPTION_COUNTER
-        EXCEPTION_COUNTER.labels(type(e).__name__).inc()
+        EXCEPTION_COUNTER.labels(type=e.__class__.__name__).inc()
         log_error(e)
         raise e

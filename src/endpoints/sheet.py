@@ -6,13 +6,14 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from db.user_state import UserState
+from shared.task_messaging import get_celery
 from web.security import token_api_key_auth, get_user_state
 from db import schemas, crud
 from db.database import get_db_dependency
-from worker.main import create_sheet_task
 
 sheet_router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"])
 
+celery = get_celery()
 
 @sheet_router.post("/create", status_code=201, summary="Store a new Google Sheet for regular archiving.")
 def create_sheet(
@@ -73,7 +74,7 @@ def archive_user_sheet(
     if not user.can_manually_trigger(sheet.group_id):
         raise HTTPException(status_code=429, detail="User cannot manually trigger sheet archiving in this group.")
 
-    task = create_sheet_task.delay(schemas.SubmitSheet(sheet_id=id, author_id=user.email, group=sheet.group_id).model_dump_json())
+    task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=id, author_id=user.email, group=sheet.group_id).model_dump_json()]).delay()
 
     return JSONResponse({"id": task.id}, status_code=201)
 
@@ -86,5 +87,5 @@ def archive_sheet(
     sheet.author_id = sheet.author_id or "api-endpoint"
     if not sheet.sheet_id:
         raise HTTPException(status_code=422, detail=f"sheet id is required")
-    task = create_sheet_task.delay(sheet.model_dump_json())
+    task = celery.signature("create_sheet_task", args=[sheet.model_dump_json()]).delay()
     return JSONResponse({"id": task.id}, status_code=201)

@@ -6,17 +6,18 @@ from datetime import datetime
 from loguru import logger
 from core.config import ALLOW_ANY_EMAIL
 from db.user_state import UserState
+from shared.task_messaging import get_celery
 from web.security import get_token_or_user_auth, get_user_state
 from sqlalchemy.orm import Session
 
 from db import crud, schemas
 from db.database import get_db_dependency
 
-from worker.main import create_archive_task
 from urllib.parse import urlparse
 
 url_router = APIRouter(prefix="/url", tags=["Single URL operations"])
 
+celery = get_celery()
 
 @url_router.post("/archive", status_code=201, summary="Submit a single URL archive request, starts an archiving task.", response_description="task_id for the archiving task, will match the archive id.")
 def archive_url(
@@ -24,6 +25,7 @@ def archive_url(
     email=Depends(get_token_or_user_auth),
     db: Session = Depends(get_db_dependency)
 ) -> schemas.Task:
+    archive.author_id = email
     logger.info(f"new {archive.public=} task for {email=} and {archive.group_id=}: {archive.url}")
 
     parsed_url = urlparse(archive.url)
@@ -39,15 +41,9 @@ def archive_url(
         if not user.has_quota_max_monthly_mbs(archive.group_id):
             raise HTTPException(status_code=429, detail="User has reached their monthly MB quota.")
     
-    # TODO: deprecate ArchiveCreate
-    backwards_compatible_archive = schemas.ArchiveCreate(
-        url=archive.url,
-        author_id=email,
-        group_id=archive.group_id,
-        public=archive.public,
-    )
+    archive_create = schemas.ArchiveCreate(**archive.model_dump())
 
-    task = create_archive_task.delay(backwards_compatible_archive.model_dump_json())
+    task = celery.signature("create_archive_task", args=[archive_create.model_dump_json()]).delay()
     task_response = schemas.Task(id=task.id)
     return JSONResponse(task_response.model_dump(), status_code=201)
 

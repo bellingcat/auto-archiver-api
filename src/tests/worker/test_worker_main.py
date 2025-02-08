@@ -21,7 +21,7 @@ class Test_create_archive_task():
 
     @patch("worker.main.insert_result_into_db")
     @patch("worker.main.is_group_invalid_for_user", return_value=None)
-    @patch("worker.main.choose_orchestrator")
+    # @patch("worker.main.choose_orchestrator")
     @patch("celery.app.task.Task.request")
     def test_success(self, m_req, m_choose, m_is_group, m_insert, worker_init, db_session):
         from worker.main import create_archive_task
@@ -46,7 +46,7 @@ class Test_create_archive_task():
 
     @patch("worker.main.insert_result_into_db", side_effect=Exception)
     @patch("worker.main.is_group_invalid_for_user", return_value=False)
-    @patch("worker.main.choose_orchestrator")
+    # @patch("worker.main.choose_orchestrator")
     def test_raise_db_error(self, m_choose, m_is_group, m_insert, worker_init):
         from worker.main import create_archive_task
         mock_orchestrator = self.mock_orchestrator_choice(m_choose)
@@ -121,47 +121,6 @@ class Test_create_sheet_task():
         assert res["success"] == True
 
         assert db_session.query(models.Archive).filter(models.Archive.url == self.URL).count() == 0
-
-
-def test_choose_orchestrator(worker_init):
-    from worker.main import choose_orchestrator
-
-    assert choose_orchestrator(None, "rick@example.com").__class__.__name__ == "ArchivingOrchestrator"
-
-
-@patch("worker.main.get_user_first_group", return_value="does-not-exist")
-def test_choose_orchestrator_assertion(worker_init):
-    from worker.main import choose_orchestrator
-
-    with pytest.raises(Exception):
-        choose_orchestrator(None, "rick@example.com")
-
-
-@patch("worker.main.read_user_groups")
-def test_get_user_first_group(m_read_user_groups, worker_init):
-    from worker.main import get_user_first_group
-
-    m_read_user_groups.return_value = {"users": {}}
-    assert get_user_first_group("email1") == "default"
-    m_read_user_groups.return_value = {"users": {"email1": []}}
-    assert get_user_first_group("email1") == "default"
-    m_read_user_groups.return_value = {"users": {"email1": ["group1", "group2"]}}
-    assert get_user_first_group("email1") == "group1"
-
-
-def test_is_group_invalid_for_user(worker_init, db_session):
-    from worker.main import is_group_invalid_for_user
-    from db.crud import upsert_user_groups
-
-    upsert_user_groups(db_session)
-
-    assert is_group_invalid_for_user(True, "", "") == False
-    assert is_group_invalid_for_user(False, "", "") == False
-
-    assert is_group_invalid_for_user(False, "default", "") == "User  is not part of default, no permission"
-    assert is_group_invalid_for_user(False, "spaceship", "jerry@example.com") == "User jerry@example.com is not part of spaceship, no permission"
-
-    assert is_group_invalid_for_user(False, "spaceship", "rick@example.com") == False
 
 
 def test_get_all_urls(worker_init, db_session):

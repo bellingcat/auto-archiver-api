@@ -92,7 +92,7 @@ def client_with_auth(app_with_auth):
 
 @pytest.fixture()
 def app_with_token(app):
-    from web.security import token_api_key_auth,get_token_or_user_auth
+    from web.security import token_api_key_auth, get_token_or_user_auth
     app.dependency_overrides[token_api_key_auth] = lambda: ALLOW_ANY_EMAIL
     app.dependency_overrides[get_token_or_user_auth] = lambda: ALLOW_ANY_EMAIL
     return app

@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from loguru import logger
 
 from core.logging import logging_middleware, log_error
-from worker.main import create_archive_task, create_sheet_task, celery, insert_result_into_db
+from shared.task_messaging import get_celery
+from worker.main import insert_result_into_db
 
 from db import crud, models, schemas
 from web.security import get_user_auth, token_api_key_auth, get_token_or_user_auth
@@ -23,8 +24,13 @@ from shared.settings import get_settings
 
 from auto_archiver import Metadata
 
-from endpoints import default_router, url_router, sheet_router, task_router, interoperability_router
+from endpoints.default import default_router
+from endpoints.url import url_router
+from endpoints.sheet import sheet_router
+from endpoints.task import task_router
+from endpoints.interoperability import interoperability_router
 
+celery = get_celery()
 
 def app_factory(settings = get_settings()):
     app = FastAPI(
@@ -84,7 +90,8 @@ def app_factory(settings = get_settings()):
         if type(url) != str or len(url) <= 5:
             raise HTTPException(status_code=422, detail=f"Invalid URL received: {url}")
         logger.info("creating task")
-        task = create_archive_task.delay(archive.model_dump_json())
+
+        task = celery.signature("create_archive_task", args=[archive.model_dump_json()]).delay()
         return JSONResponse({"id": task.id})
 
 
@@ -139,7 +146,7 @@ def app_factory(settings = get_settings()):
             raise HTTPException(status_code=422, detail=f"sheet name or id is required")
         if not crud.is_user_in_group(db, email, sheet.group_id):
             raise HTTPException(status_code=403, detail="User does not have access to this group.")
-        task = create_sheet_task.delay(sheet.model_dump_json())
+        task = celery.signature("create_sheet_task", args=[sheet.model_dump_json()]).delay()
         return JSONResponse({"id": task.id})
 
 
@@ -149,7 +156,8 @@ def app_factory(settings = get_settings()):
         sheet.author_id = sheet.author_id or "api-endpoint"
         if not sheet.sheet_name and not sheet.sheet_id:
             raise HTTPException(status_code=422, detail=f"sheet name or id is required")
-        task = create_sheet_task.delay(sheet.model_dump_json())
+        
+        task = celery.signature("create_sheet_task", args=[sheet.model_dump_json()]).delay()
         return JSONResponse({"id": task.id})
 
     # ----- endpoint to submit data archived elsewhere

@@ -4,16 +4,17 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from loguru import logger
+from shared.task_messaging import get_celery
 from web.security import get_token_or_user_auth
 
 from db import schemas
 from core.logging import log_error
-from worker.main import celery
 from utils.misc import custom_jsonable_encoder
 
 
 task_router = APIRouter(prefix="/task", tags=["Async task operations"])
 
+celery = get_celery()
 
 @task_router.get("/{task_id}", summary="Check the status of an async task by its id, works for URLs and Sheet tasks.")
 def get_status(task_id, email=Depends(get_token_or_user_auth)) -> schemas.TaskResult:

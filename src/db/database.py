@@ -48,7 +48,7 @@ async def make_async_engine(database_url: str) -> AsyncEngine:
     engine = create_async_engine(database_url, connect_args={"check_same_thread": False})
 
     async with engine.begin() as conn:
-        await conn.run_sync(lambda sync_conn: sync_conn.execute("PRAGMA journal_mode=WAL;"))
+        await conn.run_sync(lambda sync_conn: sync_conn.execute(text("PRAGMA journal_mode=WAL;")))
 
     return engine
 

@@ -260,6 +260,9 @@ class UserState:
         else:
             if group_id not in self.permissions: return False
             quota = self.permissions[group_id].max_monthly_urls
+        
+        if quota == -1:
+            return True
 
         current_month = datetime.now().month
         current_year = datetime.now().year
@@ -282,6 +285,9 @@ class UserState:
             if group_id not in self.permissions: return False
             quota = self.permissions[group_id].max_monthly_mbs
 
+        if quota == -1:
+            return True
+        
         current_month = datetime.now().month
         current_year = datetime.now().year
 

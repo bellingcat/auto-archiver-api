@@ -100,7 +100,7 @@ def base_query(db: Session):
 # --------------- TAG
 
 
-def create_tag(db: Session, tag: str):
+def create_tag(db: Session, tag: str) -> models.Tag:
     db_tag = db.query(models.Tag).filter(models.Tag.id == tag).first()
     if not db_tag:
         db_tag = models.Tag(id=tag)

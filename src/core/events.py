@@ -6,15 +6,15 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi_utils.tasks import repeat_every
 from loguru import logger
-from sqlalchemy import text
 
 from db import crud, models, schemas
 from db.database import get_db, get_db_async, make_engine, wal_checkpoint
 from shared.settings import get_settings
+from shared.task_messaging import get_celery
 from utils.metrics import measure_regular_metrics, redis_subscribe_worker_exceptions
-from worker.main import create_sheet_task
 from fastapi_mail import FastMail, MessageSchema, MessageType
 
+celery = get_celery()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
     models.Base.metadata.create_all(bind=engine)
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
     logging.getLogger("uvicorn.access").disabled = True  # loguru
-    asyncio.create_task(redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL, get_settings().CELERY_BROKER_URL))
+    asyncio.create_task(redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL))
     asyncio.create_task(repeat_measure_regular_metrics())
     with get_db() as db:
         crud.upsert_user_groups(db)
@@ -72,7 +72,9 @@ async def archive_sheets_cronjob(frequency: str, interval: int, current_time_uni
     async with get_db_async() as db:
         sheets = await crud.get_sheets_by_id_hash(db, frequency, interval, current_time_unit)
         for s in sheets:
-            task = create_sheet_task.apply_async(args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group=s.group_id).model_dump_json()])
+            
+            task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group=s.group_id).model_dump_json()]).apply_async()
+
             triggered_jobs.append({"sheet_id": s.id, "task_id": task.id})
     logger.info(f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")
 

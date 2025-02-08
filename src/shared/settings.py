@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     SHEET_ORCHESTRATION_YAML : str = "secrets/orchestration-sheet.yaml"
     
     # cronjobs
+    #TODO: disable by default?
     CRON_ARCHIVE_SHEETS: bool = False
     CRON_DELETE_STALE_SHEETS: bool = True
     DELETE_STALE_SHEETS_DAYS: int = 14

@@ -11,35 +11,13 @@ class Tag(BaseModel):
     model_config = {"from_attributes": True}
     __hash__ = object.__hash__
 
-
-class ArchiveCreate(BaseModel):
-    id: str | None = None
-    url: str
-    result: dict | None = None
-    public: bool = True
-    author_id: str | None = None
-    group_id: str | None = None
-    tags: set[Tag] | None = set()
-    rearchive: bool = True
-    sheet_id: str | None = None
-    # urls: list = []
-
-
-class Archive(ArchiveCreate):
-    created_at: datetime
-    updated_at: datetime | None
-    deleted: bool
-
-    model_config = {"from_attributes": True}
-
-
 class SubmitSheet(BaseModel):
     sheet_name: str | None = None
     sheet_id: str | None = None
     header: int = 1
     public: bool = False
     author_id: str | None = None
-    group_id: str | None = None
+    group_id: str | None
     tags: set[str] | None = set()
     columns: dict | None = {}  # TODO: implement
 
@@ -103,10 +81,25 @@ class SheetResponse(SheetAdd):
 
 
 class ArchiveTrigger(BaseModel):
+    author_id: str | None = None
     url: Annotated[str, Len(min_length=5)]
-    public: bool = True
-    group_id: Annotated[str, Len(min_length=1)] | None = None
-    tags: set[Tag] | None = set()
+    public: bool = False
+    group_id: Annotated[str, Len(min_length=1)] = "default"
+    tags: set[Tag] | None = None
+
+class ArchiveCreate(ArchiveTrigger):
+    id: str | None = None
+    result: dict | None = None
+    sheet_id: str | None = None
+    urls: list | None = None
+
+class Archive(ArchiveCreate):
+    created_at: datetime
+    updated_at: datetime | None
+    deleted: bool
+
+    model_config = {"from_attributes": True}
+
 
 class Usage(BaseModel):
     monthly_urls: int = 0
