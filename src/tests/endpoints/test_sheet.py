@@ -12,7 +12,6 @@ def test_endpoints_no_auth(client, test_no_auth):
     test_no_auth(client.get, "/sheet/mine")
     test_no_auth(client.delete, "/sheet/123-sheet-id")
     test_no_auth(client.post, "/sheet/123-sheet-id/archive")
-    test_no_auth(client.post, "/sheet/archive")
 
 
 def test_create_sheet_endpoint(app_with_auth, db_session):
@@ -192,42 +191,3 @@ class TestArchiveUserSheetEndpoint:
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
         assert r.status_code == 429
         assert r.json() == {"detail": "User cannot manually trigger sheet archiving in this group."}
-
-
-class TestTokenArchiveEndpoint:
-
-    def test_user_auth(self, client_with_auth, test_no_auth):
-        test_no_auth(client_with_auth.post, "/sheet/archive")
-
-    def test_missing_data(self, client_with_token):
-        r = client_with_token.post("/sheet/archive", json={})
-        assert r.status_code == 422
-        assert r.json() == {"detail": "sheet id is required"}
-
-    @patch("endpoints.sheet.celery", return_value=MagicMock())
-    def test_normal_flow(self, m_celery, client_with_token):
-        m_signature = MagicMock()
-        m_signature.delay.return_value = TaskResult(id="123-456-789", status="PENDING", result="")
-        m_celery.signature.return_value = m_signature
-
-        # minimum data
-        response = client_with_token.post("/sheet/archive", json={"sheet_id": "123-sheet-id"})
-        assert response.status_code == 201
-        assert response.json() == {'id': '123-456-789'}
-
-        m_celery.signature.assert_called_once()
-        m_signature.delay.assert_called_once()
-        called_val = m_celery.signature.call_args
-        assert called_val[0][0] == "create_sheet_task"
-        assert json.loads(called_val[1]['args'][0]) == {"sheet_id": "123-sheet-id", "sheet_name": None, "public": False, "author_id": "api-endpoint", "group_id": None, "tags": [], "columns": {}, "header": 1}
-
-        # maximum data
-        response = client_with_token.post("/sheet/archive", json={"sheet_id": "123-sheet-id", "sheet_name": "768-sheet-name", "author_id": "birdman@example.com", "header": 2, "public": True, "group_id": "456-group-id", "tags": ["tag1"], "columns": {"col1": "type1"}})
-        assert response.status_code == 201
-        assert response.json() == {'id': '123-456-789'}
-
-        m_celery.signature.call_count == 2
-        m_signature.delay.call_count == 2
-        called_val = m_celery.signature.call_args
-        assert called_val[0][0] == "create_sheet_task"
-        assert json.loads(called_val[1]['args'][0]) == {"sheet_id": "123-sheet-id", "sheet_name": "768-sheet-name", "public": True, "author_id": "birdman@example.com", "group_id": "456-group-id", "tags": ["tag1"], "columns": {"col1": "type1"}, "header": 2}

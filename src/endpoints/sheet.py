@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from db.user_state import UserState
 from shared.task_messaging import get_celery
-from web.security import token_api_key_auth, get_user_state
+from web.security import get_user_state
 from db import schemas, crud
 from db.database import get_db_dependency
 
@@ -74,18 +74,6 @@ def archive_user_sheet(
     if not user.can_manually_trigger(sheet.group_id):
         raise HTTPException(status_code=429, detail="User cannot manually trigger sheet archiving in this group.")
 
-    task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=id, author_id=user.email, group=sheet.group_id).model_dump_json()]).delay()
+    task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=id, author_id=user.email, group_id=sheet.group_id).model_dump_json()]).delay()
 
-    return JSONResponse({"id": task.id}, status_code=201)
-
-
-@sheet_router.post("/archive", status_code=201, summary="Trigger an archiving task for any GSheet with an API token.", response_description="task_id for the archiving task.")
-def archive_sheet(
-    sheet: schemas.SubmitSheet,
-    auth=Depends(token_api_key_auth)
-) -> schemas.Task:
-    sheet.author_id = sheet.author_id or "api-endpoint"
-    if not sheet.sheet_id:
-        raise HTTPException(status_code=422, detail=f"sheet id is required")
-    task = celery.signature("create_sheet_task", args=[sheet.model_dump_json()]).delay()
     return JSONResponse({"id": task.id}, status_code=201)
