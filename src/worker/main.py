@@ -1,6 +1,6 @@
 
-import traceback, yaml, datetime
-from typing import List, Set
+import traceback, datetime
+from typing import List
 
 from celery.signals import task_failure
 from auto_archiver import Config, ArchivingOrchestrator, Metadata
@@ -23,6 +23,8 @@ Redis = get_redis()
 
 USER_GROUPS_FILENAME = settings.USER_GROUPS_FILENAME
 
+# TODO: after release, as it requires updating past entries with sheet_id where tag is used, drop tags
+
 
 @celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 0})
 def create_archive_task(self, archive_json: str):
@@ -32,35 +34,39 @@ def create_archive_task(self, archive_json: str):
     # call auto-archiver
     orchestrator = load_orchestrator(archive.group_id)
     result = orchestrator.feed_item(Metadata().set_url(archive.url))
-
-    # prepare for DB
     assert result, f"UNABLE TO archive: {archive.url}"
+
+    # prepare and insert in DB
     archive.id = self.request.id
     archive.urls = get_all_urls(result)
     archive.result = json.loads(result.to_json())
-
     insert_result_into_db(archive)
-    return archive.result.to_dict() # TODO: is return used?
+
+    return archive.result
 
 
 @celery.task(name="create_sheet_task", bind=True)
 def create_sheet_task(self, sheet_json: str):
     sheet = schemas.SubmitSheet.model_validate_json(sheet_json)
-    sheet.tags.add("gsheet")
     logger.info(f"SHEET START {sheet=}")
 
-    # TODO: drop sheet_name and use only sheet_id (new endpoints/models)
-    orchestrator = load_orchestrator(sheet.group_id, {"configurations": {"gsheet_feeder": {"sheet": sheet.sheet_name, "sheet_id": sheet.sheet_id, "header": sheet.header}}})
+    orchestrator = load_orchestrator(sheet.group_id, True, {"configurations": {"gsheet_feeder": {"sheet_id": sheet.sheet_id}}})
 
     stats = {"archived": 0, "failed": 0, "errors": []}
     for result in orchestrator.feed():
-        if not result:
-            logger.error("Got empty result from feeder, an internal error must have occurred.")
-            continue
         try:
-            # TODO: remove public from sheet in new refactor
-            #TODO: use new insert_result_into_db
-            insert_result_into_db(result, sheet.tags, sheet.public, sheet.group_id, sheet.author_id, models.generate_uuid(), sheet.sheet_id)
+            assert result, f"UNABLE TO archive: {result.get_url()}"
+            archive = schemas.ArchiveCreate(
+                author_id=sheet.author_id,
+                url=result.get_url(),
+                group_id=sheet.group_id,
+                tags=sheet.tags,
+                id=models.generate_uuid(),
+                result=json.loads(result.to_json()),
+                sheet_id=sheet.sheet_id,
+                urls=get_all_urls(result)
+            )
+            insert_result_into_db(archive)
             stats["archived"] += 1
         except exc.IntegrityError as e:
             logger.warning(f"cached result detected: {e}")
@@ -75,33 +81,17 @@ def create_sheet_task(self, sheet_json: str):
             crud.update_sheet_last_url_archived_at(session, sheet.sheet_id)
 
     logger.info(f"SHEET DONE {sheet=}")
-    # TODO: use data model
-    return {"success": True, "sheet": sheet.sheet_name, "sheet_id": sheet.sheet_id, "time": datetime.datetime.now().isoformat(), **stats}
+    # TODO: is this used anywhere? maybe drop it
+    return schemas.CelerySheetTask(success=True, sheet_id=sheet.sheet_id, time=datetime.datetime.now().isoformat(), stats=stats).model_dump()
 
 
-@task_failure.connect(sender=create_sheet_task)
-@task_failure.connect(sender=create_archive_task)
-def task_failure_notifier(sender, **kwargs):
-    # automatically capture exceptions in the worker tasks
-    logger.warning(f"⚠️ worker task failed: {sender.name}")
-    traceback_msg = "\n".join(traceback.format_list(traceback.extract_tb(kwargs['traceback'])))
-    log_error(kwargs['exception'], traceback_msg, f"task_failure: {sender.name}")
-    redis_publish_exception(kwargs['exception'], sender.name, traceback_msg)
-
-
-def read_user_groups():
-    # read yaml safely
-    with open(USER_GROUPS_FILENAME) as inf:
-        try:
-            return yaml.safe_load(inf)
-        except yaml.YAMLError as e:
-            logger.error(f"could not open user groups filename {USER_GROUPS_FILENAME}: {e}")
-            raise e
-
-
-def load_orchestrator(group_id: str, overwrite_configs: dict = {}) -> ArchivingOrchestrator:
+def load_orchestrator(group_id: str, orchestrator_for_sheet: bool = False, overwrite_configs: dict = {}) -> ArchivingOrchestrator:
     with get_db() as session:
-        orchestrator_fn = crud.get_group(session, group_id).orchestrator
+        group = crud.get_group(session, group_id)
+        if orchestrator_for_sheet:
+            orchestrator_fn = group.orchestrator_sheet
+        else:
+            orchestrator_fn = crud.get_group(session, group_id).orchestrator
         assert orchestrator_fn, f"no orchestrator found for {group_id}"
 
     config = Config()
@@ -111,28 +101,10 @@ def load_orchestrator(group_id: str, overwrite_configs: dict = {}) -> ArchivingO
 
 def insert_result_into_db(archive: schemas.ArchiveCreate) -> str:
     with get_db() as session:
-        # create and load user, tags, if needed
-        crud.create_or_get_user(session, archive.author_id)
-        db_tags = [crud.create_tag(session, tag) for tag in archive.tags]
-        # insert everything
-        db_task = crud.create_task(session, task=archive, tags=db_tags, urls=archive.urls)
-        logger.debug(f"Added {db_task.id=} to database on {db_task.created_at} ({db_task.author_id})")
+        db_task = crud.insert_result_into_db(session, archive)
+        logger.debug(f"[ARCHIVE STORED] {db_task.author_id} {db_task.url}")
         return db_task.id
 
-
-def insert_result_into_db(result: Metadata, tags: Set[str], public: bool, group_id: str, author_id: str, task_id: str, sheet_id: str = "") -> str:
-    logger.info(f"INSERTING {public=} {group_id=} {author_id=} {tags=} into {task_id}")
-    assert result, f"UNABLE TO archive: {result.get_url() if result else result}"
-    with get_db() as session:
-        # urls are created by get_all_urls
-        # create author_id if needed
-        crud.create_or_get_user(session, author_id)
-        # create DB TAGs if needed
-        db_tags = [crud.create_tag(session, tag) for tag in tags]
-        # insert archive
-        db_task = crud.create_task(session, task=schemas.ArchiveCreate(id=task_id, url=result.get_url(), result=json.loads(result.to_json()), public=public, author_id=author_id, group_id=group_id, sheet_id=sheet_id), tags=db_tags, urls=get_all_urls(result))
-        logger.debug(f"Added {db_task.id=} to database on {db_task.created_at} ({db_task.author_id})")
-        return db_task.id
 
 # TODO: this should live within the auto-archiver
 def get_all_urls(result: Metadata) -> List[models.ArchiveUrl]:
@@ -167,3 +139,13 @@ def redis_publish_exception(exception, task_name, traceback: str = ""):
         Redis.publish(REDIS_EXCEPTIONS_CHANNEL, json.dumps(exception_data, default=str))
     except Exception as e:
         log_error(e, f"[CRITICAL] Could not publish to {REDIS_EXCEPTIONS_CHANNEL}")
+
+
+@task_failure.connect(sender=create_sheet_task)
+@task_failure.connect(sender=create_archive_task)
+def task_failure_notifier(sender, **kwargs):
+    # automatically capture exceptions in the worker tasks
+    logger.warning(f"⚠️  worker task failed: {sender.name}")
+    traceback_msg = "\n".join(traceback.format_list(traceback.extract_tb(kwargs['traceback'])))
+    log_error(kwargs['exception'], traceback_msg, f"task_failure: {sender.name}")
+    redis_publish_exception(kwargs['exception'], sender.name, traceback_msg)

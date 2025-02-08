@@ -64,7 +64,7 @@ class Test_create_archive_task():
 
 class Test_create_sheet_task():
     URL = "https://example-live.com"
-    sheet = schemas.SubmitSheet(sheet_name="Sheet", sheet_id="123", author_id="rick@example.com", group_id=None)
+    sheet = schemas.SubmitSheet(sheet_id="123", author_id="rick@example.com", group_id=None)
 
     # @patch("worker.main.insert_result_into_db")
     @patch("worker.main.models.generate_uuid", return_value="constant-uuid")
@@ -82,7 +82,6 @@ class Test_create_sheet_task():
         m_orch_generator.return_value = m_orch
 
         res = create_sheet_task(self.sheet.model_dump_json())
-        print(res)
         assert res["archived"] == 1
         assert res["failed"] == 0
         assert len(res["errors"]) == 0

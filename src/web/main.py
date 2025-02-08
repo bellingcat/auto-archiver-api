@@ -142,8 +142,6 @@ def app_factory(settings = get_settings()):
     def archive_sheet(sheet: schemas.SubmitSheet, email=Depends(get_user_auth), db: Session = Depends(get_db_dependency)):
         logger.info(f"SHEET TASK for {sheet=}")
         sheet.author_id = email
-        if not sheet.sheet_name and not sheet.sheet_id:
-            raise HTTPException(status_code=422, detail=f"sheet name or id is required")
         if not crud.is_user_in_group(db, email, sheet.group_id):
             raise HTTPException(status_code=403, detail="User does not have access to this group.")
         task = celery.signature("create_sheet_task", args=[sheet.model_dump_json()]).delay()
@@ -151,11 +149,9 @@ def app_factory(settings = get_settings()):
 
 
     @app.post("/sheet_service", status_code=201, deprecated=True)  # DEPRECATED
-    def archive_sheet_service(sheet: schemas.SubmitSheet, auth=Depends(token_api_key_auth), db: Session = Depends(get_db_dependency)):
+    def archive_sheet_service(sheet: schemas.SubmitSheet, auth=Depends(token_api_key_auth)):
         logger.info(f"SHEET TASK for {sheet=}")
         sheet.author_id = sheet.author_id or "api-endpoint"
-        if not sheet.sheet_name and not sheet.sheet_id:
-            raise HTTPException(status_code=422, detail=f"sheet name or id is required")
         
         task = celery.signature("create_sheet_task", args=[sheet.model_dump_json()]).delay()
         return JSONResponse({"id": task.id})

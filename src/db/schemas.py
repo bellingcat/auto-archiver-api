@@ -4,22 +4,12 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
-class Tag(BaseModel):
-    id: str
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-    __hash__ = object.__hash__
-
 class SubmitSheet(BaseModel):
-    sheet_name: str | None = None
-    sheet_id: str | None = None
-    header: int = 1
-    public: bool = False
+    sheet_id: str | None
     author_id: str | None = None
     group_id: str | None
     tags: set[str] | None = set()
-    columns: dict | None = {}  # TODO: implement
+    columns: dict | None = {}  # TODO: implement/remove
 
 
 class SubmitManual(BaseModel):
@@ -85,7 +75,7 @@ class ArchiveTrigger(BaseModel):
     url: Annotated[str, Len(min_length=5)]
     public: bool = False
     group_id: Annotated[str, Len(min_length=1)] = "default"
-    tags: set[Tag] | None = None
+    tags: set[str] | None = None
 
 class ArchiveCreate(ArchiveTrigger):
     id: str | None = None
@@ -108,3 +98,9 @@ class Usage(BaseModel):
 
 class UsageResponse(Usage):
     groups: dict[str, Usage]
+
+class CelerySheetTask(BaseModel):
+    success: bool
+    sheet_id: str
+    time: datetime
+    stats: dict

@@ -21,5 +21,6 @@ async def logging_middleware(request: Request, call_next):
     except Exception as e:
         from utils.metrics import EXCEPTION_COUNTER
         EXCEPTION_COUNTER.labels(type=e.__class__.__name__).inc()
+        logger.info(f"{request.client.host}:{request.client.port} {request.method} {request.url._url} - {e.__class__.__name__} {e}")
         log_error(e)
         raise e

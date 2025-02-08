@@ -18,7 +18,6 @@ celery = get_celery()
 
 @task_router.get("/{task_id}", summary="Check the status of an async task by its id, works for URLs and Sheet tasks.")
 def get_status(task_id, email=Depends(get_token_or_user_auth)) -> schemas.TaskResult:
-    logger.info(f"status check for user {email} task {task_id}")
     task = AsyncResult(task_id, app=celery)
     try:
         if task.status == "FAILURE":

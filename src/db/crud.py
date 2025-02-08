@@ -50,8 +50,8 @@ def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, lim
 def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
     return base_query(db).filter(models.Archive.author_id == email).order_by(models.Archive.created_at.desc()).offset(skip).limit(get_limit(limit)).all()
 
-
-def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]):
+#TODO: rename task to archive
+def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]) -> models.Archive:
     db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id, sheet_id=task.sheet_id)
     db_task.tags = tags
     db_task.urls = urls
@@ -234,8 +234,8 @@ def upsert_user_groups(db: Session):
 
 
 # --------------- SHEET
-def create_sheet(db: Session, sheet_id: str, sheet_name: str, email: str, group_id: str, frequency: str):
-    db_sheet = models.Sheet(id=sheet_id, name=sheet_name, author_id=email, group_id=group_id, frequency=frequency)
+def create_sheet(db: Session, sheet_id: str, name: str, email: str, group_id: str, frequency: str):
+    db_sheet = models.Sheet(id=sheet_id, name=name, author_id=email, group_id=group_id, frequency=frequency)
     db.add(db_sheet)
     db.commit()
     db.refresh(db_sheet)
@@ -248,7 +248,6 @@ def get_user_sheet(db: Session, email: str, sheet_id: str) -> models.Sheet:
 
 def get_user_sheets(db: Session, email: str) -> list[models.Sheet]:
     return db.query(models.Sheet).filter(models.Sheet.author_id == email).order_by(models.Sheet.last_url_archived_at.desc()).all()
-
 
 
 async def get_sheets_by_id_hash(db: AsyncSession, frequency: str, modulo: str, id_hash: str) -> list[models.Sheet]:
@@ -288,3 +287,15 @@ def delete_sheet(db: Session, sheet_id: str, email: str) -> bool:
         db.delete(db_sheet)
         db.commit()
     return db_sheet is not None
+
+
+#--- Celery worker tasks
+
+
+def insert_result_into_db(db: Session, archive: schemas.ArchiveCreate) -> models.Archive:
+    # create and load user, tags, if needed
+    create_or_get_user(db, archive.author_id)
+    db_tags = [create_tag(db, tag) for tag in archive.tags]
+    # insert everything
+    db_task = create_task(db, task=archive, tags=db_tags, urls=archive.urls)
+    return db_task
