@@ -39,16 +39,17 @@ def test_archive_url(m_celery, m2, client_with_auth):
     m_signature.delay.assert_called_once()
     called_val = m_celery.signature.call_args
     assert called_val[0][0] == "create_archive_task"
-    assert json.loads(called_val[1]['args'][0]) ==  {"id": None, "url": "https://example.com", "result": None, "public": True, "author_id": "rick@example.com", "group_id": None, "tags": [], "sheet_id": None}
+    assert json.loads(called_val[1]['args'][0]) ==  {"id": None, "url": "https://example.com", "result": None, "public": False, "author_id": "rick@example.com", "group_id": "default", "tags": None, "sheet_id": None, "store_until": None, "urls": None}
     m_user_state.has_quota_max_monthly_urls.assert_called_once()
     m_user_state.has_quota_max_monthly_mbs.assert_called_once()
+    m_user_state.in_group.assert_called_once_with("default")
 
     # user is not in group
     m_user_state.in_group.return_value = False
     response = client_with_auth.post("/url/archive", json={"url": "https://example.com", "group_id": "new-group"})
     assert response.status_code == 403
     assert response.json()["detail"] == "User does not have access to this group."
-    m_user_state.in_group.assert_called_once_with("new-group")
+    m_user_state.in_group.assert_called_with("new-group")
 
     # user is in group
     m_user_state.in_group.return_value = True
@@ -131,7 +132,7 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
 
     from db import crud, schemas
     for i in range(11):
-        crud.create_task(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com", group_id=None), [], [])
+        crud.create_task(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com"), [], [])
         # NB: this insertion is too fast for the ordering to be correct as they are within the same second
 
     response = client_with_auth.get("/url/search?url=https://example.com")
@@ -184,7 +185,7 @@ def test_delete_task(client_with_auth, db_session):
     assert response.json() == {"id": "delete-123-456-789", "deleted": False}
 
     from db import crud
-    crud.create_task(db_session, ArchiveCreate(id="delete-123-456-789", url="https://example.com", result={}, public=True, author_id="morty@example.com", group_id=None), [], [])
+    crud.create_task(db_session, ArchiveCreate(id="delete-123-456-789", url="https://example.com", result={}, public=True, author_id="morty@example.com"), [], [])
 
     response = client_with_auth.delete("/url/delete-123-456-789")
     assert response.status_code == 200
