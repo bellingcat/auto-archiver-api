@@ -1,5 +1,6 @@
 services:
   web:
+    command: uvicorn web:app --factory --host 0.0.0.0 --reload
     restart: "no"
     env_file: src/.env.dev
     environment:

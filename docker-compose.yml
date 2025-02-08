@@ -18,6 +18,7 @@ services:
     <<: *base-setup
     ports:
       - "127.0.0.1:8004:8000"
+    #TODO: should prod have the --reload flag?
     command: uvicorn web:app --factory --host 0.0.0.0 --reload
     volumes:
       - ./src:/app
