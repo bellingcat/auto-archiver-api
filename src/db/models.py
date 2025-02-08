@@ -37,6 +37,7 @@ class Archive(Base):
     deleted = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    store_until = Column(DateTime(timezone=True), default=None)
 
     group_id = Column(String, ForeignKey("groups.id"), default=None)
     author_id = Column(String, ForeignKey("users.email"))

@@ -38,6 +38,7 @@ class ArchiveResult(BaseModel):
     url: str
     result: dict
     created_at: datetime
+    store_until: datetime | None
 
 
 class Task(BaseModel):
@@ -82,6 +83,7 @@ class ArchiveCreate(ArchiveTrigger):
     result: dict | None = None
     sheet_id: str | None = None
     urls: list | None = None
+    store_until: datetime | None = None
 
 class Archive(ArchiveCreate):
     created_at: datetime

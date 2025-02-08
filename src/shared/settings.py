@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     CRON_ARCHIVE_SHEETS: bool = False
     CRON_DELETE_STALE_SHEETS: bool = True
     DELETE_STALE_SHEETS_DAYS: int = 14
+    CRON_DELETE_SCHEDULED_ARCHIVES: bool = True
+    DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS: int = 14
 
 	# database
     DATABASE_PATH: str

@@ -15,12 +15,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 DATABASE_QUERY_LIMIT = get_settings().DATABASE_QUERY_LIMIT
 
-# --------------- TASK = Archive
-
 
 def get_limit(user_limit: int):
     return max(1, min(user_limit, DATABASE_QUERY_LIMIT))
 
+# --------------- TASK = Archive
+
+def base_query(db: Session):
+    # NOTE: load_only is for optimization and not obfuscation, use .with_entities() if needed
+    return db.query(models.Archive)\
+        .filter(models.Archive.deleted == False)\
+        .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result, models.Archive.store_until))
 
 def get_archive(db: Session, id: str, email: str):
     query = base_query(db).filter(models.Archive.id == id)
@@ -29,8 +34,7 @@ def get_archive(db: Session, id: str, email: str):
         query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
     return query.first()
 
-
-def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False):
+def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False)-> list[models.Archive]:
     # searches for partial URLs, if email is * no ownership filtering happens
     query = base_query(db)
     if email != ALLOW_ANY_EMAIL:
@@ -52,7 +56,7 @@ def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int 
 
 #TODO: rename task to archive
 def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]) -> models.Archive:
-    db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id, sheet_id=task.sheet_id)
+    db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id, sheet_id=task.sheet_id, store_until=task.store_until)
     db_task.tags = tags
     db_task.urls = urls
     db.add(db_task)
@@ -90,13 +94,21 @@ def count_by_user_since(db: Session, seconds_delta: int = 15):
         .order_by(func.count().desc())\
         .limit(500).all()
 
+async def find_by_store_until(db: AsyncSession, store_until_is_before:datetime) -> dict:
+    res =  await db.execute(
+        select(models.Archive)
+        .filter(models.Archive.deleted ==False, models.Archive.store_until < store_until_is_before)
+    )
+    return res.scalars()
 
-def base_query(db: Session):
-    # NOTE: load_only is for optimization and not obfuscation, use .with_entities() if needed
-    return db.query(models.Archive)\
-        .filter(models.Archive.deleted == False)\
-        .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result))
-
+async def soft_delete_expired_archives(db: AsyncSession) -> dict:
+    to_delete = await find_by_store_until(db, datetime.now())
+    counter = 0
+    for archive in to_delete:
+        archive.deleted = True
+        counter += 1
+    await db.commit()
+    return counter
 # --------------- TAG
 
 
@@ -269,7 +281,7 @@ async def delete_stale_sheets(db: AsyncSession, inactivity_days: int) -> dict:
     for sheet in result.scalars():
         await db.delete(sheet)
         deleted[sheet.author_id].append(sheet)
-        await db.commit()
+    await db.commit()
     return dict(deleted)
 
 def update_sheet_last_url_archived_at(db: Session, sheet_id: str):

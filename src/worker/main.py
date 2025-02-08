@@ -37,6 +37,8 @@ def create_archive_task(self, archive_json: str):
     assert result, f"UNABLE TO archive: {archive.url}"
 
     # prepare and insert in DB
+    store_until = get_store_until(archive.group_id)
+    archive.store_until = store_until
     archive.id = self.request.id
     archive.urls = get_all_urls(result)
     archive.result = json.loads(result.to_json())
@@ -64,7 +66,8 @@ def create_sheet_task(self, sheet_json: str):
                 id=models.generate_uuid(),
                 result=json.loads(result.to_json()),
                 sheet_id=sheet.sheet_id,
-                urls=get_all_urls(result)
+                urls=get_all_urls(result),
+                store_until = get_store_until(sheet.group_id)
             )
             insert_result_into_db(archive)
             stats["archived"] += 1
@@ -121,6 +124,14 @@ def get_all_urls(result: Metadata) -> List[models.ArchiveUrl]:
                             db_urls.append(models.ArchiveUrl(url=url, key=prop_media.get("id", f"{k}{prop_media.key}_{i}.{j}")))
     return db_urls
 
+
+def get_store_until(group_id: str) -> datetime.datetime:
+    with get_db() as session:
+        group = crud.get_group(session, group_id)
+        max_lifespan = group.permissions.get("max_archive_lifespan_months", -1)
+        if max_lifespan == -1: return None
+
+        return datetime.datetime.now() + datetime.timedelta(days=30 * max_lifespan)
 
 # TODO: this should live within the auto-archiver??
 def convert_if_media(media):

@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 import datetime
 import logging
 import alembic.config
@@ -15,6 +16,7 @@ from utils.metrics import measure_regular_metrics, redis_subscribe_worker_except
 from fastapi_mail import FastMail, MessageSchema, MessageType
 
 celery = get_celery()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,6 +43,11 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(delete_stale_sheets())
     else:
         logger.warning("[CRON] Delete stale sheets cronjob is disabled.")
+
+    if get_settings().CRON_DELETE_SCHEDULED_ARCHIVES:
+        asyncio.create_task(notify_about_expired_archives())
+    else:
+        logger.warning("[CRON] Delete scheduled archives cronjob is disabled.")
 
     wal_checkpoint()
 
@@ -72,11 +79,65 @@ async def archive_sheets_cronjob(frequency: str, interval: int, current_time_uni
     async with get_db_async() as db:
         sheets = await crud.get_sheets_by_id_hash(db, frequency, interval, current_time_unit)
         for s in sheets:
-            
             task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group_id=s.group_id).model_dump_json()]).apply_async()
 
             triggered_jobs.append({"sheet_id": s.id, "task_id": task.id})
     logger.info(f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")
+
+
+# TODO: on exception should logerror but also prometheus counter
+DELETE_WINDOW = get_settings().DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS * 24 * 60 * 60
+
+@repeat_every(seconds=DELETE_WINDOW, wait_first=180, on_exception=logger.error)
+async def notify_about_expired_archives():
+    notify_from = datetime.datetime.now() + datetime.timedelta(days=get_settings().DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS)
+    async with get_db_async() as db:
+        scheduled_deletions = await crud.find_by_store_until(db, notify_from)
+
+    user_archives = defaultdict(list)
+    for archive in scheduled_deletions:
+        user_archives[archive.author_id].append(archive)
+
+    if user_archives:
+        fastmail = FastMail(get_settings().MAIL_CONFIG)
+        # notify users
+        for email in user_archives:
+            list_of_archives = "\n".join([f'{a.url},{a.id}<br/>' for a in user_archives[email]])
+            #TODO: how can users download them in bulk?
+            message = MessageSchema(
+                subject="Auto Archiver: Archives Scheduled for Deletion",
+                recipients=[email],
+                body=f"""
+                <html>
+                <body>
+                    <p>Hi {email},</p>
+                    <p>Some of your archives will be deleted in the next {get_settings().DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS} days, as they are reaching their expiration date according to our retention policy for their groups.</p>
+                    <p>If you want to preserve any, make sure to download them now.</p>
+                    <p>Here is a CSV list of URLs:</p>
+                    <code>
+                    url,archive_id<br/>
+                    {list_of_archives}
+                    </code>
+                    <p>Best,<br>The Auto Archiver team</p>
+                </body>
+                </html>
+                """,
+                subtype=MessageType.html
+            )
+            await fastmail.send_message(message)
+            logger.info(f"[CRON] Email sent to {email} about {len(user_archives[email])} scheduled archives deletion.")
+
+    # now schedule the deletion event
+    asyncio.create_task(delete_expired_archives())
+
+
+@repeat_every(max_repetitions=1, wait_first=DELETE_WINDOW - (60 * 60), seconds=0, on_exception=logger.error)
+async def delete_expired_archives():
+    async with get_db_async() as db:
+        count_deleted = await crud.soft_delete_expired_archives(db)
+        if count_deleted:
+            logger.info(f"[CRON] Deleted {count_deleted} archives.")
+
 
 
 @repeat_every(seconds=86400, wait_first=150, on_exception=logger.error)
@@ -112,4 +173,3 @@ async def delete_stale_sheets():
         )
         await fastmail.send_message(message)
         logger.info(f"[CRON] Email sent to {email} about stale sheets deletion.")
-
