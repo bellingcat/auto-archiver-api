@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from db import crud, models
 from datetime import datetime
-from shared.user_groups import GroupPermissions
+from shared.user_groups import GroupInfo, GroupPermissions
 from db.schemas import Usage, UsageResponse
 
 
@@ -19,13 +19,13 @@ class UserState:
         self.email = email.lower()
 
     @property
-    def permissions(self) -> Dict[str, GroupPermissions]:
+    def permissions(self) -> Dict[str, GroupInfo]:
         """
         Returns a dict of all group permissions and a special {"all": read/archive_url/archive_sheet} key
         """
         if not hasattr(self, '_permissions'):
             self._permissions = {}
-            self._permissions["all"] = GroupPermissions(
+            self._permissions["all"] = GroupInfo(
                 read=self.read,
                 read_public=self.read_public,
                 archive_url=self.archive_url,
@@ -38,7 +38,7 @@ class UserState:
             )
             for group in self.user_groups:
                 if not group.permissions: continue
-                self._permissions[group.id] = GroupPermissions(**group.permissions)
+                self._permissions[group.id] = GroupInfo(**group.permissions, description=group.description)
         return self._permissions
 
     @property

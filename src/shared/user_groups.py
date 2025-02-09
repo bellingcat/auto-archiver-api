@@ -123,3 +123,8 @@ class UserGroupModel(BaseModel):
             logger.warning(f"These groups are associated to USERS but not defined in the GROUPS section, the users settings may not work as expected: {groups_in_users - configured_groups}")
 
         return self
+
+# for the API return values
+class GroupInfo(GroupPermissions):
+    description: str = ""
+    service_account_emails: list[str] = []

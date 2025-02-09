@@ -10,7 +10,7 @@ from db import crud
 from db.schemas import ActiveUser, UsageResponse
 from db.user_state import UserState
 from web.security import get_user_auth, bearer_security, get_user_state
-from shared.user_groups import GroupPermissions
+from shared.user_groups import GroupInfo
 
 default_router = APIRouter()
 
@@ -42,7 +42,7 @@ async def active(
 @default_router.get("/user/permissions", summary="Get the user's global 'all' permissions and the permissions for each group they belong to.")
 def get_user_permissions(
     user: UserState = Depends(get_user_state),
-) -> Dict[str, GroupPermissions]:
+) -> Dict[str, GroupInfo]:
     return user.permissions
 
 @default_router.get("/user/usage", summary="Get the user's monthly URLs/MBs usage along with the total active sheets, breakdown by group.")
