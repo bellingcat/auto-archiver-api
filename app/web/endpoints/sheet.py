@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from app.shared.db.user_state import UserState
+from app.web.db.user_state import UserState
 from app.shared import schemas
 from app.shared.task_messaging import get_celery
 from app.web.security import get_user_state

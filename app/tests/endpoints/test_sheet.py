@@ -46,7 +46,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
 
     # switch to jerry who's got less quota/permissions
     from web.security import get_user_state
-    from app.shared.db.user_state import UserState
+    from app.web.db.user_state import UserState
     app_with_auth.dependency_overrides[get_user_state] = lambda: UserState(db_session, "jerry@example.com")
     client_jerry = TestClient(app_with_auth)
 

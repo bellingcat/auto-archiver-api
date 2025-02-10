@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.shared.config import ALLOW_ANY_EMAIL
 from app.shared.settings import get_settings
 from app.shared.db.database import get_db
-from app.shared.db.user_state import UserState
+from app.web.db.user_state import UserState
 
 settings = get_settings()
 bearer_security = HTTPBearer()
