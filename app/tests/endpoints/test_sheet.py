@@ -46,7 +46,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
 
     # switch to jerry who's got less quota/permissions
     from web.security import get_user_state
-    from db.user_state import UserState
+    from app.shared.db.user_state import UserState
     app_with_auth.dependency_overrides[get_user_state] = lambda: UserState(db_session, "jerry@example.com")
     client_jerry = TestClient(app_with_auth)
 
@@ -76,7 +76,7 @@ def test_get_user_sheets_endpoint(client_with_auth, db_session):
     assert response.json() == []
 
     # with data
-    from db import models
+    from app.shared.db import models
     db_session.add(
         models.Sheet(id="123", name="Test Sheet 1", author_id="morty@example.com", group_id="spaceship", frequency="hourly")
     )
@@ -122,7 +122,7 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
     }
 
     # add sheets for deletion
-    from db import models
+    from app.shared.db import models
     db_session.add_all([
         models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="interdimensional", frequency="daily"),
         models.Sheet(id="456-sheet-id", name="Test Sheet 2", author_id="rick@example.com", group_id="spaceship", frequency="hourly"),
@@ -146,7 +146,7 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
 class TestArchiveUserSheetEndpoint:
     @patch("endpoints.sheet.celery", return_value=MagicMock())
     def test_normal_flow(self, m_celery, client_with_auth, db_session):
-        from db import models
+        from app.shared.db import models
         db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="spaceship", frequency="hourly"))
         db_session.commit()
 
@@ -169,7 +169,7 @@ class TestArchiveUserSheetEndpoint:
         assert r.json() == {"detail": "No access to this sheet."}
 
     def test_no_access(self, client_with_auth, db_session):
-        from db import models
+        from app.shared.db import models
         db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="rick@example.com", group_id="spaceship", frequency="hourly"))
         db_session.commit()
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
@@ -177,7 +177,7 @@ class TestArchiveUserSheetEndpoint:
         assert r.json() == {"detail": "No access to this sheet."}
 
     def test_user_not_in_group(self, client_with_auth, db_session):
-        from db import models
+        from app.shared.db import models
         db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="interdimensional", frequency="hourly"))
         db_session.commit()
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
@@ -185,7 +185,7 @@ class TestArchiveUserSheetEndpoint:
         assert r.json() == {"detail": "User does not have access to this group."}
 
     def test_user_cannot_manually_trigger(self, client_with_auth, db_session):
-        from db import models
+        from app.shared.db import models
         db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="default", frequency="hourly"))
         db_session.commit()
         r = client_with_auth.post("/sheet/123-sheet-id/archive")

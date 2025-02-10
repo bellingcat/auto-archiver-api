@@ -3,7 +3,7 @@ import json
 from unittest.mock import patch
 
 from app.shared.config import ALLOW_ANY_EMAIL
-from db import crud
+from app.shared.db import crud
 
 
 def test_submit_manual_archive_unauthenticated(client, test_no_auth):

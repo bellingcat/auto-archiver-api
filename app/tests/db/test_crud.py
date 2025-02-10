@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-from db import models
+from app.shared.db import models
 from shared.settings import Settings
 
 authors = ["rick@example.com", "morty@example.com", "jerry@example.com"]
@@ -55,14 +55,14 @@ def test_data(db_session):
 
     # setup groups
     assert db_session.query(models.Group).count() == 0
-    from db import crud
+    from app.shared.db import crud
     crud.upsert_user_groups(db_session)
     assert db_session.query(models.Group).count() == 4
     assert db_session.query(models.User).count() == 3
 
 
 def test_get_archive(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
     from app.shared.config import ALLOW_ANY_EMAIL
 
     print(db_session.query(models.Group).all())
@@ -93,7 +93,7 @@ def test_get_archive(test_data, db_session):
 
 
 def test_search_archives_by_url(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
     from app.shared.config import ALLOW_ANY_EMAIL
 
     # rick's archives are private
@@ -141,7 +141,7 @@ def test_search_archives_by_url(test_data, db_session):
 
 def test_search_archives_by_email(test_data, db_session):
     from app.shared.config import ALLOW_ANY_EMAIL
-    from db import crud
+    from app.shared.db import crud
 
     # lower/upper case
     assert len(crud.search_archives_by_email(db_session, "rick@example.com")) == 34
@@ -162,7 +162,7 @@ def test_search_archives_by_email(test_data, db_session):
 
 @patch("db.crud.DATABASE_QUERY_LIMIT", new=25)
 def test_max_query_limit(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
     from app.shared.config import ALLOW_ANY_EMAIL
 
     assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL)) == 25
@@ -173,8 +173,8 @@ def test_max_query_limit(test_data, db_session):
 
 
 def test_create_task(db_session):
-    from db import crud
-    from db import schemas
+    from app.shared.db import crud
+    from app.shared import schemas
 
     task = schemas.ArchiveCreate(
         id="archive-id-456-101",
@@ -218,7 +218,7 @@ def test_create_task(db_session):
 
 
 def test_soft_delete(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     # none deleted yet
     assert crud.get_archive(db_session, "archive-id-456-0", "rick@example.com") is not None
@@ -236,7 +236,7 @@ def test_soft_delete(test_data, db_session):
 
 
 def test_count_archives(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert crud.count_archives(db_session) == 100
     db_session.query(models.Archive).filter(models.Archive.id == "archive-id-456-0").delete()
@@ -245,7 +245,7 @@ def test_count_archives(test_data, db_session):
 
 
 def test_count_archive_urls(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert crud.count_archive_urls(db_session) == 1000
     db_session.query(models.ArchiveUrl).filter(models.ArchiveUrl.url == "https://example-0.com/0").delete()
@@ -260,7 +260,7 @@ def test_count_archive_urls(test_data, db_session):
 
 
 def test_count_users(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert crud.count_users(db_session) == 3
     db_session.query(models.User).filter(models.User.email == "rick@example.com").delete()
@@ -269,7 +269,7 @@ def test_count_users(test_data, db_session):
 
 
 def test_count_by_users_since(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     # 100y window
     assert len(cu := crud.count_by_user_since(db_session, 60 * 60 * 24 * 31 * 12 * 100)) == 3
@@ -279,7 +279,7 @@ def test_count_by_users_since(test_data, db_session):
 
 
 def test_create_tag(db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert db_session.query(models.Tag).count() == 0
 
@@ -303,7 +303,7 @@ def test_create_tag(db_session):
 
 
 def test_is_user_in_group(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
     from app.shared.config import ALLOW_ANY_EMAIL
 
     # see user-groups.test.yaml
@@ -343,7 +343,7 @@ def test_is_user_in_group(test_data, db_session):
 
 
 def test_get_group(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert crud.get_group(db_session, "spaceship") is not None
     assert crud.get_group(db_session, "interdimensional") is not None
@@ -352,7 +352,7 @@ def test_get_group(test_data, db_session):
 
 
 def test_create_or_get_user(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert db_session.query(models.User).count() == 3
 
@@ -368,7 +368,7 @@ def test_create_or_get_user(test_data, db_session):
 
 
 def test_upsert_group(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert db_session.query(models.Group).count() == 4
 
@@ -397,7 +397,7 @@ def test_upsert_group(test_data, db_session):
 
 
 def test_upsert_user_groups(db_session):
-    from db import crud
+    from app.shared.db import crud
 
     @patch('db.crud.get_settings', new=lambda: bad_setings)
     def test_missing_yaml(db_session):
@@ -419,7 +419,7 @@ def test_upsert_user_groups(db_session):
 
 
 def test_create_sheet(db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert db_session.query(models.Sheet).count() == 0
 
@@ -440,7 +440,7 @@ def test_create_sheet(db_session):
 
 
 def test_get_user_sheet(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert crud.get_user_sheet(db_session, "", "sheet-0") is None
     assert crud.get_user_sheet(db_session, "morty@example.com", "sheet-0") is None
@@ -451,7 +451,7 @@ def test_get_user_sheet(test_data, db_session):
 
 
 def test_get_user_sheets(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert len(crud.get_user_sheets(db_session, "")) == 0
     rick_sheets = crud.get_user_sheets(db_session, "rick@example.com")
@@ -460,7 +460,7 @@ def test_get_user_sheets(test_data, db_session):
     assert len(crud.get_user_sheets(db_session, "morty@example.com")) == 1
 
 def test_delete_sheet(test_data, db_session):
-    from db import crud
+    from app.shared.db import crud
 
     assert crud.delete_sheet(db_session, "sheet-0", "") == False
     assert crud.delete_sheet(db_session, "sheet-0", "rick@example.com") == True

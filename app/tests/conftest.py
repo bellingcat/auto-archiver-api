@@ -3,8 +3,8 @@ from fastapi.testclient import TestClient
 import pytest
 from unittest.mock import patch
 from app.shared.config import ALLOW_ANY_EMAIL
-from db.user_state import UserState
-from shared.settings import Settings
+from app.shared.db.user_state import UserState
+from app.shared.settings import Settings
 
 
 @pytest.fixture(autouse=True)
@@ -27,9 +27,9 @@ def mock_settings():
 
 @pytest.fixture()
 def test_db(get_settings: Settings):
-    from db.database import make_engine
-    from db import models
-    from db.crud import get_user_groups
+    from app.shared.db import models
+    from app.shared.db.database import make_engine
+    from app.shared.db.crud import get_user_groups
 
     get_user_groups.cache_clear()
     make_engine.cache_clear()
@@ -54,7 +54,7 @@ def test_db(get_settings: Settings):
 
 @pytest.fixture()
 def db_session(test_db):
-    from db.database import make_session_local
+    from app.shared.db.database import make_session_local
     session_local = make_session_local(test_db)
     with session_local() as session:
         yield session
@@ -63,7 +63,7 @@ def db_session(test_db):
 @pytest.fixture()
 def app(db_session):
     from web.main import app_factory
-    from db import crud
+    from app.shared.db import crud
     app = app_factory()
     crud.upsert_user_groups(db_session)
     return app

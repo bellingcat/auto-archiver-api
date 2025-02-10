@@ -5,7 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from db import models, schemas
+from app.shared.db import models
+from app.shared import schemas
 from auto_archiver import Metadata
 from auto_archiver.core import Media
 

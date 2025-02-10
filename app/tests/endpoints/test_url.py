@@ -130,7 +130,7 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     assert response.status_code == 200
     assert response.json() == []
 
-    from db import crud, schemas
+    from app.shared.db import crud, schemas
     for i in range(11):
         crud.create_task(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com"), [], [])
         # NB: this insertion is too fast for the ordering to be correct as they are within the same second
@@ -184,7 +184,7 @@ def test_delete_task(client_with_auth, db_session):
     assert response.status_code == 200
     assert response.json() == {"id": "delete-123-456-789", "deleted": False}
 
-    from db import crud
+    from app.shared.db import crud
     crud.create_task(db_session, ArchiveCreate(id="delete-123-456-789", url="https://example.com", result={}, public=True, author_id="morty@example.com"), [], [])
 
     response = client_with_auth.delete("/url/delete-123-456-789")
