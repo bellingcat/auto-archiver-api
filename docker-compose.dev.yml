@@ -6,6 +6,7 @@ services:
     volumes:
       - ./app:/aa-api/app # for --reload to work
     environment:
+      - ENVIRONMENT_FILE=.env.dev
       - SERVE_LOCAL_ARCHIVE=/aa-api/app/local_archive # See orchestration.yaml local_storage.save_to
       - ALLOWED_ORIGINS=["http://localhost:8000","http://localhost:8004","http://localhost:8081","chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp"]
       - USER_GROUPS_FILENAME=/aa-api/app/user-groups.dev.yaml
@@ -20,7 +21,6 @@ services:
       - ./app:/aa-api/app # for watchmedo
 
   redis:
-    command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
     restart: "no"
     env_file: .env.dev
     ports:
