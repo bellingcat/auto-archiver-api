@@ -1,0 +1,51 @@
+[project]
+name = "auto-archiver-api"
+version = "0.9.0"
+description = "API wrapper for Bellingcat's Auto Archiver, supports users, groups, sheet and url archives."
+authors = [
+    { name = "Bellingcat", email = "contact-tech@bellingcat.com" },
+]
+license = {text = "MIT"}
+readme = "README.md"
+keywords = ["archive", "oosi", "osint", "scraping"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3"
+]
+
+requires-python = ">=3.10,<4.0"
+
+
+dependencies = [
+    "auto-archiver (>=0.12.0,<0.13.0)",
+    "oscrypto @ git+https://github.com/wbond/oscrypto.git@d5f3437ed24257895ae1edd9e503cfb352e635a8",
+    "celery (>=5.0)",
+    "redis (==3.5.3)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "pydantic-settings (>=2.7.1,<3.0.0)",
+    "sqlalchemy (>=2.0.38,<3.0.0)",
+    "requests (>=2.25.1)",
+    "pyopenssl (==23.3.0)",
+]
+[tool.poetry.group.worker.dependencies]
+watchdog = ">=6.0.0,<7.0.0"
+
+[tool.poetry.group.web.dependencies]
+fastapi = ">=0.115.8,<0.116.0"
+requests = ">=2.32.3,<3.0.0"
+aiosqlite = ">=0.21.0,<0.22.0"
+alembic = ">=1.14.1,<2.0.0"
+fastapi-utils = ">=0.8.0,<0.9.0"
+prometheus-fastapi-instrumentator = ">=7.0.2,<8.0.0"
+fastapi-mail = ">=1.4.2,<2.0.0"
+uvicorn = ">=0.13.4"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.3.4,<9.0.0"
+httpx = ">=0.28.1,<0.29.0"
+coverage = ">=7.6.11,<8.0.0"
+pytest-asyncio = ">=0.25.3,<0.26.0"
+

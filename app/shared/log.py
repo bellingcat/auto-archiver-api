@@ -3,8 +3,8 @@ from loguru import logger
 
 
 # logging configurations
-logger.add("logs/api_logs.log", retention="30 days", rotation="3 days")
-logger.add("logs/error_logs.log", retention="30 days", level="ERROR")
+logger.add("app/logs/api_logs.log", retention="30 days", rotation="3 days")
+logger.add("app/logs/error_logs.log", retention="30 days", level="ERROR")
 
     
 def log_error(e: Exception, traceback_str: str = None, extra:str = ""):

@@ -13,9 +13,11 @@ services:
     
 
   worker:
-  #TODO: add watchmedo
+    command: watchmedo auto-restart --patterns="*.py" --recursive --ignore-directories -- celery -- --app=app.worker.main.celery worker --loglevel=info --logfile=/aa-api/app/logs/celery.log
     restart: "no"
     env_file: .env.dev
+    volumes:
+      - ./app:/aa-api/app # for watchmedo
 
   redis:
     command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
