@@ -6,6 +6,11 @@ dev:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml build
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans
 
+
+dev-redis-only:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml build redis
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans redis
+
 stop-dev:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml down --volumes
 

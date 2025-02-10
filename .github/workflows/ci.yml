@@ -35,7 +35,7 @@ jobs:
     - name: Install dependencies
       run: pipenv install --dev
       working-directory: src
-
+#TODO: fix working-directories here
     - name: Run tests with coverage
       run: PYTHONPATH=. PIPENV_DOTENV_LOCATION=.env.test pipenv run coverage run -m pytest -v --color=yes tests/
       working-directory: src

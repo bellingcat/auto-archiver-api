@@ -1,1 +1,0 @@
-# https://fastapi.tiangolo.com/tutorial/sql-databases/#review-all-the-files
