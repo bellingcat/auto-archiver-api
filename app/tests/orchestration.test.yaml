@@ -12,6 +12,8 @@ steps:
     - console_db
 
 configurations:
+  gsheet_feeder:
+    service_account: "app/tests/fake_service_account.json"
   cli_feeder:
     urls: 
       - "url1"

@@ -15,6 +15,4 @@ def get_celery(name:str="") -> Celery:
 
 
 def get_redis() -> redis.Redis:
-    from loguru import logger
-    logger.debug(get_settings().CELERY_BROKER_URL)
     return redis.Redis.from_url(get_settings().CELERY_BROKER_URL)

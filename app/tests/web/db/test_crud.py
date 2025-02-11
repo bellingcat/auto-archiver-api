@@ -277,13 +277,14 @@ def test_upsert_group(test_data, db_session):
 
     assert db_session.query(models.Group).count() == 4
 
-    repeatable_params = ["desc 1", "orch.yaml", "sheet.yaml", {"read": ["all"]}, ["example.com"]]
+    repeatable_params = ["desc 1", "orch.yaml", "sheet.yaml", "service_account_email@example.com", {"read": ["all"]}, ["example.com"]]
 
     assert (g1 := crud.upsert_group(db_session, "spaceship", *repeatable_params)) is not None
     assert g1.id == "spaceship"
     assert g1.description == "desc 1"
     assert g1.orchestrator == "orch.yaml"
     assert g1.orchestrator_sheet == "sheet.yaml"
+    assert g1.service_account_email == "service_account_email@example.com"
     assert g1.permissions == {"read": ["all"]}
     assert g1.domains == ["example.com"]
     assert len(g1.users) == 2

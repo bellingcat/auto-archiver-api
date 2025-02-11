@@ -129,15 +129,16 @@ def get_user_groups(email: str) -> list[str]:
 
 # --------------- INIT User-Groups
 
-def upsert_group(db: Session, group_name: str, description: str, orchestrator: str, orchestrator_sheet: str, permissions: dict, domains: list) -> models.Group:
+def upsert_group(db: Session, group_name: str, description: str, orchestrator: str, orchestrator_sheet: str, service_account_email:str, permissions: dict, domains: list) -> models.Group:
     db_group = db.query(models.Group).filter(models.Group.id == group_name).first()
     if db_group is None:
-        db_group = models.Group(id=group_name, description=description, orchestrator=orchestrator, orchestrator_sheet=orchestrator_sheet, permissions=permissions, domains=domains)
+        db_group = models.Group(id=group_name, description=description, orchestrator=orchestrator, orchestrator_sheet=orchestrator_sheet, service_account_email=service_account_email, permissions=permissions, domains=domains)
         db.add(db_group)
     else:
         db_group.description = description
         db_group.orchestrator = orchestrator
         db_group.orchestrator_sheet = orchestrator_sheet
+        db_group.service_account_email = service_account_email
         db_group.permissions = permissions
         db_group.domains = domains
     db.commit()
@@ -180,7 +181,8 @@ def upsert_user_groups(db: Session):
     import json
     # upsert groups and save a map of groupid -> dbobject
     for group_id, g in ug.groups.items():
-        upsert_group(db, group_id, g.description, g.orchestrator, g.orchestrator_sheet, json.loads(g.permissions.model_dump_json()), list(group_domains.get(group_id, [])))
+        logger.debug(f"GROUP {group_id} => {g.service_account_email}")
+        upsert_group(db, group_id, g.description, g.orchestrator, g.orchestrator_sheet, g.service_account_email, json.loads(g.permissions.model_dump_json()), list(group_domains.get(group_id, [])))
     db_groups: dict[str, models.Group] = {g.id: g for g in db.query(models.Group).all()}
 
     # integrity checks

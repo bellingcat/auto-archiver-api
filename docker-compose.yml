@@ -11,8 +11,8 @@ services:
     restart: always
     env_file: .env.prod
     environment:
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       ENVIRONMENT_FILE: .env.prod
+      REDIS_HOSTNAME: redis
     ports:
       - "127.0.0.1:8004:8000"
     #TODO: should prod have the --reload flag?
@@ -42,7 +42,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER, do not change /crawls
     environment:
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_HOSTNAME: redis
       ENVIRONMENT_FILE: .env.prod
       WACZ_ENABLE_DOCKER: 1 # Enable calling docker from this container
       BROWSERTRIX_HOME_HOST: auto-archiver-api_crawls

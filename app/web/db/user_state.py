@@ -39,7 +39,7 @@ class UserState:
             )
             for group in self.user_groups:
                 if not group.permissions: continue
-                self._permissions[group.id] = GroupInfo(**group.permissions, description=group.description)
+                self._permissions[group.id] = GroupInfo(**group.permissions, description=group.description, service_account_email=group.service_account_email)
         return self._permissions
 
     @property

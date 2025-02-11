@@ -33,11 +33,12 @@ class Settings(BaseSettings):
 
     # redis
     REDIS_PASSWORD: str = ""
+    REDIS_HOSTNAME: str = "localhost"
     @property
     def CELERY_BROKER_URL(self)-> str:
         if self.REDIS_PASSWORD:
-            return f"redis://:{self.REDIS_PASSWORD}@localhost:6379"
-        return "redis://localhost:6379"
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOSTNAME}:6379"
+        return f"redis://{self.REDIS_HOSTNAME}:6379"
     REDIS_EXCEPTIONS_CHANNEL: str = "exceptions-channel"
     
 	# observability

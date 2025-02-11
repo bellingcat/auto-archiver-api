@@ -1,7 +1,8 @@
+import json
 import os
 import yaml
 from loguru import logger
-from pydantic import BaseModel, field_validator, Field, model_validator
+from pydantic import BaseModel, computed_field, field_validator, Field, model_validator
 from typing import Dict, List, Set
 from typing_extensions import Self
 
@@ -74,10 +75,38 @@ class GroupModel(BaseModel):
     permissions: GroupPermissions
 
     @field_validator('orchestrator', 'orchestrator_sheet', mode='before')
-    def validate_priority(cls, v):
+    def validate_orchestrator(cls, v):
         if not os.path.exists(v):
             raise ValueError(f"Orchestrator file not found with this path: {v}")
         return v
+
+    @computed_field
+    @property
+    def service_account_email(self) -> str:
+        if hasattr(self, "_service_account_email"):
+            return self._service_account_email
+        orch = yaml.safe_load(open(self.orchestrator_sheet))
+
+        def find_service_account_email(d):
+            for k, v in d.items():
+                if k == "service_account":
+                    return v
+                if isinstance(v, dict):
+                    if result := find_service_account_email(v):
+                        return result
+            return False
+
+        service_account_json = find_service_account_email(orch)
+        if not service_account_json:
+            raise ValueError(f"service_account key not found in orchestrator sheet file: {self.orchestrator_sheet}.")
+
+        with open(service_account_json) as f:
+            self._service_account_email = json.load(f).get("client_email")
+
+        if not self._service_account_email:
+            raise ValueError(f"Service account email not found in {service_account_json}.")
+
+        return self._service_account_email
 
 
 class UserGroupModel(BaseModel):
@@ -137,4 +166,4 @@ class UserGroupModel(BaseModel):
 
 class GroupInfo(GroupPermissions):
     description: str = ""
-    service_account_emails: list[str] = []
+    service_account_email: str = ""
