@@ -15,12 +15,10 @@ services:
       REDIS_HOSTNAME: redis
     ports:
       - "127.0.0.1:8004:8000"
-    #TODO: should prod have the --reload flag?
     command: uvicorn app.web:app --factory --host 0.0.0.0
     volumes:
-      # - ./app:/app
-      - ./app/logs:/aa-api/app/logs
-      - ./app/database:/aa-api/app/database
+      - ./logs:/aa-api/logs
+      - ./app/database:/aa-api/database
     depends_on:
       - redis
     healthcheck:
@@ -35,10 +33,10 @@ services:
       dockerfile: worker.Dockerfile
     restart: always
     env_file: .env.prod
-    command: celery --app=app.worker.main.celery worker --loglevel=info --logfile=/aa-api/app/logs/celery.log
+    command: celery --app=app.worker.main.celery worker --loglevel=warning --logfile=/aa-api/logs/celery.log
     volumes:
-      - ./app/logs:/aa-api/app/logs
-      - ./app/database:/aa-api/app/database
+      - ./logs:/aa-api/logs
+      - ./app/database:/aa-api/database
       - /var/run/docker.sock:/var/run/docker.sock
       - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER, do not change /crawls
     environment:

@@ -181,7 +181,6 @@ def upsert_user_groups(db: Session):
     import json
     # upsert groups and save a map of groupid -> dbobject
     for group_id, g in ug.groups.items():
-        logger.debug(f"GROUP {group_id} => {g.service_account_email}")
         upsert_group(db, group_id, g.description, g.orchestrator, g.orchestrator_sheet, g.service_account_email, json.loads(g.permissions.model_dump_json()), list(group_domains.get(group_id, [])))
     db_groups: dict[str, models.Group] = {g.id: g for g in db.query(models.Group).all()}
 

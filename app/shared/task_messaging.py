@@ -11,6 +11,7 @@ def get_celery(name:str="") -> Celery:
         name,
         broker_url=get_settings().CELERY_BROKER_URL,
         result_backend=get_settings().CELERY_BROKER_URL,
+        broker_connection_retry_on_startup=False
     )
 
 

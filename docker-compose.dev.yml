@@ -10,11 +10,11 @@ services:
       - SERVE_LOCAL_ARCHIVE=/aa-api/app/local_archive # See orchestration.yaml local_storage.save_to
       - ALLOWED_ORIGINS=["http://localhost:8000","http://localhost:8004","http://localhost:8081","chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp"]
       - USER_GROUPS_FILENAME=/aa-api/app/user-groups.dev.yaml
-      - DATABASE_PATH=sqlite:////aa-api/app/database/auto-archiver.db
+      - DATABASE_PATH=sqlite:////aa-api/database/auto-archiver.db
     
 
   worker:
-    command: watchmedo auto-restart --patterns="*.py" --recursive --ignore-directories -- celery -- --app=app.worker.main.celery worker --loglevel=info --logfile=/aa-api/app/logs/celery.log
+    command: watchmedo auto-restart --patterns="*.py" --recursive --ignore-directories -- celery -- --app=app.worker.main.celery worker --loglevel=debug --logfile=/aa-api/logs/celery.log
     restart: "no"
     env_file: .env.dev
     volumes:
