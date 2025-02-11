@@ -15,7 +15,7 @@ from app.web.middleware import logging_middleware
 from app.shared import schemas
 from app.shared.task_messaging import get_celery
 
-from app.shared.db import crud
+from app.web.db import crud
 from app.web.security import get_user_auth, token_api_key_auth, get_token_or_user_auth
 from app.shared.config import VERSION, API_DESCRIPTION
 from app.shared.db.database import get_db_dependency
@@ -141,7 +141,8 @@ def app_factory(settings = get_settings()):
     def archive_sheet(sheet: schemas.SubmitSheet, email=Depends(get_user_auth), db: Session = Depends(get_db_dependency)):
         logger.info(f"SHEET TASK for {sheet=}")
         sheet.author_id = email
-        if not crud.is_user_in_group(db, email, sheet.group_id):
+        #NB: no longer working
+        if not crud.is_user_in_group(email, sheet.group_id):
             raise HTTPException(status_code=403, detail="User does not have access to this group.")
         task = celery.signature("create_sheet_task", args=[sheet.model_dump_json()]).delay()
         return JSONResponse({"id": task.id})

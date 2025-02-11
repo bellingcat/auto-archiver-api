@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from app.shared.config import VERSION, BREAKING_CHANGES
 from app.shared.log import log_error
-from app.shared.db import crud
+from app.web.db import crud
 from app.shared.schemas import ActiveUser, UsageResponse
 from app.web.db.user_state import UserState
 from app.web.security import get_user_auth, bearer_security, get_user_state
@@ -56,4 +56,4 @@ def get_user_usage(
 
 @default_router.get('/favicon.ico', include_in_schema=False)
 async def favicon() -> FileResponse:
-    return FileResponse("web/static/favicon.ico")
+    return FileResponse("app/web/static/favicon.ico")

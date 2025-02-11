@@ -17,9 +17,9 @@ def test_alembic(db_session):
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
     alembic.config.main(argv=['--raiseerr', 'downgrade', 'base'])
 
-@patch("endpoints.default.crud.soft_delete_task", side_effect=Exception('mocked error'))
+@patch("app.web.endpoints.default.crud.soft_delete_task", side_effect=Exception('mocked error'))
 def test_logging_middleware(m1, client_with_auth):
-    from web.utils.metrics import EXCEPTION_COUNTER
+    from app.web.utils.metrics import EXCEPTION_COUNTER
     assert len(EXCEPTION_COUNTER.collect()[0].samples) == 0
     with pytest.raises(Exception, match="mocked error"):
         client_with_auth.delete("/url/123")
@@ -36,7 +36,7 @@ def test_serve_local_archive_logic(get_settings):
     try:
         # modify the settings
         get_settings.SERVE_LOCAL_ARCHIVE = "/app/local_archive_test"
-        from web.main import app_factory
+        from app.web.main import app_factory
         app = app_factory(get_settings)
         
         # test

@@ -16,12 +16,12 @@ class Test_create_archive_task():
     URL = "https://example-live.com"
     archive = schemas.ArchiveCreate(url=URL, tags=["tag-celery"], public=True, author_id="rick@example.com", group_id="interstellar")
 
-    @patch("worker.main.insert_result_into_db")
-    @patch("worker.main.get_store_until", return_value=datetime.now())
-    @patch("worker.main.load_orchestrator")
+    @patch("app.worker.main.insert_result_into_db")
+    @patch("app.worker.main.get_store_until", return_value=datetime.now())
+    @patch("app.worker.main.load_orchestrator")
     @patch("celery.app.task.Task.request")
     def test_success(self, m_req, m_load, m_store, m_insert, db_session):
-        from worker.main import create_archive_task
+        from app.worker.main import create_archive_task
 
         m_req.id = "this-just-in"
         mock_orchestrator = self.mock_orchestrator_choice(m_load)
@@ -38,14 +38,14 @@ class Test_create_archive_task():
         assert len(task["media"]) == 0
 
     def test_raise_invalid(self):
-        from worker.main import create_archive_task
+        from app.worker.main import create_archive_task
         with pytest.raises(Exception):
             create_archive_task(self.archive.model_dump_json())
 
-    @patch("worker.main.insert_result_into_db", side_effect=Exception)
-    @patch("worker.main.load_orchestrator")
+    @patch("app.worker.main.insert_result_into_db", side_effect=Exception)
+    @patch("app.worker.main.load_orchestrator")
     def test_raise_db_error(self, m_load, m_insert):
-        from worker.main import create_archive_task
+        from app.worker.main import create_archive_task
         mock_orchestrator = self.mock_orchestrator_choice(m_load)
 
         with pytest.raises(Exception):
@@ -53,10 +53,10 @@ class Test_create_archive_task():
         mock_orchestrator.feed_item.assert_called_once()
 
 
-    @patch("worker.main.insert_result_into_db", return_value=None)
-    @patch("worker.main.load_orchestrator")
+    @patch("app.worker.main.insert_result_into_db", return_value=None)
+    @patch("app.worker.main.load_orchestrator")
     def test_raise_empty_result(self, m_load, m_insert):
-        from worker.main import create_archive_task
+        from app.worker.main import create_archive_task
         mock_orchestrator = self.mock_orchestrator_choice(m_load)
 
         with pytest.raises(Exception) as e:
@@ -75,11 +75,11 @@ class Test_create_sheet_task():
     URL = "https://example-live.com"
     sheet = schemas.SubmitSheet(sheet_id="123", author_id="rick@example.com", group_id="interstellar", tags=["spaceship"])
 
-    @patch("worker.main.models.generate_uuid", return_value="constant-uuid")
-    @patch("worker.main.get_store_until", return_value=datetime.now())
-    @patch("worker.main.load_orchestrator")
+    @patch("app.worker.main.models.generate_uuid", return_value="constant-uuid")
+    @patch("app.worker.main.get_store_until", return_value=datetime.now())
+    @patch("app.worker.main.load_orchestrator")
     def test_success(self, m_load, m_store, m_uuid, db_session):
-        from worker.main import create_sheet_task
+        from app.worker.main import create_sheet_task
 
         assert db_session.query(models.Archive).filter(models.Archive.url == self.URL).count() == 0
 
@@ -116,7 +116,7 @@ class Test_create_sheet_task():
 
 
 def test_get_all_urls(db_session):
-    from worker.main import get_all_urls
+    from app.worker.main import get_all_urls
     from auto_archiver import Metadata
 
     meta = Metadata().set_url("https://example.com")

@@ -8,8 +8,8 @@ def test_archive_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.post, "/url/archive")
 
 
-@patch("endpoints.url.UserState")
-@patch("endpoints.url.celery", return_value=MagicMock())
+@patch("app.web.endpoints.url.UserState")
+@patch("app.web.endpoints.url.celery", return_value=MagicMock())
 def test_archive_url(m_celery, m2, client_with_auth):
     m_signature = MagicMock()
     m_signature.delay.return_value = TaskResult(id="123-456-789", status="PENDING", result="")
@@ -81,7 +81,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
     assert m_signature.delay.call_count == 2
 
 
-@patch("endpoints.url.UserState")
+@patch("app.web.endpoints.url.UserState")
 def test_archive_url_quotas(m1, client_with_auth):
     m_user_state = MagicMock()
     m1.return_value = m_user_state
@@ -102,7 +102,7 @@ def test_archive_url_quotas(m1, client_with_auth):
     m_user_state.has_quota_max_monthly_mbs.assert_called_once()
 
 
-@patch("endpoints.url.celery", return_value=MagicMock())
+@patch("app.web.endpoints.url.celery", return_value=MagicMock())
 def test_archive_url_with_api_token(m_celery, client_with_token):
     m_signature = MagicMock()
     m_signature.delay.return_value = TaskResult(id="123-456-789", status="PENDING", result="")
@@ -130,9 +130,11 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     assert response.status_code == 200
     assert response.json() == []
 
-    from app.shared.db import crud, schemas
+    from app.shared import schemas
+    from app.shared.db import worker_crud
     for i in range(11):
-        crud.create_task(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com"), [], [])
+        #TODO: fix as this method is gone to shared.db
+        worker_crud.create_task(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com"), [], [])
         # NB: this insertion is too fast for the ordering to be correct as they are within the same second
 
     response = client_with_auth.get("/url/search?url=https://example.com")
@@ -165,7 +167,7 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     assert len(response.json()) == 10
 
 
-@patch("endpoints.url.UserState")
+@patch("app.web.endpoints.url.UserState")
 def test_search_no_read_access(mock_user_state, client_with_auth):
     mock_user_state.return_value.read = False
     mock_user_state.return_value.read_public = False
@@ -184,8 +186,8 @@ def test_delete_task(client_with_auth, db_session):
     assert response.status_code == 200
     assert response.json() == {"id": "delete-123-456-789", "deleted": False}
 
-    from app.shared.db import crud
-    crud.create_task(db_session, ArchiveCreate(id="delete-123-456-789", url="https://example.com", result={}, public=True, author_id="morty@example.com"), [], [])
+    from app.shared.db import worker_crud
+    worker_crud.create_task(db_session, ArchiveCreate(id="delete-123-456-789", url="https://example.com", result={}, public=True, author_id="morty@example.com"), [], [])
 
     response = client_with_auth.delete("/url/delete-123-456-789")
     assert response.status_code == 200

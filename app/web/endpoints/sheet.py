@@ -9,7 +9,7 @@ from app.web.db.user_state import UserState
 from app.shared import schemas
 from app.shared.task_messaging import get_celery
 from app.web.security import get_user_state
-from app.shared.db import crud
+from app.web.db import crud
 from app.shared.db.database import get_db_dependency
 
 sheet_router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"])

@@ -113,5 +113,4 @@ class CelerySheetTask(BaseModel):
 
 
 class SubmitManualArchive(ArchiveTrigger):
-    url: None = None
     result: str  # should be a Metadata.to_json()

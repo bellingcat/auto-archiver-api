@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 import pytest
 from app.shared.config import VERSION
-from tests.db.test_crud import test_data
+from app.tests.web.db.test_crud import test_data
 
 
 def test_endpoint_home(client_with_auth):
@@ -14,9 +14,9 @@ def test_endpoint_home(client_with_auth):
     assert "groups" not in j
 
 
-@patch("endpoints.default.bearer_security", new_callable=AsyncMock)
-@patch("endpoints.default.get_user_auth", new_callable=AsyncMock, return_value="test@example.com")
-@patch("endpoints.default.crud.get_user_groups", return_value=["group1", "group2"])
+@patch("app.web.endpoints.default.bearer_security", new_callable=AsyncMock)
+@patch("app.web.endpoints.default.get_user_auth", new_callable=AsyncMock, return_value="test@example.com")
+@patch("app.web.endpoints.default.crud.get_user_groups", return_value=["group1", "group2"])
 def test_endpoint_home_with_groups(m1, m2, m3, client_with_auth):
     r = client_with_auth.get("/")
     assert r.status_code == 200
@@ -27,9 +27,9 @@ def test_endpoint_home_with_groups(m1, m2, m3, client_with_auth):
     assert j["groups"] == ["group1", "group2"]
 
 
-@patch("endpoints.default.bearer_security", new_callable=AsyncMock)
-@patch("endpoints.default.get_user_auth", new_callable=AsyncMock, return_value="test@example.com")
-@patch("endpoints.default.crud.get_user_groups", side_effect=Exception('mocked error'))
+@patch("app.web.endpoints.default.bearer_security", new_callable=AsyncMock)
+@patch("app.web.endpoints.default.get_user_auth", new_callable=AsyncMock, return_value="test@example.com")
+@patch("app.web.endpoints.default.crud.get_user_groups", side_effect=Exception('mocked error'))
 def test_endpoint_home_with_groups_exception(m1, m2, m3, client_with_auth):  # mocks call that triggers an internal error
     r = client_with_auth.get("/")
     assert r.status_code == 200
@@ -52,7 +52,7 @@ def test_endpoint_active_no_auth(client, test_no_auth):
 def test_endpoint_active(app):
     m_user_state = MagicMock()
 
-    from web.security import get_user_state
+    from app.web.security import get_user_state
     app.dependency_overrides[get_user_state] = lambda: m_user_state
     
     # inactive user
@@ -103,7 +103,7 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     assert 'disk_utilization{type="used"}' not in r.text
 
     # after metrics calculation
-    from web.utils.metrics import measure_regular_metrics
+    from app.web.utils.metrics import measure_regular_metrics
     await measure_regular_metrics(get_settings.DATABASE_PATH, 60 * 60 * 24 * 31 * 12 * 100)
     r2 = client_with_token.get("/metrics")
     assert 'disk_utilization{type="used"}' in r2.text
@@ -117,7 +117,7 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     assert 'database_metrics_counter_total{query="count_by_user",user="jerry@example.com"} 33.0' in r2.text
 
     # 30s window, should not change the gauges nor the total in the counters
-    from web.utils.metrics import measure_regular_metrics
+    from app.web.utils.metrics import measure_regular_metrics
     await measure_regular_metrics(get_settings.DATABASE_PATH, 30)
     r3 = client_with_token.get("/metrics")
     assert 'database_metrics{query="count_archives"} 100.0' in r3.text

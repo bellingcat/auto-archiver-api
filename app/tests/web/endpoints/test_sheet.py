@@ -45,7 +45,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     assert response.json() == {"detail": "User does not have access to this group."}
 
     # switch to jerry who's got less quota/permissions
-    from web.security import get_user_state
+    from app.web.security import get_user_state
     from app.web.db.user_state import UserState
     app_with_auth.dependency_overrides[get_user_state] = lambda: UserState(db_session, "jerry@example.com")
     client_jerry = TestClient(app_with_auth)
@@ -144,7 +144,7 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
 
 
 class TestArchiveUserSheetEndpoint:
-    @patch("endpoints.sheet.celery", return_value=MagicMock())
+    @patch("app.web.endpoints.sheet.celery", return_value=MagicMock())
     def test_normal_flow(self, m_celery, client_with_auth, db_session):
         from app.shared.db import models
         db_session.add(models.Sheet(id="123-sheet-id", name="Test Sheet 1", author_id="morty@example.com", group_id="spaceship", frequency="hourly"))

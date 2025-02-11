@@ -9,11 +9,12 @@ from fastapi_utils.tasks import repeat_every
 from loguru import logger
 from fastapi_mail import FastMail, MessageSchema, MessageType
 
-from app.shared.db import crud, models
+from app.shared.db import models
 from app.shared.db.database import get_db, get_db_async, make_engine, wal_checkpoint
 from app.shared import schemas
 from app.shared.settings import get_settings
 from app.shared.task_messaging import get_celery
+from app.web.db import crud
 from app.web.utils.metrics import measure_regular_metrics, redis_subscribe_worker_exceptions
 
 celery = get_celery()
@@ -24,12 +25,9 @@ async def lifespan(app: FastAPI):
     # see https://fastapi.tiangolo.com/advanced/events/#lifespan
 
     # STARTUP
-    logger.debug("HERE 00")
     engine = make_engine(get_settings().DATABASE_PATH)
     models.Base.metadata.create_all(bind=engine)
-    logger.debug("HERE 01")
     alembic.config.main(prog="alembic", argv=['--raiseerr', 'upgrade', 'head'])
-    logger.debug("HERE 02")
     logging.getLogger("uvicorn.access").disabled = True  # loguru
     asyncio.create_task(redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL))
     asyncio.create_task(repeat_measure_regular_metrics())

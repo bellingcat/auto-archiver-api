@@ -3,8 +3,8 @@ from fastapi.testclient import TestClient
 import pytest
 from unittest.mock import patch
 from app.shared.config import ALLOW_ANY_EMAIL
-from app.web.db.user_state import UserState
 from app.shared.settings import Settings
+from app.web.db.user_state import UserState
 
 
 @pytest.fixture(autouse=True)
@@ -21,7 +21,7 @@ def get_settings():
 
 @pytest.fixture(autouse=True)
 def mock_settings():
-    with patch('shared.settings.Settings', return_value=Settings(_env_file=".env.test")) as mock_settings:
+    with patch('app.shared.settings.Settings', return_value=Settings(_env_file=".env.test")) as mock_settings:
         yield mock_settings
 
 
@@ -29,7 +29,7 @@ def mock_settings():
 def test_db(get_settings: Settings):
     from app.shared.db import models
     from app.shared.db.database import make_engine
-    from app.shared.db.crud import get_user_groups
+    from app.web.db.crud import get_user_groups
 
     get_user_groups.cache_clear()
     make_engine.cache_clear()
@@ -62,8 +62,8 @@ def db_session(test_db):
 
 @pytest.fixture()
 def app(db_session):
-    from web.main import app_factory
-    from app.shared.db import crud
+    from app.web.main import app_factory
+    from app.web.db import crud
     app = app_factory()
     crud.upsert_user_groups(db_session)
     return app
@@ -77,7 +77,7 @@ def client(app):
 
 @pytest.fixture()
 def app_with_auth(app, db_session):
-    from web.security import get_token_or_user_auth, get_user_auth, get_user_state
+    from app.web.security import get_token_or_user_auth, get_user_auth, get_user_state
     app.dependency_overrides[get_token_or_user_auth] = lambda: "rick@example.com"
     app.dependency_overrides[get_user_auth] = lambda: "morty@example.com"
     app.dependency_overrides[get_user_state] = lambda: UserState(db_session, "MORTY@example.com")
@@ -92,7 +92,7 @@ def client_with_auth(app_with_auth):
 
 @pytest.fixture()
 def app_with_token(app):
-    from web.security import token_api_key_auth, get_token_or_user_auth
+    from app.web.security import token_api_key_auth, get_token_or_user_auth
     app.dependency_overrides[token_api_key_auth] = lambda: ALLOW_ANY_EMAIL
     app.dependency_overrides[get_token_or_user_auth] = lambda: ALLOW_ANY_EMAIL
     return app

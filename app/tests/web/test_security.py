@@ -8,7 +8,7 @@ from app.shared.config import ALLOW_ANY_EMAIL
 
 
 def test_secure_compare():
-    from web.security import secure_compare
+    from app.web.security import secure_compare
 
     assert secure_compare("test", "test")
     assert not secure_compare("test", "test2")
@@ -16,14 +16,14 @@ def test_secure_compare():
 
 @pytest.mark.asyncio
 async def test_get_token_or_user_auth_with_api():
-    from web.security import get_token_or_user_auth
+    from app.web.security import get_token_or_user_auth
     mock_api = HTTPAuthorizationCredentials(scheme="lorem", credentials="this_is_the_test_api_token")
     assert await get_token_or_user_auth(mock_api) == ALLOW_ANY_EMAIL
 
 
 @pytest.mark.asyncio
 async def test_get_token_or_user_auth_with_user():
-    from web.security import get_token_or_user_auth
+    from app.web.security import get_token_or_user_auth
     bad_user = HTTPAuthorizationCredentials(scheme="ipsum", credentials="invalid")
     e: pytest.ExceptionInfo = None
     with pytest.raises(HTTPException) as e:
@@ -32,18 +32,18 @@ async def test_get_token_or_user_auth_with_user():
     assert e.value.detail == "invalid access_token"
 
 
-@patch("web.security.authenticate_user", return_value=(True, "summer@example.com"))
+@patch("app.web.security.authenticate_user", return_value=(True, "summer@example.com"))
 @pytest.mark.asyncio
 async def test_get_user_auth(m1):
-    from web.security import get_user_auth
+    from app.web.security import get_user_auth
     good_user = HTTPAuthorizationCredentials(scheme="ipsum", credentials="valid-and-good")
     assert await get_user_auth(good_user) == "summer@example.com"
 
 
-@patch("web.security.secure_compare", return_value=False)
+@patch("app.web.security.secure_compare", return_value=False)
 @pytest.mark.asyncio
 async def test_token_api_key_auth_exception(m1):
-    from web.security import token_api_key_auth
+    from app.web.security import token_api_key_auth
 
     e: pytest.ExceptionInfo = None
     with pytest.raises(HTTPException) as e:
@@ -54,12 +54,12 @@ async def test_token_api_key_auth_exception(m1):
 
 @pytest.mark.asyncio
 async def test_authenticate_user():
-    from web.security import authenticate_user
+    from app.web.security import authenticate_user
 
     assert authenticate_user("test") == (False, "invalid access_token")
     assert authenticate_user(123) == (False, "invalid access_token")
 
-    with patch("web.security.requests.get") as mock_get:
+    with patch("app.web.security.requests.get") as mock_get:
         # bad response from oauth2
         mock_get.return_value.status_code = 403
         assert authenticate_user("this-will-call-requests") == (False, "invalid token")
@@ -100,9 +100,9 @@ async def test_authenticate_user():
 
 @pytest.mark.asyncio
 async def test_authenticate_user_exception():
-    from web.security import authenticate_user
+    from app.web.security import authenticate_user
 
-    with patch("web.security.requests.get") as mock_get:
+    with patch("app.web.security.requests.get") as mock_get:
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.side_effect = Exception("mocked error")
         assert authenticate_user("this-will-call-requests") == (False, "exception occurred")

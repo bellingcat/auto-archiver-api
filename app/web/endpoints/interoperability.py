@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.shared.aa_utils import get_all_urls
 from app.shared.config import ALLOW_ANY_EMAIL
 from app.shared import business_logic, schemas
-from app.shared.db import crud
+from app.shared.db import worker_crud
 from app.shared.db.database import get_db_dependency
 from app.web.security import token_api_key_auth
 from app.shared.db import models
@@ -26,9 +26,19 @@ def submit_manual_archive(
     auth=Depends(token_api_key_auth),
     db: Session = Depends(get_db_dependency)
 ):
-    result: Metadata = Metadata.from_json(manual.result)
+    try:
+        result: Metadata = Metadata.from_json(manual.result)
+    except json.JSONDecodeError as e:
+        log_error(e)
+        raise HTTPException(status_code=422, detail="Invalid JSON in result field.")
     manual.author_id = manual.author_id or ALLOW_ANY_EMAIL
     manual.tags.add("manual")
+
+    try:
+        store_until=business_logic.get_store_archive_until(db, manual.group_id)
+    except AssertionError as e:
+        log_error(e)
+        raise HTTPException(status_code=422, detail=str(e))
 
     try:
         archive = schemas.ArchiveCreate(
@@ -40,10 +50,10 @@ def submit_manual_archive(
             id=models.generate_uuid(),
             result=json.loads(result.to_json()),
             urls=get_all_urls(result),
-            store_until=business_logic.get_store_archive_until(db, manual.group_id),
+            store_until=store_until,
         )
 
-        db_archive = crud.store_archived_url(db, archive)
+        db_archive = worker_crud.store_archived_url(db, archive)
         logger.debug(f"[MANUAL ARCHIVE STORED] {db_archive.author_id} {db_archive.url}")
         return JSONResponse({"id": db_archive.id}, status_code=201)
     except sqlalchemy.exc.IntegrityError as e:

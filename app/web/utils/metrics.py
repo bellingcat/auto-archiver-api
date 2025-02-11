@@ -4,7 +4,7 @@ import os
 import shutil
 from prometheus_client import Counter, Gauge
 
-from app.shared.db import crud
+from app.web.db import crud
 from app.shared.db.database import get_db
 from app.shared.log import log_error
 from app.shared.task_messaging import get_redis

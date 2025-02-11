@@ -19,17 +19,17 @@ domains:
 
 
 orchestrators:
-  spaceship: tests/orchestration.test.yaml
-  interdimensional: tests/orchestration.test.yaml
-  default: tests/orchestration.test.yaml
+  spaceship: app/tests/orchestration.test.yaml
+  interdimensional: app/tests/orchestration.test.yaml
+  default: app/tests/orchestration.test.yaml
 
-default_orchestrator: tests/orchestration.test.yaml
+default_orchestrator: app/tests/orchestration.test.yaml
 
 groups:
   spaceship:
     description: "The spaceship crew"
-    orchestrator: tests/orchestration.test.yaml
-    orchestrator_sheet: tests/orchestration.test.yaml
+    orchestrator: app/tests/orchestration.test.yaml
+    orchestrator_sheet: app/tests/orchestration.test.yaml
     permissions:
       read: ["all"]
       archive_url: true
@@ -43,8 +43,8 @@ groups:
       priority: "high"
   interdimensional:
     description: "Interdimensional travelers"
-    orchestrator: tests/orchestration.test.yaml
-    orchestrator_sheet: tests/orchestration.test.yaml
+    orchestrator: app/tests/orchestration.test.yaml
+    orchestrator_sheet: app/tests/orchestration.test.yaml
     permissions:
       read: ["interdimensional", "animated-characters"]
       archive_url: true
@@ -58,8 +58,8 @@ groups:
       priority: "high"
   animated-characters:
     description: "Animated characters"
-    orchestrator: tests/orchestration.test.yaml
-    orchestrator_sheet: tests/orchestration.test.yaml
+    orchestrator: app/tests/orchestration.test.yaml
+    orchestrator_sheet: app/tests/orchestration.test.yaml
     permissions:
       read: ["animated-characters"]
       archive_url: true
@@ -72,8 +72,8 @@ groups:
       priority: "low"
   default:
     description: "Public access"
-    orchestrator: tests/orchestration.test.yaml
-    orchestrator_sheet: tests/orchestration.test.yaml
+    orchestrator: app/tests/orchestration.test.yaml
+    orchestrator_sheet: app/tests/orchestration.test.yaml
     permissions:
       # read: []
       archive_url: true

@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.config import ALLOW_ANY_EMAIL
 from app.shared.db.database import get_db
 from app.shared.db import models
-from app.shared import schemas
 from app.shared.settings import get_settings
 from app.shared.user_groups import UserGroups
 from app.shared.utils.misc import fnv1a_hash_mod
@@ -54,16 +53,6 @@ def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, lim
 
 def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int = 100):
     return base_query(db).filter(models.Archive.author_id == email).order_by(models.Archive.created_at.desc()).offset(skip).limit(get_limit(limit)).all()
-
-#TODO: rename task to archive
-def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]) -> models.Archive:
-    db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id, sheet_id=task.sheet_id, store_until=task.store_until)
-    db_task.tags = tags
-    db_task.urls = urls
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
-    return db_task
 
 
 def soft_delete_task(db: Session, task_id: str, email: str) -> bool:
@@ -113,17 +102,7 @@ async def soft_delete_expired_archives(db: AsyncSession) -> dict:
 # --------------- TAG
 
 
-def create_tag(db: Session, tag: str) -> models.Tag:
-    db_tag = db.query(models.Tag).filter(models.Tag.id == tag).first()
-    if not db_tag:
-        db_tag = models.Tag(id=tag)
-        db.add(db_tag)
-        db.commit()
-        db.refresh(db_tag)
-    return db_tag
-
-
-def is_user_in_group(db: Session, email: str, group_name: str) -> models.Group:
+def is_user_in_group(email: str, group_name: str) -> models.Group:
     if email == ALLOW_ANY_EMAIL: return True
     return len(group_name) and len(email) and group_name in get_user_groups(email)
 
@@ -149,21 +128,6 @@ def get_user_groups(email: str) -> list[str]:
 
 
 # --------------- INIT User-Groups
-
-def get_group(db: Session, group_name: str) -> models.Group:
-    return db.query(models.Group).filter(models.Group.id == group_name).first()
-
-
-def create_or_get_user(db: Session, author_id: str) -> models.User:
-    if type(author_id) == str: author_id = author_id.lower()
-    db_user = db.query(models.User).filter(models.User.email == author_id).first()
-    if not db_user:
-        db_user = models.User(email=author_id)
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-    return db_user
-
 
 def upsert_group(db: Session, group_name: str, description: str, orchestrator: str, orchestrator_sheet: str, permissions: dict, domains: list) -> models.Group:
     db_group = db.query(models.Group).filter(models.Group.id == group_name).first()
@@ -285,14 +249,6 @@ async def delete_stale_sheets(db: AsyncSession, inactivity_days: int) -> dict:
     await db.commit()
     return dict(deleted)
 
-def update_sheet_last_url_archived_at(db: Session, sheet_id: str):
-    db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id).first()
-    if db_sheet:
-        db_sheet.last_url_archived_at = datetime.now()
-        db.commit()
-        return True
-    return False
-
 
 def delete_sheet(db: Session, sheet_id: str, email: str) -> bool:
     db_sheet = db.query(models.Sheet).filter(models.Sheet.id == sheet_id, models.Sheet.author_id == email).first()
@@ -300,15 +256,3 @@ def delete_sheet(db: Session, sheet_id: str, email: str) -> bool:
         db.delete(db_sheet)
         db.commit()
     return db_sheet is not None
-
-
-#--- Celery worker tasks
-
-
-def store_archived_url(db: Session, archive: schemas.ArchiveCreate) -> models.Archive:
-    # create and load user, tags, if needed
-    create_or_get_user(db, archive.author_id)
-    db_tags = [create_tag(db, tag) for tag in archive.tags]
-    # insert everything
-    db_task = create_task(db, task=archive, tags=db_tags, urls=archive.urls)
-    return db_task

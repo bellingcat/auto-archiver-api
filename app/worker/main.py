@@ -7,13 +7,14 @@ from sqlalchemy import exc
 
 from auto_archiver import Config, ArchivingOrchestrator, Metadata
 
-from app.shared.db import crud, models
+from app.shared.db import models
 from app.shared.db.database import get_db
 from app.shared import business_logic, schemas
 from app.shared.task_messaging import get_celery, get_redis
 from app.shared.settings import get_settings
 from app.shared.log import log_error
 from app.shared.aa_utils import get_all_urls
+from app.shared.db import worker_crud
 
 
 settings = get_settings()
@@ -79,7 +80,7 @@ def create_sheet_task(self, sheet_json: str):
 
     if stats["archived"] > 0:
         with get_db() as session:
-            crud.update_sheet_last_url_archived_at(session, sheet.sheet_id)
+            worker_crud.update_sheet_last_url_archived_at(session, sheet.sheet_id)
 
     logger.info(f"SHEET DONE {sheet=}")
     # TODO: is this used anywhere? maybe drop it
@@ -88,11 +89,11 @@ def create_sheet_task(self, sheet_json: str):
 
 def load_orchestrator(group_id: str, orchestrator_for_sheet: bool = False, overwrite_configs: dict = {}) -> ArchivingOrchestrator:
     with get_db() as session:
-        group = crud.get_group(session, group_id)
+        group = worker_crud.get_group(session, group_id)
         if orchestrator_for_sheet:
             orchestrator_fn = group.orchestrator_sheet
         else:
-            orchestrator_fn = crud.get_group(session, group_id).orchestrator
+            orchestrator_fn = worker_crud.get_group(session, group_id).orchestrator
         assert orchestrator_fn, f"no orchestrator found for {group_id}"
         
 
@@ -103,7 +104,7 @@ def load_orchestrator(group_id: str, orchestrator_for_sheet: bool = False, overw
 
 def insert_result_into_db(archive: schemas.ArchiveCreate) -> str:
     with get_db() as session:
-        db_task = crud.store_archived_url(session, archive)
+        db_task = worker_crud.store_archived_url(session, archive)
         logger.debug(f"[ARCHIVE STORED] {db_task.author_id} {db_task.url}")
         return db_task.id
 
