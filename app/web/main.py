@@ -17,7 +17,7 @@ from app.shared.task_messaging import get_celery
 
 from app.web.db import crud
 from app.web.security import get_user_auth, token_api_key_auth, get_token_or_user_auth
-from app.shared.config import VERSION, API_DESCRIPTION
+from app.web.config import VERSION, API_DESCRIPTION
 from app.shared.db.database import get_db_dependency
 from app.web.events import lifespan
 from app.shared.settings import get_settings

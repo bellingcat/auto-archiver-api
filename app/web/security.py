@@ -3,7 +3,7 @@ import requests, secrets
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.shared.config import ALLOW_ANY_EMAIL
+from app.web.config import ALLOW_ANY_EMAIL
 from app.shared.settings import get_settings
 from app.shared.db.database import get_db
 from app.web.db.user_state import UserState

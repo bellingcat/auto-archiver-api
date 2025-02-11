@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 import pytest
-from app.shared.config import VERSION
+from app.web.config import VERSION
 from app.tests.web.db.test_crud import test_data
 
 

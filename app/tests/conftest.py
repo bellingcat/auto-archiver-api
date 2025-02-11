@@ -2,7 +2,7 @@ import os
 from fastapi.testclient import TestClient
 import pytest
 from unittest.mock import patch
-from app.shared.config import ALLOW_ANY_EMAIL
+from app.web.config import ALLOW_ANY_EMAIL
 from app.shared.settings import Settings
 from app.web.db.user_state import UserState
 

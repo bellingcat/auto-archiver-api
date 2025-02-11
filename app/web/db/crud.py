@@ -6,7 +6,7 @@ from loguru import logger
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.config import ALLOW_ANY_EMAIL
+from app.web.config import ALLOW_ANY_EMAIL
 from app.shared.db.database import get_db
 from app.shared.db import models
 from app.shared.settings import get_settings

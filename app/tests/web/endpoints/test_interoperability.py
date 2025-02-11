@@ -2,7 +2,7 @@ from datetime import datetime
 import json
 from unittest.mock import MagicMock, patch
 
-from app.shared.config import ALLOW_ANY_EMAIL
+from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db import crud
 
 

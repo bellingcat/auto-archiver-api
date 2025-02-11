@@ -5,7 +5,7 @@ from datetime import datetime
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from app.shared.config import ALLOW_ANY_EMAIL
+from app.web.config import ALLOW_ANY_EMAIL
 from app.shared import schemas
 from app.shared.task_messaging import get_celery
 from app.web.security import get_token_or_user_auth, get_user_state

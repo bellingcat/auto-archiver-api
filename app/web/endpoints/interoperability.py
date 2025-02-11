@@ -7,7 +7,7 @@ from auto_archiver import Metadata
 from sqlalchemy.orm import Session
 
 from app.shared.aa_utils import get_all_urls
-from app.shared.config import ALLOW_ANY_EMAIL
+from app.web.config import ALLOW_ANY_EMAIL
 from app.shared import business_logic, schemas
 from app.shared.db import worker_crud
 from app.shared.db.database import get_db_dependency

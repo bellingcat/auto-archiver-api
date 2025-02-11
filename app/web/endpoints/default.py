@@ -3,7 +3,7 @@ from typing import Dict
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
-from app.shared.config import VERSION, BREAKING_CHANGES
+from app.web.config import VERSION, BREAKING_CHANGES
 from app.shared.log import log_error
 from app.web.db import crud
 from app.shared.schemas import ActiveUser, UsageResponse

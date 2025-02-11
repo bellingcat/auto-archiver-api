@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 import pytest
 
-from app.shared.config import ALLOW_ANY_EMAIL
+from app.web.config import ALLOW_ANY_EMAIL
 
 
 def test_secure_compare():

@@ -63,7 +63,7 @@ def test_data(db_session):
 
 def test_get_archive(test_data, db_session):
     from app.web.db import crud
-    from app.shared.config import ALLOW_ANY_EMAIL
+    from app.web.config import ALLOW_ANY_EMAIL
 
     # each author's archives work
     assert (a0 := crud.get_archive(db_session, "archive-id-456-0", authors[0])) is not None
@@ -92,7 +92,7 @@ def test_get_archive(test_data, db_session):
 
 def test_search_archives_by_url(test_data, db_session):
     from app.web.db import crud
-    from app.shared.config import ALLOW_ANY_EMAIL
+    from app.web.config import ALLOW_ANY_EMAIL
 
     # rick's archives are private
     assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "rick@example.com")) == 34
@@ -138,7 +138,7 @@ def test_search_archives_by_url(test_data, db_session):
 
 
 def test_search_archives_by_email(test_data, db_session):
-    from app.shared.config import ALLOW_ANY_EMAIL
+    from app.web.config import ALLOW_ANY_EMAIL
     from app.web.db import crud
 
     # lower/upper case
@@ -161,7 +161,7 @@ def test_search_archives_by_email(test_data, db_session):
 @patch("app.web.db.crud.DATABASE_QUERY_LIMIT", new=25)
 def test_max_query_limit(test_data, db_session):
     from app.web.db import crud
-    from app.shared.config import ALLOW_ANY_EMAIL
+    from app.web.config import ALLOW_ANY_EMAIL
 
     assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL)) == 25
     assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, limit=1000)) == 25
@@ -233,7 +233,7 @@ def test_count_by_users_since(test_data, db_session):
 
 def test_is_user_in_group(test_data, db_session):
     from app.web.db import crud
-    from app.shared.config import ALLOW_ANY_EMAIL
+    from app.web.config import ALLOW_ANY_EMAIL
 
     # see user-groups.test.yaml
     test_pairs = [
