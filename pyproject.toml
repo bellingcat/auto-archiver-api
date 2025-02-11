@@ -1,6 +1,8 @@
+[tool.poetry]
+package-mode = false
+
 [project]
 name = "auto-archiver-api"
-version = "0.9.0"
 description = "API wrapper for Bellingcat's Auto Archiver, supports users, groups, sheet and url archives."
 authors = [
     { name = "Bellingcat", email = "contact-tech@bellingcat.com" },
