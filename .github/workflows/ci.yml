@@ -38,7 +38,7 @@ jobs:
       run: echo "ENVIRONMENT_FILE=.env.test" >> $GITHUB_ENV
 
     - name: Run tests with coverage
-      run: poetry run coverage run -m pytest -v -ra --color=yes tests/
+      run: poetry run coverage run -m pytest -v -ra --color=yes app/tests/
 
     - name: Report coverage
       run: poetry run coverage report
