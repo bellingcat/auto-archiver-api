@@ -61,7 +61,6 @@ class Test_create_archive_task():
 
         with pytest.raises(Exception) as e:
             create_archive_task(self.archive.model_dump_json())
-            assert "UNABLE TO archive" in str(e)
         mock_orchestrator.feed_item.assert_called_once()
 
     def mock_orchestrator_choice(self, m_load):

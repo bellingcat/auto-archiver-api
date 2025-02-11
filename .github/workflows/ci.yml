@@ -21,25 +21,24 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Install pipenv
-      run: pip install pipenv
-      working-directory: src
+    - name: Install Poetry
+      run: pipx install poetry
 
     - name: Install dependencies
-      run: pipenv install --dev
-      working-directory: src
-#TODO: fix working-directories here
+      run: poetry install --no-interaction --with dev
+
+    - name: Set dev environment variable
+      run: echo "ENVIRONMENT_FILE=.env.test" >> $GITHUB_ENV
+
     - name: Run tests with coverage
-      run: PYTHONPATH=. PIPENV_DOTENV_LOCATION=.env.test pipenv run coverage run -m pytest -v --color=yes tests/
-      working-directory: src
+      run: poetry run coverage run -m pytest -v -ra --color=yes tests/
 
     - name: Report coverage
-      run: pipenv run coverage report
-      working-directory: src
+      run: poetry run coverage report
