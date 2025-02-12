@@ -58,7 +58,7 @@ def app_factory(settings = get_settings()):
     # prometheus exposed in /metrics with authentication
     Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics", "/health", "/openapi.json", "/favicon.ico"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
 
-    # TODO: recheck this for security, currently only needed for when local_storage is used
+    # TODO: recheck this for security, currently only needed for when local_storage is used in development
     local_dir = settings.SERVE_LOCAL_ARCHIVE
     if not os.path.isdir(local_dir) and os.path.isdir(local_dir.replace("/app", ".")):
         local_dir = local_dir.replace("/app", ".")

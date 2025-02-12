@@ -18,7 +18,7 @@ services:
     command: uvicorn app.web:app --factory --host 0.0.0.0
     volumes:
       - ./logs:/aa-api/logs
-      - ./app/database:/aa-api/database
+      - ./database:/aa-api/database
     depends_on:
       - redis
     healthcheck:
@@ -36,7 +36,7 @@ services:
     command: celery --app=app.worker.main.celery worker --loglevel=warning --logfile=/aa-api/logs/celery.log
     volumes:
       - ./logs:/aa-api/logs
-      - ./app/database:/aa-api/database
+      - ./database:/aa-api/database
       - /var/run/docker.sock:/var/run/docker.sock
       - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER, do not change /crawls
     environment:

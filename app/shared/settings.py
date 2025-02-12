@@ -13,16 +13,7 @@ class Settings(BaseSettings):
 
 	# general
     SERVE_LOCAL_ARCHIVE: str = ""
-    USER_GROUPS_FILENAME: str = "user-groups.yaml"
-    SHEET_ORCHESTRATION_YAML : str = "secrets/orchestration-sheet.yaml"
-    
-    # cronjobs
-    #TODO: disable by default?
-    CRON_ARCHIVE_SHEETS: bool = False
-    CRON_DELETE_STALE_SHEETS: bool = True
-    DELETE_STALE_SHEETS_DAYS: int = 14
-    CRON_DELETE_SCHEDULED_ARCHIVES: bool = True
-    DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS: int = 14
+    USER_GROUPS_FILENAME: str = "app/user-groups.yaml"
 
 	# database
     DATABASE_PATH: str
@@ -31,25 +22,31 @@ class Settings(BaseSettings):
     def ASYNC_DATABASE_PATH(self) -> str:
         return self.DATABASE_PATH.replace("sqlite://", "sqlite+aiosqlite://")
 
+	# security
+    API_BEARER_TOKEN: Annotated[str, Len(min_length=20)]
+    ALLOWED_ORIGINS: Annotated[Set[str], Len(min_length=1)]
+    CHROME_APP_IDS: Annotated[Set[Annotated[str, Len(min_length=10)]], Len(min_length=1)]
+    BLOCKED_EMAILS: Annotated[Set[str], Len(min_length=0)] = set()
+
     # redis
     REDIS_PASSWORD: str = ""
     REDIS_HOSTNAME: str = "localhost"
+    REDIS_EXCEPTIONS_CHANNEL: str = "exceptions-channel"
     @property
     def CELERY_BROKER_URL(self)-> str:
         if self.REDIS_PASSWORD:
             return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOSTNAME}:6379"
         return f"redis://{self.REDIS_HOSTNAME}:6379"
-    REDIS_EXCEPTIONS_CHANNEL: str = "exceptions-channel"
+    
+    # cronjobs
+    CRON_ARCHIVE_SHEETS: bool = False
+    CRON_DELETE_STALE_SHEETS: bool = False
+    DELETE_STALE_SHEETS_DAYS: int = 14
+    CRON_DELETE_SCHEDULED_ARCHIVES: bool = False
+    DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS: int = 14
     
 	# observability
     REPEAT_COUNT_METRICS_SECONDS: int = 30
-
-	# security
-    API_BEARER_TOKEN: Annotated[str, Len(min_length=20)]
-    ALLOWED_ORIGINS: Annotated[Set[str], Len(min_length=1)]
-    CHROME_APP_IDS: Annotated[Set[Annotated[str, Len(min_length=10)]], Len(min_length=1)]
-    #TODO: deprecate blocklist?
-    BLOCKED_EMAILS: Annotated[Set[str], Len(min_length=0)] = set()
 
     # email configuration, if needed
     MAIL_FROM: str = "noreply@bellingcat.com"
