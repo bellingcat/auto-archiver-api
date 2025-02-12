@@ -85,7 +85,7 @@ async def archive_sheets_cronjob(frequency: str, interval: int, current_time_uni
             task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group_id=s.group_id).model_dump_json()]).apply_async(**group_queue)
 
             triggered_jobs.append({"sheet_id": s.id, "task_id": task.id})
-    logger.info(f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")
+    logger.debug(f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")
 
 
 # TODO: on exception should logerror but also prometheus counter
@@ -129,7 +129,7 @@ async def notify_about_expired_archives():
                 subtype=MessageType.html
             )
             await fastmail.send_message(message)
-            logger.info(f"[CRON] Email sent to {email} about {len(user_archives[email])} scheduled archives deletion.")
+            logger.debug(f"[CRON] Email sent to {email} about {len(user_archives[email])} scheduled archives deletion.")
 
     # now schedule the deletion event
     asyncio.create_task(delete_expired_archives())
@@ -140,13 +140,13 @@ async def delete_expired_archives():
     async with get_db_async() as db:
         count_deleted = await crud.soft_delete_expired_archives(db)
         if count_deleted:
-            logger.info(f"[CRON] Deleted {count_deleted} archives.")
+            logger.debug(f"[CRON] Deleted {count_deleted} archives.")
 
 
 @repeat_every(seconds=86400, wait_first=150, on_exception=logger.error)
 async def delete_stale_sheets():
     STALE_DAYS = get_settings().DELETE_STALE_SHEETS_DAYS
-    logger.info(f"[CRON] Deleting stale sheets older than {STALE_DAYS} days.")
+    logger.debug(f"[CRON] Deleting stale sheets older than {STALE_DAYS} days.")
     async with get_db_async() as db:
         user_sheets = await crud.delete_stale_sheets(db, STALE_DAYS)
 
@@ -175,7 +175,7 @@ async def delete_stale_sheets():
             subtype=MessageType.html
         )
         await fastmail.send_message(message)
-        logger.info(f"[CRON] Email sent to {email} about stale sheets deletion.")
+        logger.debug(f"[CRON] Email sent to {email} about stale sheets deletion.")
 
 
 # @repeat_at
