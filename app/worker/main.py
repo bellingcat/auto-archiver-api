@@ -48,7 +48,7 @@ def create_archive_task(self, archive_json: str):
 @celery.task(name="create_sheet_task", bind=True)
 def create_sheet_task(self, sheet_json: str):
     sheet = schemas.SubmitSheet.model_validate_json(sheet_json)
-    queue_name = create_sheet_task.request.delivery_info.get('routing_key', 'No queue info')
+    queue_name = (create_sheet_task.request.delivery_info or {}).get('routing_key', 'unknown')
     logger.info(f"[queue={queue_name}] SHEET START {sheet=}")
 
     orchestrator = load_orchestrator(sheet.group_id, True, {"configurations": {"gsheet_feeder": {"sheet_id": sheet.sheet_id}}})

@@ -15,6 +15,8 @@ from app.shared.db.database import get_db_dependency
 
 from urllib.parse import urlparse
 
+from app.web.utils.misc import convert_priority_to_queue_dict
+
 url_router = APIRouter(prefix="/url", tags=["Single URL operations"])
 
 celery = get_celery()
@@ -32,6 +34,7 @@ def archive_url(
     if not all([parsed_url.scheme, parsed_url.netloc]):
         raise HTTPException(status_code=400, detail="Invalid URL received.")
 
+    archive_create = schemas.ArchiveCreate(**archive.model_dump())
     if email != ALLOW_ANY_EMAIL:
         user = UserState(db, email)
         if archive.group_id and not user.in_group(archive.group_id):
@@ -40,10 +43,11 @@ def archive_url(
             raise HTTPException(status_code=429, detail="User has reached their monthly URL quota.")
         if not user.has_quota_max_monthly_mbs(archive.group_id):
             raise HTTPException(status_code=429, detail="User has reached their monthly MB quota.")
+        group_queue = user.priority_group(archive_create.group_id)
+    else:
+        group_queue = convert_priority_to_queue_dict("high")
     
-    archive_create = schemas.ArchiveCreate(**archive.model_dump())
 
-    group_queue = user.priority_group(archive_create.group_id)
     task = celery.signature("create_archive_task", args=[archive_create.model_dump_json()]).apply_async(**group_queue)
     task_response = schemas.Task(id=task.id)
     return JSONResponse(task_response.model_dump(), status_code=201)

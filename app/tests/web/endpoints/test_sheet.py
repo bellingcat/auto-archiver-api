@@ -151,14 +151,14 @@ class TestArchiveUserSheetEndpoint:
         db_session.commit()
 
         m_signature = MagicMock()
-        m_signature.delay.return_value = TaskResult(id="123-taskid", status="PENDING", result="")
+        m_signature.apply_async.return_value = TaskResult(id="123-taskid", status="PENDING", result="")
         m_celery.signature.return_value = m_signature
 
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
         assert r.status_code == 201
         assert r.json() == {"id": "123-taskid"}
         m_celery.signature.assert_called_once()
-        m_signature.delay.assert_called_once()
+        m_signature.apply_async.assert_called_once()
 
     def test_token_auth(self, client_with_token, test_no_auth):
         test_no_auth(client_with_token.post, "/sheet/123-sheet-id/archive")

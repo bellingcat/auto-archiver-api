@@ -176,3 +176,10 @@ async def delete_stale_sheets():
         )
         await fastmail.send_message(message)
         logger.info(f"[CRON] Email sent to {email} about stale sheets deletion.")
+
+
+# @repeat_at
+async def generate_users_export_csv():
+    #TODO: implement a cronjob that regularly requested user data to a CSV file
+    # see https://colab.research.google.com/drive/1QDbo3QXHPBdiTuANlA1AWVvN-rqxuCPa?authuser=0#scrollTo=4nPXeSdK8RBT
+    pass
