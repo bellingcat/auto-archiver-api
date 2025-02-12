@@ -9,19 +9,6 @@ class SubmitSheet(BaseModel):
     author_id: str | None = None
     group_id: str = "default"
     tags: set[str] | None = set()
-    columns: dict | None = {}  # TODO: implement/remove
-
-
-class SubmitManual(BaseModel):  # deprecated
-    result: str  # should be a Metadata.to_json()
-    public: bool = False
-    author_id: str | None = None
-    group_id: str | None = None
-    tags: set[str] | None = set()
-
-# API REQUESTS BELOW
-# TODO: replace existing schemas with these
-
 
 class ArchiveUrl(BaseModel):
     url: str
@@ -29,9 +16,6 @@ class ArchiveUrl(BaseModel):
     author_id: str | None
     group_id: str | None
     tags: set[str] | None = set()
-
-# API RESPONSES BELOW
-
 
 class ArchiveResult(BaseModel):
     id: str
