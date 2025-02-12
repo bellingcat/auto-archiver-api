@@ -89,12 +89,12 @@ async def archive_sheets_cronjob(frequency: str, interval: int, current_time_uni
 
 
 # TODO: on exception should logerror but also prometheus counter
-DELETE_WINDOW = get_settings().DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS * 24 * 60 * 60
+DELETE_WINDOW = get_settings().DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS * 24 * 60 * 60
 
 
 @repeat_every(seconds=DELETE_WINDOW, wait_first=180, on_exception=logger.error)
 async def notify_about_expired_archives():
-    notify_from = datetime.datetime.now() + datetime.timedelta(days=get_settings().DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS)
+    notify_from = datetime.datetime.now() + datetime.timedelta(days=get_settings().DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS)
     async with get_db_async() as db:
         scheduled_deletions = await crud.find_by_store_until(db, notify_from)
 
@@ -106,7 +106,7 @@ async def notify_about_expired_archives():
         fastmail = FastMail(get_settings().MAIL_CONFIG)
         # notify users
         for email in user_archives:
-            list_of_archives = "\n".join([f'{a.url},{a.id}<br/>' for a in user_archives[email]])
+            list_of_archives = "\n".join([f'{a.url}, {a.id}, {a.store_until.isoformat()}<br/>' for a in user_archives[email]])
             # TODO: how can users download them in bulk?
             message = MessageSchema(
                 subject="Auto Archiver: Archives Scheduled for Deletion",
@@ -115,11 +115,11 @@ async def notify_about_expired_archives():
                 <html>
                 <body>
                     <p>Hi {email},</p>
-                    <p>Some of your archives will be deleted in the next {get_settings().DELETE_SCHEDULED_ARCHIVES_NOTIFY_DAYS} days, as they are reaching their expiration date according to our retention policy for their groups.</p>
+                    <p>Some of your archives will be deleted in the next {get_settings().DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS} days, as they are reaching their expiration date according to our retention policy for their groups.</p>
                     <p>If you want to preserve any, make sure to download them now.</p>
                     <p>Here is a CSV list of URLs:</p>
                     <code>
-                    url,archive_id<br/>
+                    url,archive_id,time_of_deletion<br/>
                     {list_of_archives}
                     </code>
                     <p>Best,<br>The Auto Archiver team</p>
@@ -135,7 +135,7 @@ async def notify_about_expired_archives():
     asyncio.create_task(delete_expired_archives())
 
 
-@repeat_every(max_repetitions=1, wait_first=DELETE_WINDOW - (60 * 60), seconds=0, on_exception=logger.error)
+@repeat_every(max_repetitions=1, wait_first=10, seconds=0, on_exception=logger.error)
 async def delete_expired_archives():
     async with get_db_async() as db:
         count_deleted = await crud.soft_delete_expired_archives(db)

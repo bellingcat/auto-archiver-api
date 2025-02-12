@@ -89,7 +89,7 @@ def count_by_user_since(db: Session, seconds_delta: int = 15):
         .limit(500).all()
 
 
-async def find_by_store_until(db: AsyncSession, store_until_is_before: datetime) -> dict:
+async def find_by_store_until(db: AsyncSession, store_until_is_before: datetime) -> list[models.Archive]:
     res = await db.execute(
         select(models.Archive)
         .filter(models.Archive.deleted == False, models.Archive.store_until < store_until_is_before)
