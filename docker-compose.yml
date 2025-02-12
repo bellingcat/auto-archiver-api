@@ -22,7 +22,7 @@ services:
     depends_on:
       - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python3", "-c", 'import sys, urllib.request; sys.exit(urllib.request.urlopen("http://localhost:8000/health").getcode() != 200)']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -49,7 +49,7 @@ services:
       - web
       - redis
     healthcheck:
-      test: ["CMD", "pipenv", "run", "celery", "-A", "worker.main.celery", "status"]
+      test: ["CMD-SHELL", "./poetry-venv/bin/poetry run celery -A app.worker.main.celery inspect ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
