@@ -12,6 +12,7 @@ from app.shared.db import models
 from app.shared.settings import get_settings
 from app.shared.user_groups import UserGroups
 from app.shared.utils.misc import fnv1a_hash_mod
+from app.web.utils.misc import convert_priority_to_queue_dict
 
 DATABASE_QUERY_LIMIT = get_settings().DATABASE_QUERY_LIMIT
 
@@ -21,11 +22,13 @@ def get_limit(user_limit: int):
 
 # --------------- TASK = Archive
 
+
 def base_query(db: Session):
     # NOTE: load_only is for optimization and not obfuscation, use .with_entities() if needed
     return db.query(models.Archive)\
         .filter(models.Archive.deleted == False)\
         .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result, models.Archive.store_until))
+
 
 def get_archive(db: Session, id: str, email: str):
     query = base_query(db).filter(models.Archive.id == id)
@@ -34,7 +37,8 @@ def get_archive(db: Session, id: str, email: str):
         query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
     return query.first()
 
-def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False)-> list[models.Archive]:
+
+def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False) -> list[models.Archive]:
     # searches for partial URLs, if email is * no ownership filtering happens
     query = base_query(db)
     if email != ALLOW_ANY_EMAIL:
@@ -84,12 +88,14 @@ def count_by_user_since(db: Session, seconds_delta: int = 15):
         .order_by(func.count().desc())\
         .limit(500).all()
 
-async def find_by_store_until(db: AsyncSession, store_until_is_before:datetime) -> dict:
-    res =  await db.execute(
+
+async def find_by_store_until(db: AsyncSession, store_until_is_before: datetime) -> dict:
+    res = await db.execute(
         select(models.Archive)
-        .filter(models.Archive.deleted ==False, models.Archive.store_until < store_until_is_before)
+        .filter(models.Archive.deleted == False, models.Archive.store_until < store_until_is_before)
     )
     return res.scalars()
+
 
 async def soft_delete_expired_archives(db: AsyncSession) -> dict:
     to_delete = await find_by_store_until(db, datetime.now())
@@ -106,6 +112,11 @@ def is_user_in_group(email: str, group_name: str) -> models.Group:
     if email == ALLOW_ANY_EMAIL: return True
     return len(group_name) and len(email) and group_name in get_user_groups(email)
 
+
+async def get_group_priority_async(db: AsyncSession, group_id: str) -> dict:
+    db_group = await db.get(models.Group, group_id)
+    priority = db_group.permissions.get("priority", "low") if db_group else "low"
+    return convert_priority_to_queue_dict(priority)
 
 @lru_cache
 def get_user_groups(email: str) -> list[str]:
@@ -129,7 +140,7 @@ def get_user_groups(email: str) -> list[str]:
 
 # --------------- INIT User-Groups
 
-def upsert_group(db: Session, group_name: str, description: str, orchestrator: str, orchestrator_sheet: str, service_account_email:str, permissions: dict, domains: list) -> models.Group:
+def upsert_group(db: Session, group_name: str, description: str, orchestrator: str, orchestrator_sheet: str, service_account_email: str, permissions: dict, domains: list) -> models.Group:
     db_group = db.query(models.Group).filter(models.Group.id == group_name).first()
     if db_group is None:
         db_group = models.Group(id=group_name, description=description, orchestrator=orchestrator, orchestrator_sheet=orchestrator_sheet, service_account_email=service_account_email, permissions=permissions, domains=domains)
@@ -237,6 +248,7 @@ async def get_sheets_by_id_hash(db: AsyncSession, frequency: str, modulo: str, i
         if fnv1a_hash_mod(sheet.id, modulo) == id_hash:
             filtered.append(sheet)
     return filtered
+
 
 async def delete_stale_sheets(db: AsyncSession, inactivity_days: int) -> dict:
     time_threshold = datetime.now() - timedelta(days=inactivity_days)

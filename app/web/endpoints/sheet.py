@@ -75,6 +75,7 @@ def archive_user_sheet(
     if not user.can_manually_trigger(sheet.group_id):
         raise HTTPException(status_code=429, detail="User cannot manually trigger sheet archiving in this group.")
 
-    task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=id, author_id=user.email, group_id=sheet.group_id).model_dump_json()]).delay()
+    group_queue = user.priority_group(sheet.group_id)
+    task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=id, author_id=user.email, group_id=sheet.group_id).model_dump_json()]).apply_async(**group_queue)
 
     return JSONResponse({"id": task.id}, status_code=201)

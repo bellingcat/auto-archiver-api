@@ -27,7 +27,6 @@ USER_GROUPS_FILENAME = settings.USER_GROUPS_FILENAME
 # TODO: after release, as it requires updating past entries with sheet_id where tag is used, drop tags
 @celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 0})
 def create_archive_task(self, archive_json: str):
-    logger.info(archive_json)
     archive = schemas.ArchiveCreate.model_validate_json(archive_json)
 
     # call auto-archiver
@@ -49,7 +48,8 @@ def create_archive_task(self, archive_json: str):
 @celery.task(name="create_sheet_task", bind=True)
 def create_sheet_task(self, sheet_json: str):
     sheet = schemas.SubmitSheet.model_validate_json(sheet_json)
-    logger.info(f"SHEET START {sheet=}")
+    queue_name = create_sheet_task.request.delivery_info.get('routing_key', 'No queue info')
+    logger.info(f"[queue={queue_name}] SHEET START {sheet=}")
 
     orchestrator = load_orchestrator(sheet.group_id, True, {"configurations": {"gsheet_feeder": {"sheet_id": sheet.sheet_id}}})
 

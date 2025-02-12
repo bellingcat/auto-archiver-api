@@ -43,7 +43,8 @@ def archive_url(
     
     archive_create = schemas.ArchiveCreate(**archive.model_dump())
 
-    task = celery.signature("create_archive_task", args=[archive_create.model_dump_json()]).delay()
+    group_queue = user.priority_group(archive_create.group_id)
+    task = celery.signature("create_archive_task", args=[archive_create.model_dump_json()]).apply_async(**group_queue)
     task_response = schemas.Task(id=task.id)
     return JSONResponse(task_response.model_dump(), status_code=201)
 

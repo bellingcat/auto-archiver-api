@@ -81,7 +81,8 @@ async def archive_sheets_cronjob(frequency: str, interval: int, current_time_uni
     async with get_db_async() as db:
         sheets = await crud.get_sheets_by_id_hash(db, frequency, interval, current_time_unit)
         for s in sheets:
-            task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group_id=s.group_id).model_dump_json()]).apply_async()
+            group_queue = await crud.get_group_priority_async(db, s.group_id)
+            task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group_id=s.group_id).model_dump_json()]).apply_async(**group_queue)
 
             triggered_jobs.append({"sheet_id": s.id, "task_id": task.id})
     logger.info(f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")

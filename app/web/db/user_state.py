@@ -9,6 +9,8 @@ from app.shared.db import models
 from app.shared.user_groups import GroupInfo, GroupPermissions
 from app.shared.schemas import Usage, UsageResponse
 from app.web.db import crud
+from app.web.utils.misc import convert_priority_to_queue_dict
+
 
 class UserState:
     """
@@ -261,7 +263,7 @@ class UserState:
         else:
             if group_id not in self.permissions: return False
             quota = self.permissions[group_id].max_monthly_urls
-        
+
         if quota == -1:
             return True
 
@@ -269,6 +271,7 @@ class UserState:
         current_year = datetime.now().year
         user_urls = self.db.query(models.Archive).filter(
             models.Archive.author_id == self.email,
+            models.Archive.group_id == group_id,
             func.extract('month', models.Archive.created_at) == current_month,
             func.extract('year', models.Archive.created_at) == current_year
         ).count()
@@ -288,13 +291,14 @@ class UserState:
 
         if quota == -1:
             return True
-        
+
         current_month = datetime.now().month
         current_year = datetime.now().year
 
         # find and sum all user bytes over this month
         user_bytes = self.db.query(models.Archive).filter(
             models.Archive.author_id == self.email,
+            models.Archive.group_id == group_id,
             func.extract('month', models.Archive.created_at) == current_month,
             func.extract('year', models.Archive.created_at) == current_year
         ).with_entities(func.coalesce(func.sum(
@@ -327,3 +331,12 @@ class UserState:
             return False
 
         return frequency in self.permissions[group_id].sheet_frequency
+
+    def priority_group(self, group_id: str) -> str:
+        priority = "low"
+        for group in self.user_groups:
+            if group.id != group_id: continue
+            if not group.permissions: continue
+            priority = group.permissions.get("priority", priority)
+            break
+        return convert_priority_to_queue_dict(priority)
