@@ -4,7 +4,8 @@ services:
     restart: "no"
     env_file: .env.dev
     volumes:
-      - ./app:/aa-api/app # for --reload to work
+      - ./app/web:/aa-api/app/web # for --reload to work
+      - ./app/shared:/aa-api/app/shared # for --reload to work
     environment:
       - ENVIRONMENT_FILE=.env.dev
       - SERVE_LOCAL_ARCHIVE=/aa-api/app/local_archive # See orchestration.yaml local_storage.save_to
@@ -18,7 +19,8 @@ services:
     restart: "no"
     env_file: .env.dev
     volumes:
-      - ./app:/aa-api/app # for watchmedo
+      - ./app/worker:/aa-api/app/worker # for watchmedo to work
+      - ./app/shared:/aa-api/app/shared # for watchmedo to work
 
   redis:
     restart: "no"

@@ -19,6 +19,7 @@ services:
     volumes:
       - ./logs:/aa-api/logs
       - ./database:/aa-api/database
+      - ./secrets:/aa-api/secrets
     depends_on:
       - redis
     healthcheck:
@@ -37,6 +38,7 @@ services:
     volumes:
       - ./logs:/aa-api/logs
       - ./database:/aa-api/database
+      - ./secrets:/aa-api/secrets
       - /var/run/docker.sock:/var/run/docker.sock
       - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER, do not change /crawls
     environment:

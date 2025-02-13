@@ -2,8 +2,43 @@
 
 [![CI](https://github.com/bellingcat/auto-archiver-api/workflows/CI/badge.svg)](https://github.com/bellingcat/auto-archiver-api/actions/workflows/ci.yaml)
 
-An api that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps and enables CORS, everything runs on docker but development can be done without docker (except for redis).
+A web API that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps and enables CORS, everything runs on docker but development can be done without docker (except for redis).
 
+### setup
+To properly set up the API you need to install `docker` and to edit 2 files:
+1. a `.env` to configure the API, stays at the root level
+2. a `user-groups.yaml` to manage user permissions
+Do not commit those files, they are .gitignored by default.
+
+We have examples for both of those, and here's how to set them up whether you're in development or production:
+
+#### setup for DEVELOPMENT
+```bash
+# copy and modify the .env.dev file according to your needs
+cp .env.example .env.dev
+# copy the user-groups.example.yaml and modify it accordingly
+cp user-groups.example.yaml user-groups.dev.yaml
+# run the APP, make sure VPNs are off
+make dev
+# check it's running by calling the health endpoint
+curl 'http://localhost:8004/health'
+# > {"status":"ok"}
+```
+now go to http://localhost:8004/docs#/ and you should see the API documentation
+
+#### setup for PRODUCTION
+```bash
+# copy and modify the .env.prod file according to your needs
+cp .env.example .env.prod
+# copy the user-groups.example.yaml and modify it accordingly
+cp user-groups.example.yaml user-groups.yaml
+# deploy the app
+make prod
+# check it's running by calling the health endpoint
+curl 'http://localhost:8004/health'
+# > {"status":"ok"}
+```
+now go to http://localhost:8004/docs#/ and you should see the API documentation
 
 ## User, Domains, Groups, and permissions management
 there are 2 ways to access the API
@@ -97,6 +132,16 @@ orchestrators:
 
 ## Database migrations
 check https://alembic.sqlalchemy.org/en/latest/tutorial.html#the-migration-environment
+```bash
+# set the env variables
+export ENVIRONMENT_FILE=.env.alembic
+# create a new migration with description in app/migrations
+poetry run alembic revision -m "create account table"
+# perform all migrations
+poetry run alembic upgrade head
+# downgrade by one migration
+poetry run alembic downgrade -1
+```
 
 * create migrations with `alembic revision -m "create account table"`
 * if running in the normal pipenv environment use `PIPENV_DOTENV_LOCATION=.env.alembic pipenv run` followed by:
@@ -127,16 +172,12 @@ curl -XPOST -H "Authorization: Bearer GOOGLE_OAUTH_TOKEN" -H "Content-type: appl
 
 ### Testing
 ```bash
-# can be done from top level but let's do it from the src folder for consistency with CI etc
-cd src
+# set the testing environment variables
+export ENVIRONMENT_FILE=.env.test
 # run tests and generate coverage
-PYTHONPATH=. PIPENV_DOTENV_LOCATION=.env.test pipenv run coverage run -m pytest -vv --disable-warnings --color=yes tests/  && pipenv run coverage html
-
+poetry run coverage run -m pytest -vv --disable-warnings --color=yes app/tests/
 # get coverage report in command line
-pipenv run coverage report
-
-# get coverage HTML
-pipenv run coverage html
-
-# > open/run server on htmlcov/index.html to navigate through line coverage
+poetry run coverage report
+# get coverage report in HTML format
+poetry run coverage html
 ```

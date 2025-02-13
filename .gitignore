@@ -1,3 +1,5 @@
+user-groups.dev.yaml
+user-groups.yaml
 orchestration.yaml
 my-archives
 *.pyc
@@ -24,3 +26,4 @@ local_archive_test
 *db-wal
 *db-shm
 copy-files.sh
+temp/

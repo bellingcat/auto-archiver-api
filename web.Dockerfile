@@ -13,11 +13,10 @@ RUN pip install --no-cache-dir poetry
 COPY pyproject.toml poetry.lock README.md .
 RUN poetry install --with web --no-interaction --no-ansi --no-cache
 
-# Copy the application code
+# Copy the application code and configurations
 COPY alembic.ini ./
-COPY .env* ./app/
-COPY ./secrets/ ./secrets/
 COPY ./app/ ./app/
+COPY user-groups.* ./app/
 
 # Run the FastAPI app with Uvicorn
 ENTRYPOINT ["poetry", "run"]
