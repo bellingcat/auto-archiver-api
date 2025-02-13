@@ -9,7 +9,13 @@ from app.shared.settings import get_settings
 
 @lru_cache
 def make_engine(database_url: str):
-    engine = create_engine(database_url, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        database_url,
+        connect_args={"check_same_thread": False},
+        pool_size=15,       # Increase pool size
+        max_overflow=20,    # Allow more temporary connections
+        pool_recycle=1800   # Recycle connections every 30 minutes
+    )
 
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(conn, _) -> None:
@@ -36,6 +42,7 @@ def get_db_dependency():
     # to use with Depends and ensure proper session closing
     with get_db() as db:
         yield db
+
 
 def wal_checkpoint():
     # WAL checkpointing, make sure the .sqlite file receives the latest changes
