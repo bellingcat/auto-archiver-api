@@ -2,10 +2,11 @@ from loguru import logger
 import requests, secrets
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
 from app.web.config import ALLOW_ANY_EMAIL
 from app.shared.settings import get_settings
-from app.shared.db.database import get_db
+from app.shared.db.database import get_db_dependency
 from app.web.db.user_state import UserState
 
 settings = get_settings()
@@ -78,6 +79,5 @@ def authenticate_user(access_token):
         return False, "exception occurred"
 
 
-def get_user_state(email=Depends(get_user_auth)):
-    with get_db() as db:
-        return UserState(db, email)
+def get_user_state(email:str=Depends(get_user_auth), db:Session=Depends(get_db_dependency)):
+    return UserState(db, email)
