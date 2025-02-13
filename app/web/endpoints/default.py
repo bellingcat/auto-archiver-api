@@ -1,29 +1,20 @@
 
 from typing import Dict
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.web.config import VERSION, BREAKING_CHANGES
-from app.shared.log import log_error
-from app.web.db import crud
 from app.shared.schemas import ActiveUser, UsageResponse
 from app.web.db.user_state import UserState
-from app.web.security import get_user_auth, bearer_security, get_user_state
+from app.web.security import get_user_state
 from app.shared.user_groups import GroupInfo
 
 default_router = APIRouter()
 
 
 @default_router.get("/")
-async def home(request: Request):
-    # TODO: maybe split into 2 routes: one non authenticated and one authenticated for the groups info only, necessary only for the extension
-    status = {"version": VERSION, "breakingChanges": BREAKING_CHANGES}
-    try:
-        email = await get_user_auth(await bearer_security(request))
-        status["groups"] = crud.get_user_groups(email)
-    except HTTPException: pass  # not authenticated is fine
-    except Exception as e: log_error(e)
-    return JSONResponse(status)
+async def home():
+    return JSONResponse({"version": VERSION, "breakingChanges": BREAKING_CHANGES})
 
 
 @default_router.get("/health")

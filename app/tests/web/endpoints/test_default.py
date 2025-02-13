@@ -13,32 +13,6 @@ def test_endpoint_home(client_with_auth):
     assert "breakingChanges" in j
     assert "groups" not in j
 
-
-@patch("app.web.endpoints.default.bearer_security", new_callable=AsyncMock)
-@patch("app.web.endpoints.default.get_user_auth", new_callable=AsyncMock, return_value="test@example.com")
-@patch("app.web.endpoints.default.crud.get_user_groups", return_value=["group1", "group2"])
-def test_endpoint_home_with_groups(m1, m2, m3, client_with_auth):
-    r = client_with_auth.get("/")
-    assert r.status_code == 200
-    j = r.json()
-    assert "version" in j and j["version"] == VERSION
-    assert "breakingChanges" in j
-    assert "groups" in j
-    assert j["groups"] == ["group1", "group2"]
-
-
-@patch("app.web.endpoints.default.bearer_security", new_callable=AsyncMock)
-@patch("app.web.endpoints.default.get_user_auth", new_callable=AsyncMock, return_value="test@example.com")
-@patch("app.web.endpoints.default.crud.get_user_groups", side_effect=Exception('mocked error'))
-def test_endpoint_home_with_groups_exception(m1, m2, m3, client_with_auth):  # mocks call that triggers an internal error
-    r = client_with_auth.get("/")
-    assert r.status_code == 200
-    j = r.json()
-    assert "version" in j and j["version"] == VERSION
-    assert "breakingChanges" in j
-    assert "groups" not in j
-
-
 def test_endpoint_health(client_with_auth):
     r = client_with_auth.get("/health")
     assert r.status_code == 200
