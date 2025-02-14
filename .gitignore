@@ -27,3 +27,4 @@ local_archive_test
 *db-shm
 copy-files.sh
 temp/
+.python-version
