@@ -29,9 +29,9 @@ def mock_settings():
 def test_db(get_settings: Settings):
     from app.shared.db import models
     from app.shared.db.database import make_engine
-    from app.web.db.crud import get_user_groups
+    from app.web.db.crud import get_user_group_names
 
-    get_user_groups.cache_clear()
+    get_user_group_names.cache_clear()
     make_engine.cache_clear()
     engine = make_engine(get_settings.DATABASE_PATH)
 

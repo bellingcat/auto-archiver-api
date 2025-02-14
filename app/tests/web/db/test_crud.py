@@ -231,47 +231,6 @@ def test_count_by_users_since(test_data, db_session):
     assert cu[2].total == 33
 
 
-def test_is_user_in_group(test_data, db_session):
-    from app.web.db import crud
-    from app.web.config import ALLOW_ANY_EMAIL
-
-    # see user-groups.test.yaml
-    test_pairs = [
-        (ALLOW_ANY_EMAIL, "spaceship", True),
-        (ALLOW_ANY_EMAIL, "non-existant!@#!%!", True),
-
-        ("rick@example.com", "spaceship", True),
-        ("rick@example.com", "SPACESHIP", False),
-        ("rick@example.com", "interdimensional", True),
-        ("rick@example.com", "animated-characters", True),
-        ("rick@example.com", "the-jerrys-club", False),
-
-        ("morty@example.com", "spaceship", True),
-        ("morty@example.com", "interdimensional", False),
-        ("morty@example.com", "the-jerrys-club", False),
-
-        ("jerry@example.com", "spaceship", False),
-        ("jerry@example.com", "interdimensional", False),
-        ("jerry@example.com", "the-jerrys-club", False),  # group not in 'groups'
-
-        ("rick@example.com", "animated-characters", True),
-        ("morty@example.com", "animated-characters", True),
-        ("jerry@example.com", "animated-characters", True),
-        ("anyone@example.com", "animated-characters", True),
-        ("anyone@birdy.com", "animated-characters", True),
-
-        ("summer@herself.com", "animated-characters", False),
-
-        ("rick@example.com", "", False),
-        ("", "spaceship", False),
-        ("bademailexample.com", "spaceship", False),
-    ]
-    for email, group, expected in test_pairs:
-        print(f"{email} in {group} == {expected}")
-        assert crud.is_user_in_group(email, group) == expected
-
-
-
 def test_upsert_group(test_data, db_session):
     from app.web.db import crud
 

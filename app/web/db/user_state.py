@@ -47,15 +47,13 @@ class UserState:
     @property
     def user_groups_names(self):
         if not hasattr(self, '_user_groups_names'):
-            self._user_groups_names = crud.get_user_groups(self.email) + ["default"]
+            self._user_groups_names = crud.get_user_group_names(self.db, self.email) + ["default"]
         return self._user_groups_names
 
     @property
     def user_groups(self):
         if not hasattr(self, '_user_groups'):
-            self._user_groups = self.db.query(models.Group).filter(
-                models.Group.id.in_(self.user_groups_names)
-            ).all()
+            self._user_groups = crud.get_user_groups_by_name(self.db, self.user_groups_names)
         return self._user_groups
 
     @property
@@ -150,8 +148,9 @@ class UserState:
             self._priority = "low"
             for group in self.user_groups:
                 if not group.permissions: continue
-                if group.permissions.get("priority", "low") == "high":
+                if group.permissions.get("priority", self._priority) == "high":
                     self._priority = "high"
+                    break
         return self._priority
 
     @property
