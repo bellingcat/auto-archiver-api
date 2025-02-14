@@ -55,7 +55,7 @@ def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag]
 def store_archived_url(db: Session, archive: schemas.ArchiveCreate) -> models.Archive:
     # create and load user, tags, if needed
     create_or_get_user(db, archive.author_id)
-    db_tags = [create_tag(db, tag) for tag in archive.tags]
+    db_tags = [create_tag(db, tag) for tag in (archive.tags or [])]
     # insert everything
     db_task = create_task(db, task=archive, tags=db_tags, urls=archive.urls)
     return db_task
