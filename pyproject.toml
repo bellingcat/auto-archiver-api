@@ -17,11 +17,11 @@ classifiers = [
     "Programming Language :: Python :: 3"
 ]
 
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.10,<3.13"
 
 
 dependencies = [
-    "auto-archiver (>=0.12.0,<0.13.0)",
+    "auto-archiver (>=0.13.1)",
     "oscrypto @ git+https://github.com/wbond/oscrypto.git@d5f3437ed24257895ae1edd9e503cfb352e635a8",
     "celery (>=5.0)",
     "redis (==3.5.3)",
@@ -29,10 +29,11 @@ dependencies = [
     "pydantic-settings (>=2.7.1,<3.0.0)",
     "sqlalchemy (>=2.0.38,<3.0.0)",
     "requests (>=2.25.1)",
-    "pyopenssl (==23.3.0)",
+    "pyopenssl (>=23.3.0)",
 ]
 [tool.poetry.group.worker.dependencies]
 watchdog = ">=6.0.0,<7.0.0"
+setuptools = "^75.8.0"
 
 [tool.poetry.group.web.dependencies]
 fastapi = ">=0.115.8,<0.116.0"
@@ -43,6 +44,7 @@ fastapi-utils = ">=0.8.0,<0.9.0"
 prometheus-fastapi-instrumentator = ">=7.0.2,<8.0.0"
 fastapi-mail = ">=1.4.2,<2.0.0"
 uvicorn = ">=0.13.4"
+pyyaml = "^6.0.2"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -2,8 +2,7 @@
 
 from typing import List
 from loguru import logger
-from auto_archiver import Metadata
-from auto_archiver.core import Media
+from auto_archiver.core import Media, Metadata
 
 from app.shared.db import models
 

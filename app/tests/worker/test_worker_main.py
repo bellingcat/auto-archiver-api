@@ -7,8 +7,7 @@ import pytest
 
 from app.shared.db import models
 from app.shared import schemas
-from auto_archiver import Metadata
-from auto_archiver.core import Media
+from auto_archiver.core import Media, Metadata
 
 
 
@@ -16,22 +15,24 @@ class Test_create_archive_task():
     URL = "https://example-live.com"
     archive = schemas.ArchiveCreate(url=URL, tags=["tag-celery"], public=True, author_id="rick@example.com", group_id="interstellar")
 
+    @patch("app.worker.main.ArchivingOrchestrator")
+    @patch("app.worker.main.get_all_urls", return_value=[])
     @patch("app.worker.main.insert_result_into_db")
     @patch("app.worker.main.get_store_until", return_value=datetime.now())
-    @patch("app.worker.main.load_orchestrator")
+    @patch("app.worker.main.get_orchestrator_args", return_value=["arg1", "arg2"]) 
     @patch("celery.app.task.Task.request")
-    def test_success(self, m_req, m_load, m_store, m_insert, db_session):
+    def test_success(self, m_req, m_args, m_store, m_insert, m_urls, m_orchestrator, db_session):
         from app.worker.main import create_archive_task
 
         m_req.id = "this-just-in"
-        mock_orchestrator = self.mock_orchestrator_choice(m_load)
+        m_orchestrator.run.return_value = Metadata().set_url(self.URL).success()
 
         task = create_archive_task(self.archive.model_dump_json())
 
-        m_load.assert_called_once_with("interstellar")
+        m_args.assert_called_once()
         m_store.assert_called_once_with("interstellar")
         m_insert.assert_called_once()
-        mock_orchestrator.feed_item.assert_called_once()
+        m_orchestrator.run.assert_called_once()
 
         assert task["status"] == "success"
         assert task["metadata"]["url"] == self.URL
@@ -43,10 +44,10 @@ class Test_create_archive_task():
             create_archive_task(self.archive.model_dump_json())
 
     @patch("app.worker.main.insert_result_into_db", side_effect=Exception)
-    @patch("app.worker.main.load_orchestrator")
-    def test_raise_db_error(self, m_load, m_insert):
+    @patch("app.worker.main.get_orchestrator_args")
+    def test_raise_db_error(self, m_args, m_insert):
         from app.worker.main import create_archive_task
-        mock_orchestrator = self.mock_orchestrator_choice(m_load)
+        mock_orchestrator = self.mock_orchestrator_choice(m_args)
 
         with pytest.raises(Exception):
             create_archive_task(self.archive.model_dump_json())
@@ -54,10 +55,10 @@ class Test_create_archive_task():
 
 
     @patch("app.worker.main.insert_result_into_db", return_value=None)
-    @patch("app.worker.main.load_orchestrator")
-    def test_raise_empty_result(self, m_load, m_insert):
+    @patch("app.worker.main.get_orchestrator_args")
+    def test_raise_empty_result(self, m_args, m_insert):
         from app.worker.main import create_archive_task
-        mock_orchestrator = self.mock_orchestrator_choice(m_load)
+        mock_orchestrator = self.mock_orchestrator_choice(m_args)
 
         with pytest.raises(Exception) as e:
             create_archive_task(self.archive.model_dump_json())
@@ -76,8 +77,8 @@ class Test_create_sheet_task():
 
     @patch("app.worker.main.models.generate_uuid", return_value="constant-uuid")
     @patch("app.worker.main.get_store_until", return_value=datetime.now())
-    @patch("app.worker.main.load_orchestrator")
-    def test_success(self, m_load, m_store, m_uuid, db_session):
+    @patch("app.worker.main.get_orchestrator_args")
+    def test_success(self, m_args, m_store, m_uuid, db_session):
         from app.worker.main import create_sheet_task
 
         assert db_session.query(models.Archive).filter(models.Archive.url == self.URL).count() == 0
@@ -86,11 +87,11 @@ class Test_create_sheet_task():
         mock_metadata.add_media(Media("fn1.txt", urls=["outcome1.com"]))
         m_orch = MagicMock()
         m_orch.feed.return_value = iter([False, mock_metadata, mock_metadata])
-        m_load.return_value = m_orch
+        m_args.return_value = m_orch
 
         res = create_sheet_task(self.sheet.model_dump_json())
 
-        m_load.assert_called_once_with("interstellar", True, {'configurations': {'gsheet_feeder': {'sheet_id': '123'}}})
+        m_args.assert_called_once_with("interstellar", True, {'configurations': {'gsheet_feeder': {'sheet_id': '123'}}})
         m_orch.feed.assert_called_once()
         m_store.assert_called_with("interstellar")
         m_store.call_count == 2
@@ -116,7 +117,6 @@ class Test_create_sheet_task():
 
 def test_get_all_urls(db_session):
     from app.worker.main import get_all_urls
-    from auto_archiver import Metadata
 
     meta = Metadata().set_url("https://example.com")
     m1 = meta.add_media(Media("fn1.txt", urls=["outcome1.com"]))

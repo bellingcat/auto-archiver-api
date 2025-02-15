@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from loguru import logger
 import sqlalchemy
-from auto_archiver import Metadata
+from auto_archiver.core import Metadata
 from sqlalchemy.orm import Session
 
 from app.shared.aa_utils import get_all_urls
