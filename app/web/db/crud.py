@@ -242,7 +242,7 @@ def get_user_sheets(db: Session, email: str) -> list[models.Sheet]:
     return db.query(models.Sheet).filter(models.Sheet.author_id == email).order_by(models.Sheet.last_url_archived_at.desc()).all()
 
 
-async def get_sheets_by_id_hash(db: AsyncSession, frequency: str, modulo: str, id_hash: str) -> list[models.Sheet]:
+async def get_sheets_by_id_hash(db: AsyncSession, frequency: str, modulo: str, id_hash: int) -> list[models.Sheet]:
     result = await db.execute(
         select(models.Sheet).filter(models.Sheet.frequency == frequency)
     )

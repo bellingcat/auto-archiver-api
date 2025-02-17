@@ -32,9 +32,24 @@ def test_submit_manual_archive(m1, client_with_token, db_session):
     assert [u.url for u in inserted.urls] == ["http://example.s3.com"]
     assert type(inserted.store_until) == datetime
 
-
-    # cannot have the same URL twice 
+    # cannot have the same URL twice
     aa_metadata = json.dumps({"status": "test: success", "metadata": {"url": "http://example.com"}, "media": [{"filename": "fn1", "urls": ["http://example.com", "http://example.com"]}]})
     r = client_with_token.post("/interop/submit-archive", json={"result": aa_metadata, "public": False, "author_id": "jerry@gmail.com", "tags": ["test"], "url": "http://example.com"})
     assert r.status_code == 422
     assert r.json() == {"detail": "Cannot insert into DB due to integrity error, likely duplicate urls."}
+
+
+# test with invalid JSON
+def test_submit_manual_archive_invalid_json(client_with_token):
+    r = client_with_token.post("/interop/submit-archive", json={"result": "invalid json", "public": False, "author_id": "jer", "tags": ["test"], "url": "http://example.com"})
+    assert r.status_code == 422
+    assert r.json() == {"detail": "Invalid JSON in result field."}
+
+
+@patch("app.web.endpoints.interoperability.business_logic")
+def test_submit_manual_archive_no_store_until(m_b, client_with_token, db_session):
+    m_b.get_store_archive_until.side_effect = AssertionError("AssertionError")
+    aa_metadata = json.dumps({"status": "test: success", "metadata": {"url": "http://example.com"}, "media": [{"filename": "fn1", "urls": ["http://example.s3.com"]}]})
+    r = client_with_token.post("/interop/submit-archive", json={"result": aa_metadata, "public": True, "author_id": "jerry@gmail.com", "group_id": "spaceship", "tags": ["test"], "url": "http://example.com"})
+    assert r.status_code == 422
+    assert r.json() == {"detail": "AssertionError"}

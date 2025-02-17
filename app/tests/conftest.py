@@ -1,7 +1,10 @@
 import os
+from typing import AsyncGenerator
 from fastapi.testclient import TestClient
 import pytest
 from unittest.mock import patch
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from app.web.config import ALLOW_ANY_EMAIL
 from app.shared.settings import Settings
 from app.web.db.user_state import UserState
@@ -57,6 +60,49 @@ def db_session(test_db):
     from app.shared.db.database import make_session_local
     session_local = make_session_local(test_db)
     with session_local() as session:
+        yield session
+
+
+@pytest_asyncio.fixture()
+async def async_test_db(get_settings: Settings):
+    from app.shared.db import models
+    from app.shared.db.database import make_async_engine
+    from app.web.db.crud import get_user_group_names
+    import asyncio
+
+    get_user_group_names.cache_clear()
+    engine = await make_async_engine(get_settings.ASYNC_DATABASE_PATH)
+
+    fs = get_settings.ASYNC_DATABASE_PATH.replace("sqlite+aiosqlite:///", "")
+    if not os.path.exists(fs):
+        open(fs, 'w').close()
+
+    async def create_all():
+        async with engine.begin() as conn:
+            await conn.run_sync(models.Base.metadata.create_all)
+
+    await create_all()
+
+    yield engine
+
+    async def drop_all():
+        async with engine.begin() as conn:
+            await conn.run_sync(models.Base.metadata.drop_all)
+
+    await drop_all()
+
+    engine.dispose()
+    for suffix in ["", "-wal", "-shm"]:
+        new_fs = fs + suffix
+        if os.path.exists(new_fs):
+            os.remove(new_fs)
+
+
+@pytest_asyncio.fixture()
+async def async_db_session(async_test_db: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
+    from app.shared.db.database import make_async_session_local
+    session_local = await make_async_session_local(async_test_db)
+    async with session_local() as session:
         yield session
 
 

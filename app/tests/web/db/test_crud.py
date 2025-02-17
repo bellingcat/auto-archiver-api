@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -6,6 +6,7 @@ import yaml
 from app.shared.db import models
 from app.shared.settings import Settings
 
+from app.web.db import crud
 authors = ["rick@example.com", "morty@example.com", "jerry@example.com"]
 
 
@@ -62,7 +63,6 @@ def test_data(db_session):
 
 
 def test_get_archive(test_data, db_session):
-    from app.web.db import crud
     from app.web.config import ALLOW_ANY_EMAIL
 
     # each author's archives work
@@ -91,7 +91,6 @@ def test_get_archive(test_data, db_session):
 
 
 def test_search_archives_by_url(test_data, db_session):
-    from app.web.db import crud
     from app.web.config import ALLOW_ANY_EMAIL
 
     # rick's archives are private
@@ -139,7 +138,6 @@ def test_search_archives_by_url(test_data, db_session):
 
 def test_search_archives_by_email(test_data, db_session):
     from app.web.config import ALLOW_ANY_EMAIL
-    from app.web.db import crud
 
     # lower/upper case
     assert len(crud.search_archives_by_email(db_session, "rick@example.com")) == 34
@@ -160,7 +158,6 @@ def test_search_archives_by_email(test_data, db_session):
 
 @patch("app.web.db.crud.DATABASE_QUERY_LIMIT", new=25)
 def test_max_query_limit(test_data, db_session):
-    from app.web.db import crud
     from app.web.config import ALLOW_ANY_EMAIL
 
     assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL)) == 25
@@ -171,8 +168,6 @@ def test_max_query_limit(test_data, db_session):
 
 
 def test_soft_delete(test_data, db_session):
-    from app.web.db import crud
-
     # none deleted yet
     assert crud.get_archive(db_session, "archive-id-456-0", "rick@example.com") is not None
     assert db_session.query(models.Archive).filter(models.Archive.deleted == True).count() == 0
@@ -189,8 +184,6 @@ def test_soft_delete(test_data, db_session):
 
 
 def test_count_archives(test_data, db_session):
-    from app.web.db import crud
-
     assert crud.count_archives(db_session) == 100
     db_session.query(models.Archive).filter(models.Archive.id == "archive-id-456-0").delete()
     db_session.commit()
@@ -198,8 +191,6 @@ def test_count_archives(test_data, db_session):
 
 
 def test_count_archive_urls(test_data, db_session):
-    from app.web.db import crud
-
     assert crud.count_archive_urls(db_session) == 1000
     db_session.query(models.ArchiveUrl).filter(models.ArchiveUrl.url == "https://example-0.com/0").delete()
     db_session.commit()
@@ -213,8 +204,6 @@ def test_count_archive_urls(test_data, db_session):
 
 
 def test_count_users(test_data, db_session):
-    from app.web.db import crud
-
     assert crud.count_users(db_session) == 3
     db_session.query(models.User).filter(models.User.email == "rick@example.com").delete()
     db_session.commit()
@@ -232,8 +221,6 @@ def test_count_by_users_since(test_data, db_session):
 
 
 def test_upsert_group(test_data, db_session):
-    from app.web.db import crud
-
     assert db_session.query(models.Group).count() == 4
 
     repeatable_params = ["desc 1", "orch.yaml", "sheet.yaml", "service_account_email@example.com", {"read": ["all"]}, ["example.com"]]
@@ -262,8 +249,6 @@ def test_upsert_group(test_data, db_session):
 
 
 def test_upsert_user_groups(db_session):
-    from app.web.db import crud
-
     @patch('app.web.db.crud.get_settings', new=lambda: bad_setings)
     def test_missing_yaml(db_session):
         with pytest.raises(FileNotFoundError):
@@ -284,8 +269,6 @@ def test_upsert_user_groups(db_session):
 
 
 def test_create_sheet(db_session):
-    from app.web.db import crud
-
     assert db_session.query(models.Sheet).count() == 0
 
     s = crud.create_sheet(db_session, "sheet-id-123", "sheet name", "email@example.com", "group-id", "hourly")
@@ -305,8 +288,6 @@ def test_create_sheet(db_session):
 
 
 def test_get_user_sheet(test_data, db_session):
-    from app.web.db import crud
-
     assert crud.get_user_sheet(db_session, "", "sheet-0") is None
     assert crud.get_user_sheet(db_session, "morty@example.com", "sheet-0") is None
 
@@ -316,8 +297,6 @@ def test_get_user_sheet(test_data, db_session):
 
 
 def test_get_user_sheets(test_data, db_session):
-    from app.web.db import crud
-
     assert len(crud.get_user_sheets(db_session, "")) == 0
     rick_sheets = crud.get_user_sheets(db_session, "rick@example.com")
     assert len(rick_sheets) == 2
@@ -326,8 +305,156 @@ def test_get_user_sheets(test_data, db_session):
 
 
 def test_delete_sheet(test_data, db_session):
-    from app.web.db import crud
-
     assert crud.delete_sheet(db_session, "sheet-0", "") == False
     assert crud.delete_sheet(db_session, "sheet-0", "rick@example.com") == True
     assert crud.delete_sheet(db_session, "sheet-0", "rick@example.com") == False
+
+
+@pytest.mark.asyncio
+async def test_find_by_store_until(async_db_session):
+    # Add archives with different store_until dates
+    now = datetime.now()
+    archive1 = models.Archive(
+        id="archive-expired-1",
+        url="https://example-expired-1.com",
+        result={},
+        author_id="rick@example.com",
+        store_until=now - timedelta(days=1)
+    )
+    archive2 = models.Archive(
+        id="archive-expired-2",
+        url="https://example-expired-2.com",
+        result={},
+        author_id="rick@example.com",
+        store_until=now - timedelta(hours=1)
+    )
+    archive3 = models.Archive(
+        id="archive-active",
+        url="https://example-active.com",
+        result={},
+        author_id="rick@example.com",
+        store_until=now + timedelta(days=1)
+    )
+    async_db_session.add_all([archive1, archive2, archive3])
+    await async_db_session.commit()
+
+    # Should find 2 expired archives
+    expired = await crud.find_by_store_until(async_db_session, now)
+    assert len(list(expired)) == 2
+
+    # Should find 1 archive expired before 2 hours ago
+    expired = await crud.find_by_store_until(async_db_session, now - timedelta(hours=2))
+    assert len(list(expired)) == 1
+
+    # Should find no archives expired before 2 days ago
+    expired = await crud.find_by_store_until(async_db_session, now - timedelta(days=2))
+    assert len(list(expired)) == 0
+
+    # Should not find deleted archives
+    archive1.deleted = True
+    await async_db_session.commit()
+    expired = await crud.find_by_store_until(async_db_session, now)
+    assert len(list(expired)) == 1
+
+
+@pytest.mark.asyncio
+async def test_get_sheets_by_id_hash(async_db_session):
+    # Add test data
+    authors = ["rick@example.com", "morty@example.com", "jerry@example.com"]
+    sheets = [
+        models.Sheet(id="sheet-0", name="sheet-0", author_id=authors[0], group_id=None, frequency="daily"),
+        models.Sheet(id="sheet-0-2", name="sheet-0-2", author_id=authors[0], group_id="spaceship", frequency="hourly"),
+        models.Sheet(id="sheet-1", name="sheet-1", author_id=authors[1], group_id=None, frequency="daily"),
+        models.Sheet(id="sheet-2", name="sheet-2", author_id=authors[2], group_id=None, frequency="daily")
+    ]
+    async_db_session.add_all(sheets)
+    await async_db_session.commit()
+
+    with patch("app.web.db.crud.fnv1a_hash_mod", return_value=1):
+        # Test retrieving hourly sheets
+        hourly_sheets = await crud.get_sheets_by_id_hash(async_db_session, "hourly", 4, 1)
+        assert len(hourly_sheets) == 1
+        assert hourly_sheets[0].id == "sheet-0-2"
+        assert hourly_sheets[0].frequency == "hourly"
+
+        # Test retrieving daily sheets
+        daily_sheets = await crud.get_sheets_by_id_hash(async_db_session, "daily", 4, 1)
+        assert len(daily_sheets) == 3
+        assert all(sheet.frequency == "daily" for sheet in daily_sheets)
+        assert {sheet.id for sheet in daily_sheets} == {"sheet-0", "sheet-1", "sheet-2"}
+
+        # Test with non-matching hash
+        no_sheets = await crud.get_sheets_by_id_hash(async_db_session, "daily", 4, 3)
+        assert len(no_sheets) == 0
+
+        # Test with non-existent frequency
+        weekly_sheets = await crud.get_sheets_by_id_hash(async_db_session, "weekly", 4, 1)
+        assert len(weekly_sheets) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_stale_sheets(async_db_session):
+    from datetime import datetime, timedelta
+    from sqlalchemy.sql import select
+
+    now = datetime.now()
+    active_date = now - timedelta(days=5)
+    stale_date = now - timedelta(days=15)
+
+    # Create test sheets with different last_url_archived_at dates
+    sheets = [
+        models.Sheet(
+            id="sheet-active-1",
+            name="Active Sheet 1",
+            author_id="rick@example.com",
+            frequency="daily",
+            last_url_archived_at=active_date
+        ),
+        models.Sheet(
+            id="sheet-active-2",
+            name="Active Sheet 2",
+            author_id="morty@example.com",
+            frequency="hourly",
+            last_url_archived_at=active_date
+        ),
+        models.Sheet(
+            id="sheet-stale-1",
+            name="Stale Sheet 1",
+            author_id="rick@example.com",
+            frequency="daily",
+            last_url_archived_at=stale_date
+        ),
+        models.Sheet(
+            id="sheet-stale-2",
+            name="Stale Sheet 2",
+            author_id="morty@example.com",
+            frequency="daily",
+            last_url_archived_at=stale_date
+        )
+    ]
+    async_db_session.add_all(sheets)
+    await async_db_session.commit()
+
+    # Should not delete sheets with 20 days inactivity threshold
+    deleted = await crud.delete_stale_sheets(async_db_session, 20)
+    assert len(deleted) == 0  # No sheets should be deleted
+    result = await async_db_session.execute(select(models.Sheet))
+    assert len(list(result.scalars())) == 4  # All sheets should remain
+
+    # Should delete sheets with 7 days inactivity threshold
+    deleted = await crud.delete_stale_sheets(async_db_session, 7)
+    assert len(deleted) == 2  # Two authors affected
+    assert len(deleted["rick@example.com"]) == 1  # One sheet deleted for Rick
+    assert len(deleted["morty@example.com"]) == 1  # One sheet deleted for Morty
+    assert deleted["rick@example.com"][0].id == "sheet-stale-1"
+    assert deleted["morty@example.com"][0].id == "sheet-stale-2"
+
+    # Verify only active sheets remain
+    result = await async_db_session.execute(select(models.Sheet))
+    remaining = list(result.scalars())
+    assert len(remaining) == 2
+    assert {s.id for s in remaining} == {"sheet-active-1", "sheet-active-2"}
+
+    # Running again should not delete anything
+    deleted = await crud.delete_stale_sheets(async_db_session, 7)
+    assert len(deleted) == 0

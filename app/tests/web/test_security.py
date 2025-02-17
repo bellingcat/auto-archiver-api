@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
@@ -101,8 +101,21 @@ async def test_authenticate_user():
 @pytest.mark.asyncio
 async def test_authenticate_user_exception():
     from app.web.security import authenticate_user
-
     with patch("app.web.security.requests.get") as mock_get:
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.side_effect = Exception("mocked error")
         assert authenticate_user("this-will-call-requests") == (False, "exception occurred")
+
+
+def test_get_user_state():
+    from app.web.security import get_user_state
+    from app.web.db.user_state import UserState
+
+    mock_session = Mock()
+    test_email = "test@example.com"
+
+    state = get_user_state(test_email, mock_session)
+
+    assert isinstance(state, UserState)
+    assert state.email == test_email
+    assert state.db == mock_session

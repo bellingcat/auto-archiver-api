@@ -1,8 +1,27 @@
 from app.shared.db import models
+from app.shared.db import worker_crud, models
+from datetime import datetime
 
 
 from app.tests.web.db.test_crud import test_data
 
+def test_update_sheet_last_url_archived_at(db_session):
+
+    # Create test sheet
+    test_sheet = models.Sheet(id="sheet-123")
+    db_session.add(test_sheet)
+    db_session.commit()
+
+    # Test updating existing sheet
+    assert isinstance(test_sheet.last_url_archived_at, datetime)
+    before = test_sheet.last_url_archived_at
+    assert worker_crud.update_sheet_last_url_archived_at(db_session, "sheet-123") is True
+    db_session.refresh(test_sheet)
+    assert isinstance(test_sheet.last_url_archived_at, datetime)
+    assert test_sheet.last_url_archived_at > before
+    
+    # Test non-existent sheet
+    assert worker_crud.update_sheet_last_url_archived_at(db_session, "non-existent-sheet") is False
 
 def test_get_group(test_data, db_session):
     from app.shared.db import worker_crud

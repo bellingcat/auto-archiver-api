@@ -4,7 +4,6 @@ import traceback, datetime
 from celery.signals import task_failure
 from loguru import logger
 from sqlalchemy import exc
-import auto_archiver
 from auto_archiver.core.orchestrator import ArchivingOrchestrator
 
 from app.shared.db import models
