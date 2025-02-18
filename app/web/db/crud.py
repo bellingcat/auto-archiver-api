@@ -121,6 +121,7 @@ def get_user_group_names(db: Session, email: str) -> list[str]:
     """
     given an email retrieves the user groups from the DB and then the email-domain groups from a global variable, the email does not need to belong to an existing user. 
     """
+    #TODO: the read: [group1, group2] permissions don't currently work
     if not email or not len(email) or "@" not in email: return []
 
     # get user groups

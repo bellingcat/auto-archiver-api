@@ -22,7 +22,7 @@ Redis = get_redis()
 
 USER_GROUPS_FILENAME = settings.USER_GROUPS_FILENAME
 
-# PATCHES for new aa's functionality
+# TODO: these are temporary PATCHES for new aa's functionality
 # logger.add("app/worker/worker_log.log", level="DEBUG") 
 logger.remove = lambda x: print(f"logger.remove({x})")
 
