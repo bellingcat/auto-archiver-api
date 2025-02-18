@@ -4,15 +4,19 @@
 
 A web API that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps and enables CORS, everything runs on docker but development can be done without docker (except for redis).
 
-### setup
-To properly set up the API you need to install `docker` and to edit 2 files:
-1. a `.env` to configure the API, stays at the root level
+## setup
+To properly set up the API you need to install `docker` and to edit 3 files:
+1. a `.env.prod` and `.env.dev` to configure the API, stays at the root level
 2. a `user-groups.yaml` to manage user permissions
-Do not commit those files, they are .gitignored by default.
+  1. note that all local files referenced in `user-groups.yaml` and any orchestration.yaml files should be relative to the home directory so if your service account is in `secrets/orchestration.yaml` use that path and not just `orchestration.yaml`.
 
-We have examples for both of those, and here's how to set them up whether you're in development or production:
+Do not commit those files, they are .gitignored by default. 
+We also advise you to keep any sensitive files in the `secrets/` folder which is pinned and gitignored.
 
-#### setup for DEVELOPMENT
+
+We have examples for both of those files (`.env.example` and `user-groups.example.yaml`), and here's how to set them up whether you're in development or production:
+
+### setup for DEVELOPMENT
 ```bash
 # copy and modify the .env.dev file according to your needs
 cp .env.example .env.dev
@@ -26,7 +30,7 @@ curl 'http://localhost:8004/health'
 ```
 now go to http://localhost:8004/docs#/ and you should see the API documentation
 
-#### setup for PRODUCTION
+### setup for PRODUCTION
 ```bash
 # copy and modify the .env.prod file according to your needs
 cp .env.example .env.prod
@@ -49,86 +53,36 @@ there are 2 ways to access the API
 The permissions are defined solely via the `user-groups.yaml` file
 - users belong to groups which determine their access level/quotas/orchestration setup
   - users are assigned to groups explicitly (via email)
-  - users are assigned to groups implicitly (via email domains)
-    - domains are associated to groups
+  - users are assigned to groups implicitly (via email domains) as domains can be associated to groups
   - users that are not explicitly or implicitly in the system belong to the `default` group, restrict their permissions if you do not wish them to be able to search/archive
   - if a user is assigned to one group which is not explicitly defined, a warning will be thrown, it may be necessary to do that if you discontinue a given group but the database still has entries for it and so
 - groups determine
-  - which orchestrator to use for single URL archives and for spreadsheet archives
+  - which orchestrator to use for single URL archives and for spreadsheet archives see [GroupPermissions](app/shared/user_groups.py)
   - a set of permissions
     - `read` can be [`all`], [] or a comma separated list of group names, meaning people in this group can access either all, none, or those belonging to explicitly listed groups.
       - the group itself must be included in the list, otherwise the user cannot search archives of that group
+    - `read_public` a boolean that enables the user to search public archives
     - `archive_url` a boolean that enables the user to archive links in this group
     - `archive_sheet` a boolean that enables the user to archive spreadsheets
+    - `manually_trigger_sheet` a boolean that enables the user to manually trigger a sheet archive for sheets in this group
     - `sheet_frequency` a list of options for the sheet archiving frequency, currently max permissions is `["hourly", "daily"]`
     - `max_sheets` defines the maximum amount of spreadsheets someone can have in total (`-1` means no limit)
     - `max_archive_lifespan_months` defines the lifespan of an archive before being deleted from S3, users will be notified 1 month in advance with instructions to download TODO
-    - `monthly_urls` how many total URLs someone can archive per month (`-1` means no limit)
-    - `monthly_mbs` how many MBs of data someone can archive per month (`-1` means no limit)
+    - `max_monthly_urls` how many total URLs someone can archive per month (`-1` means no limit)
+    - `max_monthly_mbs` how many MBs of data someone can archive per month (`-1` means no limit)
     - `priority` one of `high` or `low`, this will be used to give archiving priority
   - group names are all lower-case
 
 
-To figure out:
-- workshop participants should be able to test this. `public`
-- how can people bring their own storage/api keys?
-- how to implement lifespan of archives? 6 months lifespan example. they should expect a way to download all archives locally.
-- how to deactivate unused sheets and notify?
-- how to mark URLs for deletion, and then do a hard delete?
-- what actions can people take:
-  - URL (P=needs permission, O=open)
-    - P archive
-    - P search
-    - O find own links
-    - DISABLED find by id
-    - P delete archive (soft)
-  - Sheets
-    - P create a new sheet
-    - O get my sheets
-    - O delete a sheet
-    - P archive a sheet now
+## development of web/worker without docker
 
-
-## Development
-http://localhost:8004
-
-TODO: update .env file instructions, should use .env.prod and .env.dev and only use .env for always overwriting dev/prod settings.
-
-requires `src/.env`
-
-cd /src
 <!-- * `pipenv install --editable ../../auto-archiver` -->
-* console 1 - `docker compose up redis` optionally add `web` if not running uvicorn locally
-* console 2 - `pipenv shell` + `celery worker --app=worker.celery --loglevel=info --logfile=logs/celery_dev.log`
-  * `celery --app=worker.celery worker --loglevel=info --logfile=logs/celery_dev.log` celery 5
-  * or with watchdog for dev auto-reload `watchmedo auto-restart -d ./  -- celery --app=worker.celery worker --loglevel=info --logfile=logs/celery_dev.log`
-* console 3 - `pipenv shell` + `uvicorn main:app --host 0.0.0.0 --reload`
-orchestration must be from the console(?)
-* turn off VPNs if connection to docker is not working
+We advise you to use `make prod` but you can also spin up redis and run the API (uvicorn) and worker (celery) individually like so:
+* console 1 - `make dev-redis-only` to spin up redis, turn off any VPNs
+* console 2 - `export ENVIRONMENT_FILE=.env.dev` then `poetry run celery --app=app.worker.main.celery worker --loglevel=debug --logfile=/aa-api/logs/celery.log -Q high_priority,low_priority --concurrency=1`
+  * or with watchdog for dev auto-reload `watchmedo auto-restart --patterns="*.py" --recursive --ignore-directories -- celery -- --app=app.worker.main.celery worker --loglevel=debug --logfile=/aa-api/logs/celery.log -Q high_priority,low_priority --concurrency=1`
+* console 3 - `export ENVIRONMENT_FILE=.env.dev` then `poetry run uvicorn main:app --host 0.0.0.0 --reload`
 
-## User management
-TODO: update description and example
-- users/domains/groups
-Copy [example.user-groups.yaml](src/example.user-groups.yaml) into a new file and set the environment variable `USER_GROUPS_FILENAME` to that filename (defaults to `user-groups.yaml`).
-
-This file contains 2 parts user-groups specifications. Each user can archive URLs publicly, privately, or privately for a group so long as they are declared as part of that group. In the example bellow `email1` has 2 groups while `email3` has none. 
-```yaml
-users:
-  email1@example.com:
-    - group1
-    - group2
-  email2@example.com:
-    - group2
-  email3@example-no-group.com:
-```
-
-Auto-archiver orchestrator files configurations. For each archiving task an orchestrator is chosen, either from a specified group (if group-level visibility) or the first group the user is assigned to in the above file or the `default` orchestration file which is a required config.
-```yaml
-orchestrators:
-  group1: secrets/orchestration-group1.yaml
-  group2: secrets/orchestration-group2.yaml
-  default: secrets/orchestration-default:orchestration.yaml
-```
 
 ## Database migrations
 check https://alembic.sqlalchemy.org/en/latest/tutorial.html#the-migration-environment
@@ -143,31 +97,12 @@ poetry run alembic upgrade head
 poetry run alembic downgrade -1
 ```
 
-* create migrations with `alembic revision -m "create account table"`
-* if running in the normal pipenv environment use `PIPENV_DOTENV_LOCATION=.env.alembic pipenv run` followed by:
-  * migrate to most recent with `alembic upgrade head`
-  * downgrade with `alembic downgrade -1`
-
 ## Release
-Update `main.py:VERSION`.
+Update the version in [config.py](app/web/config.py)
 
-Copy `.env` and `src/.env` to deployment, along with the contents of `secrets/` including `secrets/orchestration.yaml`.
+Make sure environment and user-groups files are up to date.
 
 Then `make prod`.
-
-#### updating packages/app/access
-If pipenv packages are updated:  `make prod` to build images with new packages.
-
-New users should be added to the `src/.env` file `ALLOWED_EMAILS` prop.
-
-Run `pipenv update auto-archiver` inside `src` to update the auto-archiver version being used, then test with `make dev`. 
-
-
-```bash
-# CALL /sheet POST endpoint
-curl -XPOST -H "Authorization: Bearer GOOGLE_OAUTH_TOKEN" -H "Content-type: application/json" -d '{"sheet_id": "SHEET_ID", "header": 1}' 'http://localhost:8004/sheet'
-
-```
 
 
 ### Testing
