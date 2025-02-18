@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=os.environ.get("ENVIRONMENT_FILE") , env_file_encoding='utf-8', extra='ignore', str_strip_whitespace=True)
 
 	# general
-    SERVE_LOCAL_ARCHIVE: str = ""
+    SERVE_LOCAL_ARCHIVE: str | None = None
     USER_GROUPS_FILENAME: str = "app/user-groups.yaml"
 
 	# database

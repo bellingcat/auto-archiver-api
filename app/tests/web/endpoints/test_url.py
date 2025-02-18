@@ -133,8 +133,7 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     from app.shared import schemas
     from app.shared.db import worker_crud
     for i in range(11):
-        #TODO: fix as this method is gone to shared.db
-        worker_crud.create_task(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com"), [], [])
+        worker_crud.create_archive(db_session, ArchiveCreate(id=f"url-456-{i}", url="https://example.com" if i < 10 else "https://something-else.com", result={}, public=True, author_id="rick@example.com"), [], [])
         # NB: this insertion is too fast for the ordering to be correct as they are within the same second
 
     response = client_with_auth.get("/url/search?url=https://example.com")
@@ -187,7 +186,7 @@ def test_delete_task(client_with_auth, db_session):
     assert response.json() == {"id": "delete-123-456-789", "deleted": False}
 
     from app.shared.db import worker_crud
-    worker_crud.create_task(db_session, ArchiveCreate(id="delete-123-456-789", url="https://example.com", result={}, public=True, author_id="morty@example.com"), [], [])
+    worker_crud.create_archive(db_session, ArchiveCreate(id="delete-123-456-789", url="https://example.com", result={}, public=True, author_id="morty@example.com"), [], [])
 
     response = client_with_auth.delete("/url/delete-123-456-789")
     assert response.status_code == 200

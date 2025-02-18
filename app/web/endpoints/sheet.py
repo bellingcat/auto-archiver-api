@@ -51,7 +51,7 @@ def delete_sheet(
     id: str,
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> schemas.TaskDelete:
+) -> schemas.DeleteResponse:
     return JSONResponse({
         "id": id,
         "deleted": crud.delete_sheet(db, id, user.email)

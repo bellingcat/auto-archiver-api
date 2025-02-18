@@ -14,7 +14,7 @@ from app.shared.task_messaging import get_redis
 EXCEPTION_COUNTER = Counter(
     "exceptions",
     "Number of times a certain exception has occurred.",
-    labelnames=["type"]
+    labelnames=["type", "location"]
 )
 WORKER_EXCEPTION = Counter(
     "worker_exceptions_total",

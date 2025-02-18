@@ -17,7 +17,7 @@ def test_alembic(db_session):
     alembic.config.main(argv=['--raiseerr', 'upgrade', 'head'])
     alembic.config.main(argv=['--raiseerr', 'downgrade', 'base'])
 
-@patch("app.web.endpoints.url.crud.soft_delete_task", side_effect=Exception('mocked error'))
+@patch("app.web.endpoints.url.crud.soft_delete_archive", side_effect=Exception('mocked error'))
 def test_logging_middleware(m1, client_with_auth):
     from app.web.utils.metrics import EXCEPTION_COUNTER
     assert len(EXCEPTION_COUNTER.collect()[0].samples) == 0

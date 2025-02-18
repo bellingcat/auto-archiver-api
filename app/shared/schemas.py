@@ -34,7 +34,7 @@ class TaskResult(Task):
     result: str
 
 
-class TaskDelete(Task):
+class DeleteResponse(Task):
     deleted: bool
 
 

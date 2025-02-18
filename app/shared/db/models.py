@@ -103,7 +103,7 @@ class Sheet(Base):
     author_id = Column(String, ForeignKey("users.email"))
     group_id = Column(String, ForeignKey("groups.id"), doc="Group ID, user must be in a group to create a sheet.")
     frequency = Column(String, default="daily", doc="Frequency of archiving: hourly, daily, weekly.")
-    # TODO: stats is not needed, is it?
+    # TODO: stats is not being used, consider removing
     stats = Column(JSON, default={}, doc="Sheet statistics like total links, total rows, ...")
     last_url_archived_at = Column(DateTime(timezone=True), server_default=func.now(), doc="Last time a new link was archived.")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -88,7 +88,7 @@ def test_create_task(db_session):
     )
 
     # with tags and urls
-    nt = worker_crud.create_task(db_session, task, [models.Tag(id="tag-101")], [models.ArchiveUrl(url="https://example-0.com/0", key="media_0")])
+    nt = worker_crud.create_archive(db_session, task, [models.Tag(id="tag-101")], [models.ArchiveUrl(url="https://example-0.com/0", key="media_0")])
 
     assert nt is not None
     assert nt.id == "archive-id-456-101"
@@ -105,7 +105,7 @@ def test_create_task(db_session):
 
     # without tags and urls
     task.id = "archive-id-456-102"
-    nt = worker_crud.create_task(db_session, task, [], [])
+    nt = worker_crud.create_archive(db_session, task, [], [])
     assert nt is not None
     assert nt.id == "archive-id-456-102"
     assert nt.url == "https://example-0.com"

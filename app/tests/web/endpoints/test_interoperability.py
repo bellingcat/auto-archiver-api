@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 from unittest.mock import MagicMock, patch
 
+from app.shared.db import models
 from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db import crud
 
@@ -22,7 +23,7 @@ def test_submit_manual_archive(m1, client_with_token, db_session):
     assert r.status_code == 201
     assert "id" in r.json()
 
-    inserted = crud.get_archive(db_session, r.json()["id"], ALLOW_ANY_EMAIL)
+    inserted = db_session.query(models.Archive).filter(models.Archive.id == r.json()["id"]).first()
     assert inserted.url == "http://example.com"
     assert inserted.group_id == "spaceship"
     assert inserted.author_id == "jerry@gmail.com"

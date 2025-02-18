@@ -32,20 +32,18 @@ def base_query(db: Session):
         .options(load_only(models.Archive.id, models.Archive.created_at, models.Archive.url, models.Archive.result, models.Archive.store_until))
 
 
-def get_archive(db: Session, id: str, email: str):
-    query = base_query(db).filter(models.Archive.id == id)
-    if email != ALLOW_ANY_EMAIL:
-        groups = get_user_group_names(db ,email)
-        query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
-    return query.first()
-
-
-def search_archives_by_url(db: Session, url: str, email: str, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False) -> list[models.Archive]:
-    # searches for partial URLs, if email is * no ownership filtering happens
+def search_archives_by_url(db: Session, url: str, email: str, read_groups: bool | set[str], read_public: bool, skip: int = 0, limit: int = 100, archived_after: datetime = None, archived_before: datetime = None, absolute_search: bool = False) -> list[models.Archive]:
+    # searches for partial URLs, if email is * no ownership (or read/read_public) filtering happens
     query = base_query(db)
     if email != ALLOW_ANY_EMAIL:
-        groups = get_user_group_names(db, email)
-        query = query.filter(or_(models.Archive.public == True, models.Archive.author_id == email, models.Archive.group_id.in_(groups)))
+        or_filters = [models.Archive.author_id == email]
+        if read_public:
+            or_filters.append(models.Archive.public == True)
+        if read_groups == True:
+            or_filters.append(models.Archive.group_id.isnot(None))
+        else:
+            or_filters.append(models.Archive.group_id.in_(read_groups))
+        query = query.filter(or_(*or_filters))
     if absolute_search:
         query = query.filter(models.Archive.url == url)
     else:
@@ -61,13 +59,13 @@ def search_archives_by_email(db: Session, email: str, skip: int = 0, limit: int 
     return base_query(db).filter(models.Archive.author_id == email).order_by(models.Archive.created_at.desc()).offset(skip).limit(get_limit(limit)).all()
 
 
-def soft_delete_task(db: Session, task_id: str, email: str) -> bool:
+def soft_delete_archive(db: Session, id: str, email: str) -> bool:
     # TODO: implement hard-delete with cronjob that deletes from S3
-    db_task = db.query(models.Archive).filter(models.Archive.id == task_id, models.Archive.author_id == email, models.Archive.deleted == False).first()
-    if db_task:
-        db_task.deleted = True
+    db_archive = db.query(models.Archive).filter(models.Archive.id == id, models.Archive.author_id == email, models.Archive.deleted == False).first()
+    if db_archive:
+        db_archive.deleted = True
         db.commit()
-    return db_task is not None
+    return db_archive is not None
 
 
 def count_archives(db: Session):
@@ -121,7 +119,7 @@ def get_user_group_names(db: Session, email: str) -> list[str]:
     """
     given an email retrieves the user groups from the DB and then the email-domain groups from a global variable, the email does not need to belong to an existing user. 
     """
-    #TODO: the read: [group1, group2] permissions don't currently work
+    # TODO: the read: [group1, group2] permissions don't currently work
     if not email or not len(email) or "@" not in email: return []
 
     # get user groups
@@ -178,8 +176,8 @@ def upsert_user_groups(db: Session):
     reads the user_groups yaml file and inserts any new users, groups, 
     along with new participation of users in groups
     """
-    logger.debug("Updating user-groups configuration.")
     filename = get_settings().USER_GROUPS_FILENAME
+    logger.debug(f"Updating user-groups configuration with file {filename}.")
 
     ug = UserGroups(filename)
 

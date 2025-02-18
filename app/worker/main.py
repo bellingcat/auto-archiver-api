@@ -27,14 +27,14 @@ USER_GROUPS_FILENAME = settings.USER_GROUPS_FILENAME
 logger.remove = lambda x: print(f"logger.remove({x})")
 
 # TODO: after release, as it requires updating past entries with sheet_id where tag is used, drop tags
-@celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 0})
+@celery.task(name="create_archive_task", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 1})
 def create_archive_task(self, archive_json: str):
     archive = schemas.ArchiveCreate.model_validate_json(archive_json)
 
     # call auto-archiver
     args = get_orchestrator_args(archive.group_id, False, [archive.url])
     # args = get_orchestrator_args(archive.group_id, False, [archive.url, "--extractors", "generic_extractor"])
-    logger.error(args)
+    logger.debug(args)
     try:
         result = next(ArchivingOrchestrator().run(args), None)
     except SystemExit as e:
@@ -61,6 +61,7 @@ def create_sheet_task(self, sheet_json: str):
     logger.info(f"[queue={queue_name}] SHEET START {sheet=}")
 
     args = get_orchestrator_args(sheet.group_id, True, ["--gsheet_feeder.sheet_id", sheet.sheet_id])
+    logger.info(f"[queue={queue_name}] {args=}")
 
     stats = {"archived": 0, "failed": 0, "errors": []}
     try:
@@ -116,9 +117,9 @@ def get_orchestrator_args(group_id: str, orchestrator_for_sheet: bool, cli_args:
 
 def insert_result_into_db(archive: schemas.ArchiveCreate) -> str:
     with get_db() as session:
-        db_task = worker_crud.store_archived_url(session, archive)
-        logger.debug(f"[ARCHIVE STORED] {db_task.author_id} {db_task.url}")
-        return db_task.id
+        db_archive = worker_crud.store_archived_url(session, archive)
+        logger.debug(f"[ARCHIVE STORED] {db_archive.author_id} {db_archive.url}")
+        return db_archive.id
 
 
 def get_store_until(group_id: str) -> datetime.datetime:

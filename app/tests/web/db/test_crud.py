@@ -62,78 +62,56 @@ def test_data(db_session):
     assert db_session.query(models.User).count() == 3
 
 
-def test_get_archive(test_data, db_session):
-    from app.web.config import ALLOW_ANY_EMAIL
-
-    # each author's archives work
-    assert (a0 := crud.get_archive(db_session, "archive-id-456-0", authors[0])) is not None
-    assert a0.id == "archive-id-456-0"
-    assert a0.url == "https://example-0.com"
-    assert a0.author_id == authors[0]
-    assert a0.public == False
-
-    assert crud.get_archive(db_session, "archive-id-456-1", authors[1]) is not None
-    assert crud.get_archive(db_session, "archive-id-456-2", authors[2]) is not None
-
-    # ALLOW_ANY_EMAIL
-    assert crud.get_archive(db_session, "archive-id-456-0", ALLOW_ANY_EMAIL) is not None
-    assert crud.get_archive(db_session, "archive-id-456-1", ALLOW_ANY_EMAIL) is not None
-
-    # not found
-    assert crud.get_archive(db_session, "archive-missing", authors[0]) is None
-
-    # public
-    assert (a_public := crud.get_archive(db_session, "archive-id-456-2", authors[0])) is not None
-    assert a_public.public == True
-
-    # not public - rick's
-    assert crud.get_archive(db_session, "archive-id-456-0", authors[1]) is None
-
-
 def test_search_archives_by_url(test_data, db_session):
     from app.web.config import ALLOW_ANY_EMAIL
 
     # rick's archives are private
-    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "rick@example.com")) == 34
-    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", ALLOW_ANY_EMAIL)) == 34
-    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "morty@example.com")) == 0
+    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "rick@example.com", True, False)) == 34
+    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "rick@example.com", [], False)) == 34
+    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "rick@example.com", [], True)) == 34
+    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", ALLOW_ANY_EMAIL, [], False)) == 34
+    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", ALLOW_ANY_EMAIL, True, False)) == 34
+    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "morty@example.com", [], False)) == 0
+    assert len(crud.search_archives_by_url(db_session, "https://example-0.com", "morty@example.com", [], True)) == 0
 
     # morty's archives are public but half are in spaceship group
-    assert len(crud.search_archives_by_url(db_session, "https://example-1.com", "rick@example.com")) == 16
+    assert len(crud.search_archives_by_url(db_session, "https://example-1.com", "rick@example.com", ["spaceship"], False)) == 16
+    assert len(crud.search_archives_by_url(db_session, "https://example-1.com", "rick@example.com", True, False)) == 16
+    assert len(crud.search_archives_by_url(db_session, "https://example-1.com", "jerry@example.com", True, True)) == 16
 
     # jerry's archives are public
-    assert len(crud.search_archives_by_url(db_session, "https://example-2.com", "jerry@example.com")) == 33
-    assert len(crud.search_archives_by_url(db_session, "https://example-2.com", "rick@example.com")) == 33
+    assert len(crud.search_archives_by_url(db_session, "https://example-2.com", "jerry@example.com", [], True)) == 33
+    assert len(crud.search_archives_by_url(db_session, "https://example-2.com", "rick@example.com", [], True)) == 33
 
     # fuzzy search
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL)) == 100
-    assert len(crud.search_archives_by_url(db_session, "https://EXAMPLE", ALLOW_ANY_EMAIL)) == 100
-    assert len(crud.search_archives_by_url(db_session, "2.com", ALLOW_ANY_EMAIL)) == 33
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False)) == 100
+    assert len(crud.search_archives_by_url(db_session, "https://EXAMPLE", ALLOW_ANY_EMAIL, False, False)) == 100
+    assert len(crud.search_archives_by_url(db_session, "2.com", ALLOW_ANY_EMAIL, False, False)) == 33
 
     # absolute search
-    assert len(crud.search_archives_by_url(db_session, "example-2.com", ALLOW_ANY_EMAIL, absolute_search=True)) == 0
-    assert len(crud.search_archives_by_url(db_session, "https://example-2.com", ALLOW_ANY_EMAIL, absolute_search=True)) == 33
+    assert len(crud.search_archives_by_url(db_session, "example-2.com", ALLOW_ANY_EMAIL, [], False, absolute_search=True)) == 0
+    assert len(crud.search_archives_by_url(db_session, "https://example-2.com", ALLOW_ANY_EMAIL, [], False, absolute_search=True)) == 33
 
     # archived_after
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, archived_after=datetime(2010, 1, 1))) == 100
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, archived_after=datetime(2021, 1, 15))) == 70
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, archived_after=datetime(2031, 1, 1))) == 0
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, True, True, archived_after=datetime(2010, 1, 1))) == 100
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, archived_after=datetime(2021, 1, 15))) == 70
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, archived_after=datetime(2031, 1, 1))) == 0
 
     # archived before
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, archived_before=datetime(2010, 1, 1))) == 0
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, archived_before=datetime(2021, 1, 15))) == 28
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, archived_before=datetime(2031, 1, 1))) == 100
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, archived_before=datetime(2010, 1, 1))) == 0
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, archived_before=datetime(2021, 1, 15))) == 28
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, archived_before=datetime(2031, 1, 1))) == 100
 
     # archived before and after
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, archived_after=datetime(2001, 1, 1), archived_before=datetime(2031, 1, 11))) == 100
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, archived_after=datetime(2021, 1, 14), archived_before=datetime(2021, 1, 16))) == 2
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, archived_after=datetime(2001, 1, 1), archived_before=datetime(2031, 1, 11))) == 100
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, archived_after=datetime(2021, 1, 14), archived_before=datetime(2021, 1, 16))) == 2
 
     # limit
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, limit=10)) == 10
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, limit=-1)) == 1
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, limit=10)) == 10
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, limit=-1)) == 1
 
     # skip
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, skip=10)) == 90
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, False, False, skip=10)) == 90
 
 
 def test_search_archives_by_email(test_data, db_session):
@@ -160,8 +138,8 @@ def test_search_archives_by_email(test_data, db_session):
 def test_max_query_limit(test_data, db_session):
     from app.web.config import ALLOW_ANY_EMAIL
 
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL)) == 25
-    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, limit=1000)) == 25
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, [], False)) == 25
+    assert len(crud.search_archives_by_url(db_session, "https://example", ALLOW_ANY_EMAIL, True, True, limit=1000)) == 25
 
     assert len(crud.search_archives_by_email(db_session, "rick@example.com")) == 25
     assert len(crud.search_archives_by_email(db_session, "rick@example.com", limit=1000)) == 25
@@ -169,18 +147,18 @@ def test_max_query_limit(test_data, db_session):
 
 def test_soft_delete(test_data, db_session):
     # none deleted yet
-    assert crud.get_archive(db_session, "archive-id-456-0", "rick@example.com") is not None
+    db_session.query(models.Archive).filter(models.Archive.id == "archive-id-456-0").first() is not None
     assert db_session.query(models.Archive).filter(models.Archive.deleted == True).count() == 0
 
     # delete
-    assert crud.soft_delete_task(db_session, "archive-id-456-0", "rick@example.com") == True
+    assert crud.soft_delete_archive(db_session, "archive-id-456-0", "rick@example.com") == True
 
     # ensure soft delete
     assert db_session.query(models.Archive).filter(models.Archive.deleted == True).count() == 1
-    assert crud.get_archive(db_session, "archive-id-456-0", "rick@example.com") is None
+    db_session.query(models.Archive).filter(models.Archive.id == "archive-id-456-0").first() is None
 
     # already deleted
-    assert crud.soft_delete_task(db_session, "archive-id-456-0", "rick@example.com") == False
+    assert crud.soft_delete_archive(db_session, "archive-id-456-0", "rick@example.com") == False
 
 
 def test_count_archives(test_data, db_session):

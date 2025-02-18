@@ -15,6 +15,7 @@ from app.shared import schemas
 from app.shared.settings import get_settings
 from app.shared.task_messaging import get_celery
 from app.web.db import crud
+from app.web.middleware import increase_exceptions_counter
 from app.web.utils.metrics import measure_regular_metrics, redis_subscribe_worker_exceptions
 
 celery = get_celery()
@@ -60,17 +61,17 @@ async def lifespan(app: FastAPI):
 
 
 # CRON JOBS
-@repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS, on_exception=logger.error)
+@repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS, on_exception=increase_exceptions_counter)
 async def repeat_measure_regular_metrics():
     await measure_regular_metrics(get_settings().DATABASE_PATH, get_settings().REPEAT_COUNT_METRICS_SECONDS)
 
 
-@repeat_every(seconds=60, wait_first=120, on_exception=logger.error)
+@repeat_every(seconds=60, wait_first=120, on_exception=increase_exceptions_counter)
 async def archive_hourly_sheets_cronjob():
     await archive_sheets_cronjob("hourly", 60, datetime.datetime.now().minute)
 
 
-@repeat_every(seconds=3600, wait_first=120, on_exception=logger.error)
+@repeat_every(seconds=3600, wait_first=120, on_exception=increase_exceptions_counter)
 async def archive_daily_sheets_cronjob():
     await archive_sheets_cronjob("daily", 24, datetime.datetime.now().hour)
 
@@ -92,7 +93,7 @@ async def archive_sheets_cronjob(frequency: str, interval: int, current_time_uni
 DELETE_WINDOW = get_settings().DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS * 24 * 60 * 60
 
 
-@repeat_every(seconds=DELETE_WINDOW, wait_first=180, on_exception=logger.error)
+@repeat_every(seconds=DELETE_WINDOW, wait_first=180, on_exception=increase_exceptions_counter)
 async def notify_about_expired_archives():
     notify_from = datetime.datetime.now() + datetime.timedelta(days=get_settings().DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS)
     async with get_db_async() as db:
@@ -135,7 +136,7 @@ async def notify_about_expired_archives():
     asyncio.create_task(delete_expired_archives())
 
 
-@repeat_every(max_repetitions=1, wait_first=10, seconds=0, on_exception=logger.error)
+@repeat_every(max_repetitions=1, wait_first=10, seconds=0, on_exception=increase_exceptions_counter)
 async def delete_expired_archives():
     async with get_db_async() as db:
         count_deleted = await crud.soft_delete_expired_archives(db)
@@ -143,7 +144,7 @@ async def delete_expired_archives():
             logger.debug(f"[CRON] Deleted {count_deleted} archives.")
 
 
-@repeat_every(seconds=86400, wait_first=150, on_exception=logger.error)
+@repeat_every(seconds=86400, wait_first=150, on_exception=increase_exceptions_counter)
 async def delete_stale_sheets():
     STALE_DAYS = get_settings().DELETE_STALE_SHEETS_DAYS
     logger.debug(f"[CRON] Deleting stale sheets older than {STALE_DAYS} days.")

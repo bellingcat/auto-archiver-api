@@ -61,22 +61,24 @@ def search_by_url(
         email: str = Depends(get_token_or_user_auth)
 ) -> list[schemas.ArchiveResult]:
 
+    read_groups, read_public = False, False
     if email != ALLOW_ANY_EMAIL:
         user = UserState(db, email)
         if not user.read and not user.read_public:
             raise HTTPException(status_code=403, detail="User does not have read access.")
-
-    return crud.search_archives_by_url(db, url.strip(), email, skip=skip, limit=limit, archived_after=archived_after, archived_before=archived_before)
+        read_groups = user.read
+        read_public = user.read_public
+    return crud.search_archives_by_url(db, url.strip(), email, read_groups, read_public, skip=skip, limit=limit, archived_after=archived_after, archived_before=archived_before)
 
 
 @url_router.delete("/{id}", summary="Delete a single URL archive by id.")
-def delete_task(
+def delete_archive(
     id:str, 
     user: UserState = Depends(get_user_state), 
     db: Session = Depends(get_db_dependency)
-) -> schemas.TaskDelete:
+) -> schemas.DeleteResponse:
     logger.info(f"deleting url archive task {id} request by {user.email}")
     return JSONResponse({
         "id": id,
-        "deleted": crud.soft_delete_task(db, id, user.email)
+        "deleted": crud.soft_delete_archive(db, id, user.email)
     })

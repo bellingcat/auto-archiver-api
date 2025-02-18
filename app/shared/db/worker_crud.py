@@ -41,15 +41,14 @@ def create_tag(db: Session, tag: str) -> models.Tag:
     return db_tag
 
 
-def create_task(db: Session, task: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]) -> models.Archive:
-	# TODO: rename task to archive
-    db_task = models.Archive(id=task.id, url=task.url, result=task.result, public=task.public, author_id=task.author_id, group_id=task.group_id, sheet_id=task.sheet_id, store_until=task.store_until)
-    db_task.tags = tags
-    db_task.urls = urls
-    db.add(db_task)
+def create_archive(db: Session, archive: schemas.ArchiveCreate, tags: list[models.Tag], urls: list[models.ArchiveUrl]) -> models.Archive:
+    db_archive = models.Archive(id=archive.id, url=archive.url, result=archive.result, public=archive.public, author_id=archive.author_id, group_id=archive.group_id, sheet_id=archive.sheet_id, store_until=archive.store_until)
+    db_archive.tags = tags
+    db_archive.urls = urls
+    db.add(db_archive)
     db.commit()
-    db.refresh(db_task)
-    return db_task
+    db.refresh(db_archive)
+    return db_archive
 
 
 def store_archived_url(db: Session, archive: schemas.ArchiveCreate) -> models.Archive:
@@ -57,5 +56,5 @@ def store_archived_url(db: Session, archive: schemas.ArchiveCreate) -> models.Ar
     create_or_get_user(db, archive.author_id)
     db_tags = [create_tag(db, tag) for tag in (archive.tags or [])]
     # insert everything
-    db_task = create_task(db, task=archive, tags=db_tags, urls=archive.urls)
-    return db_task
+    db_archive = create_archive(db, archive=archive, tags=db_tags, urls=archive.urls)
+    return db_archive
