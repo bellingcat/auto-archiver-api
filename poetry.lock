@@ -154,14 +154,14 @@ cryptography = "*"
 
 [[package]]
 name = "auto-archiver"
-version = "0.13.2"
+version = "0.13.4"
 description = "Automatically archive links to videos, images, and social media content from Google Sheets (and more)."
 optional = false
 python-versions = "<3.13,>=3.10"
 groups = ["main"]
 files = [
-    {file = "auto_archiver-0.13.2-py3-none-any.whl", hash = "sha256:672671080bdc2e4cd50792b3521a8a1d70aabb50ee3f779ed30879162b0c352b"},
-    {file = "auto_archiver-0.13.2.tar.gz", hash = "sha256:b0d5505206bdb02f2ddb1b3a3a622780cc06ace0f3440b272f1d9bc9c314c9e2"},
+    {file = "auto_archiver-0.13.4-py3-none-any.whl", hash = "sha256:490ee0dbc86e3481ee06cdbfbbaf397cbc9733b4aaac8cac233f29af5dc4ba53"},
+    {file = "auto_archiver-0.13.4.tar.gz", hash = "sha256:dac206f643e8101bb1efdea2e6cbdfaca1e3ae50cfe3fa34b466b7518337d675"},
 ]
 
 [package.dependencies]

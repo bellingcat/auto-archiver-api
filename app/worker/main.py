@@ -33,10 +33,10 @@ def create_archive_task(self, archive_json: str):
 
     # call auto-archiver
     args = get_orchestrator_args(archive.group_id, False, [archive.url])
-    # args = get_orchestrator_args(archive.group_id, False, [archive.url, "--extractors", "generic_extractor"])
-    logger.debug(args)
     try:
-        result = next(ArchivingOrchestrator().run(args), None)
+        orchestrator = ArchivingOrchestrator()
+        orchestrator.setup(args)
+        result = next(orchestrator.feed())
     except SystemExit as e:
         log_error(e, f"create_archive_task: SystemExit from AA")
     except Exception as e:
@@ -61,11 +61,12 @@ def create_sheet_task(self, sheet_json: str):
     logger.info(f"[queue={queue_name}] SHEET START {sheet=}")
 
     args = get_orchestrator_args(sheet.group_id, True, ["--gsheet_feeder.sheet_id", sheet.sheet_id])
-    logger.info(f"[queue={queue_name}] {args=}")
+    orchestrator = ArchivingOrchestrator()
+    orchestrator.setup(args)
 
     stats = {"archived": 0, "failed": 0, "errors": []}
     try:
-        for result in ArchivingOrchestrator().run(args):
+        for result in orchestrator.feed():
             try:
                 assert result, f"ERROR archiving URL for sheet {sheet.sheet_id}"
                 archive = schemas.ArchiveCreate(

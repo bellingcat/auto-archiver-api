@@ -1,7 +1,6 @@
 from datetime import datetime
-from unittest import mock
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -24,7 +23,7 @@ class Test_create_archive_task():
         from app.worker.main import create_archive_task
 
         m_req.id = "this-just-in"
-        m_orchestrator.return_value.run.return_value = iter([Metadata().set_url(self.URL).success()])
+        m_orchestrator.return_value.feed.return_value = iter([Metadata().set_url(self.URL).success()])
 
         task = create_archive_task(self.archive.model_dump_json())
 
@@ -32,7 +31,8 @@ class Test_create_archive_task():
         m_store.assert_called_once_with("interstellar")
         m_insert.assert_called_once()
         m_urls.assert_called_once()
-        m_orchestrator.return_value.run.assert_called_once()
+        m_orchestrator.return_value.feed.assert_called_once()
+        m_orchestrator.return_value.setup.assert_called_once()
 
         assert task["status"] == "success"
         assert task["metadata"]["url"] == self.URL
@@ -47,25 +47,25 @@ class Test_create_archive_task():
     @patch("app.worker.main.get_orchestrator_args")
     def test_raise_db_error(self, m_args, m_orchestrator):
         from app.worker.main import create_archive_task
-        m_orchestrator.return_value.run.side_effect = Exception("Orchestrator failed")
+        m_orchestrator.return_value.feed.side_effect = Exception("Orchestrator failed")
 
         with pytest.raises(Exception) as e:
             create_archive_task(self.archive.model_dump_json())
         assert str(e.value) == "Orchestrator failed"
         m_args.assert_called_once()
-        m_orchestrator.return_value.run.assert_called_once()
+        m_orchestrator.return_value.feed.assert_called_once()
 
     @patch("app.worker.main.ArchivingOrchestrator")
     @patch("app.worker.main.insert_result_into_db", return_value=None)
     @patch("app.worker.main.get_orchestrator_args")
     def test_raise_empty_result(self, m_args, m_insert, m_orchestrator):
         from app.worker.main import create_archive_task
-        m_orchestrator.return_value.run.return_value = iter([None])
+        m_orchestrator.return_value.feed.return_value = iter([None])
 
         with pytest.raises(Exception) as e:
             create_archive_task(self.archive.model_dump_json())
         assert str(e.value) == "UNABLE TO archive: https://example-live.com"
-        m_orchestrator.return_value.run.assert_called_once()
+        m_orchestrator.return_value.feed.assert_called_once()
 
 
 class Test_create_sheet_task():
@@ -85,12 +85,13 @@ class Test_create_sheet_task():
         mock_metadata = Metadata().set_url(self.URL).success()
         mock_metadata.add_media(Media("fn1.txt", urls=["outcome1.com"]))
 
-        m_orchestrator.return_value.run.return_value = iter([False, mock_metadata, mock_metadata])
+        m_orchestrator.return_value.feed.return_value = iter([False, mock_metadata, mock_metadata])
 
         res = create_sheet_task(self.sheet.model_dump_json())
 
         m_args.assert_called_once_with("interstellar", True, ["--gsheet_feeder.sheet_id", "123"])
-        m_orchestrator.return_value.run.assert_called_once()
+        m_orchestrator.return_value.setup.assert_called_once()
+        m_orchestrator.return_value.feed.assert_called_once()
         m_store.assert_called_with("interstellar")
         m_store.call_count == 2
         m_uuid.call_count == 2
