@@ -1,0 +1,62 @@
+# NOTE: all emails should be lower-cased
+users:
+  user01@example.com:
+    - group1
+  user02@example.com:
+    - group2
+  user03@example.com:
+    - group1
+    - group2
+
+domains:
+  example.com:
+    - group-for-friends
+  gmail-example.com:
+    - group1
+
+
+groups:
+  group1:
+    description: "Group 1 which can do everything, no limits"
+    orchestrator: secrets/orchestration.group1.yaml
+    orchestrator_sheet: secrets/orchestration.group1-sheet.yaml
+    permissions:
+      read: ["all"]
+      archive_url: true
+      archive_sheet: true
+      sheet_frequency: ["hourly", "daily"]
+      max_sheets: -1
+      max_archive_lifespan_months: -1
+      max_monthly_urls: -1
+      max_monthly_mbs: -1
+      manually_trigger_sheet: true
+  group2:
+    description: "Group that can only archive URLs, not sheets, they can search their own group and group-for-friends archives."
+    orchestrator: secrets/orchestration.group2.yaml
+    orchestrator_sheet: secrets/orchestration-group2-sheet.yaml
+    permissions:
+      read: ["group2", "group-for-friends"]
+      archive_url: true
+      max_archive_lifespan_months: 12
+      max_monthly_urls: 100
+      max_monthly_mbs: 1000
+  group-for-friends:
+    description: "Friends can have one sheet only which archives once a day"
+    orchestrator: secrets/orchestration.friends.yaml
+    orchestrator_sheet: secrets/orchestration.friends-sheet.yaml
+    permissions:
+      read: ["friends-1"]
+      archive_sheet: true
+      sheet_frequency: ["daily"]
+      max_sheets: 1
+      max_archive_lifespan_months: 12
+      max_monthly_urls: 1000
+      max_monthly_mbs: 1000
+  default:
+    description: "Public access, can only search public archives"
+    orchestrator: secrets/orchestration-default.yaml
+    orchestrator_sheet: secrets/orchestration-default.yaml
+    permissions:
+      read: ["default"]
+      read_public: true
+  

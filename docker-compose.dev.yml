@@ -1,19 +1,30 @@
 services:
   web:
+    command: uvicorn app.web:app --factory --host 0.0.0.0 --reload
     restart: "no"
-    env_file: src/.env.dev
+    env_file: .env.dev
+    volumes:
+      - ./app/web:/aa-api/app/web # for --reload to work
+      - ./app/shared:/aa-api/app/shared # for --reload to work
     environment:
-      - SERVE_LOCAL_ARCHIVE=/app/local_archive # See orchestration.yaml local_storage.save_to
-      - ALLOWED_ORIGINS=http://localhost:8004,chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp
-      - USER_GROUPS_FILENAME=user-groups.dev.yaml
-      - DATABASE_PATH=sqlite:////app/auto-archiver.db
+      - ENVIRONMENT_FILE=.env.dev
+      - SERVE_LOCAL_ARCHIVE=/aa-api/app/local_archive # See orchestration.yaml local_storage.save_to
+      - ALLOWED_ORIGINS=["http://localhost:8000","http://localhost:8004","http://localhost:8081","chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp"]
+      - USER_GROUPS_FILENAME=/aa-api/app/user-groups.dev.yaml
+      - DATABASE_PATH=sqlite:////aa-api/database/auto-archiver.db
+    
 
   worker:
+    # command: watchmedo auto-restart --patterns="*.py" --recursive --ignore-directories -- celery -- --app=app.worker.main.celery worker --loglevel=debug --logfile=/aa-api/logs/celery.log -Q high_priority,low_priority --concurrency=${CONCURRENCY}
+    command: celery --app=app.worker.main.celery worker --loglevel=debug --logfile=/aa-api/logs/celery.log -Q high_priority,low_priority --concurrency=${CONCURRENCY}
     restart: "no"
-    env_file: src/.env.dev
+    env_file: .env.dev
+    volumes:
+      - ./app/worker:/aa-api/app/worker # for watchmedo to work
+      - ./app/shared:/aa-api/app/shared # for watchmedo to work
 
   redis:
     restart: "no"
-    env_file: src/.env.dev
+    env_file: .env.dev
     ports:
       - 6379:6379

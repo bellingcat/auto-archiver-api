@@ -3,15 +3,20 @@ clean-dev:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml down --volumes --remove-orphans
 
 dev:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml build
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans
+	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml build
+	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans
+
+
+dev-redis-only:
+	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml build redis
+	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans redis
 
 stop-dev:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml down --volumes
 
 prod:
-	docker compose build
-	docker compose up -d --remove-orphans
+	docker compose --env-file .env.prod build
+	docker compose --env-file .env.prod up -d --remove-orphans
 	docker buildx prune --keep-storage 20gb -f
 	docker image prune -f
 	docker system df

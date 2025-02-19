@@ -1,0 +1,87 @@
+# NOTE: all emails should be lower-cased
+users:
+  rick@example.com:
+    - spaceship
+    - interdimensional
+  morty@example.com:
+    - spaceship
+  jerry@example.com:
+    - the-jerrys-club
+  # summer@herself.com:
+  # badyemail.com:
+
+domains:
+  example.com:
+    - animated-characters
+  birdy.com:
+    - animated-characters
+    - this-does-not-exist
+
+
+orchestrators:
+  spaceship: app/tests/orchestration.test.yaml
+  interdimensional: app/tests/orchestration.test.yaml
+  default: app/tests/orchestration.test.yaml
+
+default_orchestrator: app/tests/orchestration.test.yaml
+
+groups:
+  spaceship:
+    description: "The spaceship crew"
+    orchestrator: app/tests/orchestration.test.yaml
+    orchestrator_sheet: app/tests/orchestration.test.yaml
+    permissions:
+      read: ["all"]
+      archive_url: true
+      archive_sheet: true
+      manually_trigger_sheet: true
+      sheet_frequency: ["hourly", "daily"]
+      max_sheets: -1
+      max_archive_lifespan_months: -1
+      max_monthly_urls: -1
+      max_monthly_mbs: -1
+      priority: "high"
+  interdimensional:
+    description: "Interdimensional travelers"
+    orchestrator: app/tests/orchestration.test.yaml
+    orchestrator_sheet: app/tests/orchestration.test.yaml
+    permissions:
+      read: ["interdimensional", "animated-characters"]
+      archive_url: true
+      archive_sheet: true
+      manually_trigger_sheet: true
+      sheet_frequency: ["hourly", "daily"]
+      max_sheets: 5
+      max_archive_lifespan_months: 12
+      max_monthly_urls: 1000
+      max_monthly_mbs: 1000
+      priority: "high"
+  animated-characters:
+    description: "Animated characters"
+    orchestrator: app/tests/orchestration.test.yaml
+    orchestrator_sheet: app/tests/orchestration.test.yaml
+    permissions:
+      read: ["animated-characters"]
+      archive_url: true
+      archive_sheet: true
+      sheet_frequency: ["daily"]
+      max_sheets: 1
+      max_archive_lifespan_months: 12
+      max_monthly_urls: 2
+      max_monthly_mbs: 10
+      priority: "low"
+  default:
+    description: "Public access"
+    orchestrator: app/tests/orchestration.test.yaml
+    orchestrator_sheet: app/tests/orchestration.test.yaml
+    permissions:
+      # read: []
+      archive_url: true
+      # manually_trigger_sheet: false
+      # archive_sheet: false
+      # sheet_frequency: []
+      # max_sheets: 0
+      # max_archive_lifespan_months: 12
+      max_monthly_urls: 1
+      # max_monthly_mbs: 50
+      priority: "low"

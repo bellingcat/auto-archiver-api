@@ -1,13 +1,3 @@
-# reusable YAML variables
-x-broker-url: &broker-url "redis://:${REDIS_PASSWORD}@redis:6379/0"
-
-x-base-setup: &base-setup
-  build: ./src
-  restart: always
-  env_file: src/.env.prod
-  environment:
-    CELERY_BROKER_URL: *broker-url
-    CELERY_RESULT_BACKEND: *broker-url
 
 volumes:
   crawls:
@@ -15,31 +5,45 @@ volumes:
 name: "auto-archiver-api"
 services:
   web:
-    <<: *base-setup
+    build: 
+      context: .
+      dockerfile: web.Dockerfile
+    restart: always
+    env_file: .env.prod
+    environment:
+      ENVIRONMENT_FILE: .env.prod
+      REDIS_HOSTNAME: redis
     ports:
       - "127.0.0.1:8004:8000"
-    command: uvicorn web:app --factory --host 0.0.0.0 --reload
+    command: uvicorn app.web:app --factory --host 0.0.0.0
     volumes:
-      - ./src:/app
+      - ./logs:/aa-api/logs
+      - ./database:/aa-api/database
+      - ./secrets:/aa-api/secrets
     depends_on:
       - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python3", "-c", 'import sys, urllib.request; sys.exit(urllib.request.urlopen("http://localhost:8000/health").getcode() != 200)']
       interval: 30s
       timeout: 10s
       retries: 3
 
   worker:
-    <<: *base-setup
-    command: celery --app=worker.main.celery worker --loglevel=info --logfile=logs/celery.log
+    build: 
+      context: .
+      dockerfile: worker.Dockerfile
+    restart: always
+    env_file: .env.prod
+    command: celery --app=app.worker.main.celery worker --loglevel=warning --logfile=/aa-api/logs/celery.log -Q high_priority,low_priority --concurrency=${CONCURRENCY}
     volumes:
-      - ./src:/app
+      - ./logs:/aa-api/logs
+      - ./database:/aa-api/database
+      - ./secrets:/aa-api/secrets
       - /var/run/docker.sock:/var/run/docker.sock
       - crawls:/crawls # BROWSERTRIX_HOME_HOST:BROWSERTRIX_HOME_CONTAINER, do not change /crawls
     environment:
-      # celery broker-url needs to be duplicated here, do not remove
-      CELERY_BROKER_URL: *broker-url
-      CELERY_RESULT_BACKEND: *broker-url
+      REDIS_HOSTNAME: redis
+      ENVIRONMENT_FILE: .env.prod
       WACZ_ENABLE_DOCKER: 1 # Enable calling docker from this container
       BROWSERTRIX_HOME_HOST: auto-archiver-api_crawls
       BROWSERTRIX_HOME_CONTAINER: /crawls
@@ -47,7 +51,7 @@ services:
       - web
       - redis
     healthcheck:
-      test: ["CMD", "pipenv", "run", "celery", "-A", "worker.main.celery", "status"]
+      test: ["CMD-SHELL", "./poetry-venv/bin/poetry run celery -A app.worker.main.celery inspect ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -55,10 +59,11 @@ services:
   redis:
     image: redis:6-alpine
     restart: always
+    env_file: .env.prod
     command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
     volumes:
-      - "./redis/data:/data"
-      - "./redis/config:/conf"
+      - ./redis/data:/data
+      - ./redis/config:/conf
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 30s

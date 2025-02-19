@@ -1,1 +1,0 @@
-based on https://fastapi-users.github.io/fastapi-users/10.4/configuration/oauth/
