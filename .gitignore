@@ -29,3 +29,4 @@ copy-files.sh
 temp/
 .python-version
 orchestration2.yaml
+database
