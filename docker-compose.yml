@@ -34,7 +34,7 @@ services:
       dockerfile: worker.Dockerfile
     restart: always
     env_file: .env.prod
-    command: celery --app=app.worker.main.celery worker -Q high_priority,low_priority --concurrency=${CONCURRENCY}
+    command: celery --app=app.worker.main.celery worker -Q high_priority,low_priority --concurrency=${CONCURRENCY} --max-tasks-per-child=100
     volumes:
       - ./logs:/aa-api/logs
       - ./database:/aa-api/database
