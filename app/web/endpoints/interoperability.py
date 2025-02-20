@@ -34,11 +34,8 @@ def submit_manual_archive(
     manual.author_id = manual.author_id or ALLOW_ANY_EMAIL
     manual.tags.add("manual")
 
-    try:
-        store_until=business_logic.get_store_archive_until(db, manual.group_id)
-    except AssertionError as e:
-        log_error(e)
-        raise HTTPException(status_code=422, detail=str(e))
+    store_until = business_logic.get_store_archive_until_or_never(db, manual.group_id)
+    logger.debug(f"[MANUAL ARCHIVE] {manual.author_id} {manual.url} {store_until}")
 
     try:
         archive = schemas.ArchiveCreate(

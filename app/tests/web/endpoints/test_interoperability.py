@@ -47,10 +47,14 @@ def test_submit_manual_archive_invalid_json(client_with_token):
     assert r.json() == {"detail": "Invalid JSON in result field."}
 
 
-@patch("app.web.endpoints.interoperability.business_logic")
-def test_submit_manual_archive_no_store_until(m_b, client_with_token, db_session):
-    m_b.get_store_archive_until.side_effect = AssertionError("AssertionError")
+@patch("app.web.endpoints.interoperability.business_logic.get_store_archive_until", side_effect=AssertionError("AssertionError"))
+def test_submit_manual_archive_no_store_until(m_sau, client_with_token, db_session):
     aa_metadata = json.dumps({"status": "test: success", "metadata": {"url": "http://example.com"}, "media": [{"filename": "fn1", "urls": ["http://example.s3.com"]}]})
     r = client_with_token.post("/interop/submit-archive", json={"result": aa_metadata, "public": True, "author_id": "jerry@gmail.com", "group_id": "spaceship", "tags": ["test"], "url": "http://example.com"})
-    assert r.status_code == 422
-    assert r.json() == {"detail": "AssertionError"}
+    assert r.status_code == 201
+    assert len(r.json()["id"]) == 36
+    res = db_session.query(models.Archive).filter(models.Archive.id == r.json()["id"]).first()
+    assert res.store_until is None
+    # testing that store_until = None is not comparable with datetime, and will always return False
+    res = db_session.query(models.Archive).filter(models.Archive.id == r.json()["id"], models.Archive.store_until < datetime.now()).first()
+    assert res is None
