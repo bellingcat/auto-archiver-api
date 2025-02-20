@@ -11,15 +11,15 @@ users:
 domains:
   example.com:
     - group-for-friends
-  gmail-example.com:
+  gmail.com:
     - group1
 
-
+# the secrets/orchestration files MUST exist for you to run this successfully
 groups:
   group1:
     description: "Group 1 which can do everything, no limits"
-    orchestrator: secrets/orchestration.group1.yaml
-    orchestrator_sheet: secrets/orchestration.group1-sheet.yaml
+    orchestrator: secrets/orchestration.yaml
+    orchestrator_sheet: secrets/orchestration-sheet.yaml
     permissions:
       read: ["all"]
       archive_url: true
@@ -32,8 +32,8 @@ groups:
       manually_trigger_sheet: true
   group2:
     description: "Group that can only archive URLs, not sheets, they can search their own group and group-for-friends archives."
-    orchestrator: secrets/orchestration.group2.yaml
-    orchestrator_sheet: secrets/orchestration-group2-sheet.yaml
+    orchestrator: secrets/orchestration.yaml
+    orchestrator_sheet: secrets/orchestration-sheet.yaml
     permissions:
       read: ["group2", "group-for-friends"]
       archive_url: true
@@ -42,8 +42,8 @@ groups:
       max_monthly_mbs: 1000
   group-for-friends:
     description: "Friends can have one sheet only which archives once a day"
-    orchestrator: secrets/orchestration.friends.yaml
-    orchestrator_sheet: secrets/orchestration.friends-sheet.yaml
+    orchestrator: secrets/orchestration.yaml
+    orchestrator_sheet: secrets/orchestration-sheet.yaml
     permissions:
       read: ["friends-1"]
       archive_sheet: true
@@ -54,8 +54,8 @@ groups:
       max_monthly_mbs: 1000
   default:
     description: "Public access, can only search public archives"
-    orchestrator: secrets/orchestration-default.yaml
-    orchestrator_sheet: secrets/orchestration-default.yaml
+    orchestrator: secrets/orchestration.yaml
+    orchestrator_sheet: secrets/orchestration-sheet.yaml
     permissions:
       read: ["default"]
       read_public: true

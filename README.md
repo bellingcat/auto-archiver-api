@@ -2,15 +2,17 @@
 
 [![CI](https://github.com/bellingcat/auto-archiver-api/workflows/CI/badge.svg)](https://github.com/bellingcat/auto-archiver-api/actions/workflows/ci.yaml)
 
-A web API that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps and enables CORS, everything runs on docker but development can be done without docker (except for redis).
+A web API that uses celery workers to process URL archive requests via [bellingcat/auto-archiver](https://github.com/bellingcat/auto-archiver), it allows authentication via Google OAuth Apps and enables CORS, everything runs on docker.
 
 ![image](https://github.com/user-attachments/assets/905d697d-b83e-437b-87d1-cc86d3c8d8bf)
 
 ## setup
-To properly set up the API you need to install `docker` and to edit 3 files:
+To properly set up the API you need to install `docker` and to edit these files:
 1. a `.env.prod` and `.env.dev` to configure the API, stays at the root level
 2. a `user-groups.yaml` to manage user permissions
   1. note that all local files referenced in `user-groups.yaml` and any orchestration.yaml files should be relative to the home directory so if your service account is in `secrets/orchestration.yaml` use that path and not just `orchestration.yaml`.
+  2. go through the example file and configure it according to your needs.
+3. you will need to create and reference at least one `secrets/orchestration.yaml` file, you can do so by following the instructions in the [auto-archiver](https://github.com/bellingcat/auto-archiver#installation) that automatically generates one for you. If you use the archive sheets feature you will need to create a `orchestrationsheets-sheets.yaml` file as well that should have the `gsheet_feeder` and `gsheet_db` enabled and configured, the auto-archiver has [extensive documentation](https://auto-archiver.readthedocs.io/en/latest/) on how to set this up.
 
 Do not commit those files, they are .gitignored by default. 
 We also advise you to keep any sensitive files in the `secrets/` folder which is pinned and gitignored.
