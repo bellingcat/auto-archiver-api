@@ -14,6 +14,7 @@ from app.shared.settings import get_settings
 from app.shared.log import log_error
 from app.shared.aa_utils import get_all_urls
 from app.shared.db import worker_crud
+from app.worker.worker_log import setup_celery_logger
 
 settings = get_settings()
 
@@ -21,6 +22,8 @@ celery = get_celery("worker")
 Redis = get_redis()
 
 USER_GROUPS_FILENAME = settings.USER_GROUPS_FILENAME
+
+setup_celery_logger(celery)
 
 # TODO: these are temporary PATCHES for new aa's functionality
 # logger.add("app/worker/worker_log.log", level="DEBUG") 
