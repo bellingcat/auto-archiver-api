@@ -27,7 +27,6 @@ def archive_url(
     email=Depends(get_token_or_user_auth),
     db: Session = Depends(get_db_dependency)
 ) -> schemas.Task:
-    archive.author_id = email
     logger.info(f"new {archive.public=} task for {email=} and {archive.group_id=}: {archive.url}")
 
     parsed_url = urlparse(archive.url)
@@ -36,6 +35,7 @@ def archive_url(
 
     archive_create = schemas.ArchiveCreate(**archive.model_dump())
     if email != ALLOW_ANY_EMAIL:
+        archive_create.author_id = email
         user = UserState(db, email)
         if archive.group_id and not user.in_group(archive.group_id):
             raise HTTPException(status_code=403, detail="User does not have access to this group.")
@@ -45,6 +45,7 @@ def archive_url(
             raise HTTPException(status_code=429, detail="User has reached their monthly MB quota.")
         group_queue = user.priority_group(archive_create.group_id)
     else:
+        archive_create.author_id = archive.author_id or email
         group_queue = convert_priority_to_queue_dict("high")
     
 

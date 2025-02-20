@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 from app.shared.schemas import ArchiveCreate, TaskResult
+from app.web.config import ALLOW_ANY_EMAIL
 
 
 def test_archive_url_unauthenticated(client, test_no_auth):
@@ -107,13 +108,21 @@ def test_archive_url_with_api_token(m_celery, client_with_token):
     m_signature = MagicMock()
     m_signature.apply_async.return_value = TaskResult(id="123-456-789", status="PENDING", result="")
     m_celery.signature.return_value = m_signature
-    response = client_with_token.post("/url/archive", json={"url": "https://example.com"})
+    response = client_with_token.post("/url/archive", json={"url": "https://example.com", "author_id": "someone@example.com"})
     assert response.status_code == 201
     assert response.json() == {'id': '123-456-789'}
     m_celery.signature.assert_called_once()
     m_signature.apply_async.assert_called_once()
     called_val = m_celery.signature.call_args
     assert called_val[0][0] == "create_archive_task"
+    assert json.loads(called_val[1]['args'][0]) ==  {"id": None, "url": "https://example.com", "result": None, "public": False, "author_id": "someone@example.com", "group_id": "default", "tags": None, "sheet_id": None, "store_until": None, "urls": None}
+
+    # missing id should use ALLOW_ANY_EMAIL
+    response = client_with_token.post("/url/archive", json={"url": "https://example.com", "author_id": None})
+    assert response.status_code == 201
+    called_val = m_celery.signature.call_args
+    assert called_val[0][0] == "create_archive_task"
+    assert json.loads(called_val[1]['args'][0]) ==  {"id": None, "url": "https://example.com", "result": None, "public": False, "author_id": ALLOW_ANY_EMAIL, "group_id": "default", "tags": None, "sheet_id": None, "store_until": None, "urls": None}
 
 
 def test_search_by_url_unauthenticated(client, test_no_auth):
