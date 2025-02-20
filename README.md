@@ -7,7 +7,7 @@ A web API that uses celery workers to process URL archive requests via [bellingc
 ![image](https://github.com/user-attachments/assets/905d697d-b83e-437b-87d1-cc86d3c8d8bf)
 
 ## setup
-To properly set up the API you need to install `docker` and to edit these files:
+To properly set up the API you need to install `docker` and to have these files, see more on the sections below:
 1. a `.env.prod` and `.env.dev` to configure the API, stays at the root level
 2. a `user-groups.yaml` to manage user permissions
   1. note that all local files referenced in `user-groups.yaml` and any orchestration.yaml files should be relative to the home directory so if your service account is in `secrets/orchestration.yaml` use that path and not just `orchestration.yaml`.
@@ -16,7 +16,6 @@ To properly set up the API you need to install `docker` and to edit these files:
 
 Do not commit those files, they are .gitignored by default. 
 We also advise you to keep any sensitive files in the `secrets/` folder which is pinned and gitignored.
-
 
 We have examples for both of those files (`.env.example` and `user-groups.example.yaml`), and here's how to set them up whether you're in development or production:
 
