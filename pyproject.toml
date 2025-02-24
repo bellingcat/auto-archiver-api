@@ -4,6 +4,7 @@ package-mode = false
 [project]
 name = "auto-archiver-api"
 description = "API wrapper for Bellingcat's Auto Archiver, supports users, groups, sheet and url archives."
+version = "0.1.0"
 authors = [
     { name = "Bellingcat", email = "contact-tech@bellingcat.com" },
 ]
