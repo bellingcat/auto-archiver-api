@@ -4,6 +4,7 @@ package-mode = false
 [project]
 name = "auto-archiver-api"
 description = "API wrapper for Bellingcat's Auto Archiver, supports users, groups, sheet and url archives."
+version = "0.1.0"
 authors = [
     { name = "Bellingcat", email = "contact-tech@bellingcat.com" },
 ]
@@ -16,7 +17,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3"
 ]
-
 requires-python = ">=3.10,<3.13"
 
 
@@ -53,4 +53,3 @@ pytest = ">=8.3.4,<9.0.0"
 httpx = ">=0.28.1,<0.29.0"
 coverage = ">=7.6.11,<8.0.0"
 pytest-asyncio = ">=0.25.3,<0.26.0"
-
