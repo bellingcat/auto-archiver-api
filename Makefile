@@ -1,6 +1,6 @@
 .PHONY: lint
 lint:
-	uv run pre-commit run --all-files
+	poetry run pre-commit run --all-files
 
 clean-dev:
 	@echo -n "Are you sure? [yes/N] (this will delete volumes) " && read ans && [ $${ans:-N} = yes ]
