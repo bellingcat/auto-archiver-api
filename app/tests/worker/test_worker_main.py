@@ -1,29 +1,47 @@
 from datetime import datetime
-
 from unittest.mock import patch
 
 import pytest
-
-from app.shared.db import models
-from app.shared import schemas
 from auto_archiver.core import Media, Metadata
 
+from app.shared import schemas
+from app.shared.db import models
 
-class Test_create_archive_task():
+
+class Test_create_archive_task:
     URL = "https://example-live.com"
-    archive = schemas.ArchiveCreate(url=URL, tags=["tag-celery"], public=True, author_id="rick@example.com", group_id="interstellar")
+    archive = schemas.ArchiveCreate(
+        url=URL,
+        tags=["tag-celery"],
+        public=True,
+        author_id="rick@example.com",
+        group_id="interstellar",
+    )
 
     @patch("app.worker.main.ArchivingOrchestrator")
     @patch("app.worker.main.get_all_urls", return_value=[])
     @patch("app.worker.main.insert_result_into_db")
     @patch("app.worker.main.get_store_until", return_value=datetime.now())
-    @patch("app.worker.main.get_orchestrator_args", return_value=["arg1", "arg2"])
+    @patch(
+        "app.worker.main.get_orchestrator_args", return_value=["arg1", "arg2"]
+    )
     @patch("celery.app.task.Task.request")
-    def test_success(self, m_req, m_args, m_store, m_insert, m_urls, m_orchestrator, db_session):
+    def test_success(
+        self,
+        m_req,
+        m_args,
+        m_store,
+        m_insert,
+        m_urls,
+        m_orchestrator,
+        db_session,
+    ):
         from app.worker.main import create_archive_task
 
         m_req.id = "this-just-in"
-        m_orchestrator.return_value.feed.return_value = iter([Metadata().set_url(self.URL).success()])
+        m_orchestrator.return_value.feed.return_value = iter(
+            [Metadata().set_url(self.URL).success()]
+        )
 
         task = create_archive_task(self.archive.model_dump_json())
 
@@ -40,6 +58,7 @@ class Test_create_archive_task():
 
     def test_raise_invalid(self):
         from app.worker.main import create_archive_task
+
         with pytest.raises(Exception):
             create_archive_task(self.archive.model_dump_json())
 
@@ -47,7 +66,10 @@ class Test_create_archive_task():
     @patch("app.worker.main.get_orchestrator_args")
     def test_raise_db_error(self, m_args, m_orchestrator):
         from app.worker.main import create_archive_task
-        m_orchestrator.return_value.feed.side_effect = Exception("Orchestrator failed")
+
+        m_orchestrator.return_value.feed.side_effect = Exception(
+            "Orchestrator failed"
+        )
 
         with pytest.raises(Exception) as e:
             create_archive_task(self.archive.model_dump_json())
@@ -60,6 +82,7 @@ class Test_create_archive_task():
     @patch("app.worker.main.get_orchestrator_args")
     def test_raise_empty_result(self, m_args, m_insert, m_orchestrator):
         from app.worker.main import create_archive_task
+
         m_orchestrator.return_value.feed.return_value = iter([None])
 
         with pytest.raises(Exception) as e:
@@ -68,28 +91,44 @@ class Test_create_archive_task():
         m_orchestrator.return_value.feed.assert_called_once()
 
 
-class Test_create_sheet_task():
+class Test_create_sheet_task:
     URL = "https://example-live.com"
-    sheet = schemas.SubmitSheet(sheet_id="123", author_id="rick@example.com", group_id="interstellar", tags=["spaceship"])
+    sheet = schemas.SubmitSheet(
+        sheet_id="123",
+        author_id="rick@example.com",
+        group_id="interstellar",
+        tags=["spaceship"],
+    )
 
     @patch("app.worker.main.get_all_urls", return_value=[])
     @patch("app.worker.main.ArchivingOrchestrator")
     @patch("app.worker.main.models.generate_uuid", return_value="constant-uuid")
     @patch("app.worker.main.get_store_until", return_value=datetime.now())
     @patch("app.worker.main.get_orchestrator_args")
-    def test_success(self, m_args, m_store, m_uuid, m_orchestrator, m_urls, db_session):
+    def test_success(
+        self, m_args, m_store, m_uuid, m_orchestrator, m_urls, db_session
+    ):
         from app.worker.main import create_sheet_task
 
-        assert db_session.query(models.Archive).filter(models.Archive.url == self.URL).count() == 0
+        assert (
+            db_session.query(models.Archive)
+            .filter(models.Archive.url == self.URL)
+            .count()
+            == 0
+        )
 
         mock_metadata = Metadata().set_url(self.URL).success()
         mock_metadata.add_media(Media("fn1.txt", urls=["outcome1.com"]))
 
-        m_orchestrator.return_value.feed.return_value = iter([False, mock_metadata, mock_metadata])
+        m_orchestrator.return_value.feed.return_value = iter(
+            [False, mock_metadata, mock_metadata]
+        )
 
         res = create_sheet_task(self.sheet.model_dump_json())
 
-        m_args.assert_called_once_with("interstellar", True, ["--gsheet_feeder.sheet_id", "123"])
+        m_args.assert_called_once_with(
+            "interstellar", True, ["--gsheet_feeder.sheet_id", "123"]
+        )
         m_orchestrator.return_value.setup.assert_called_once()
         m_orchestrator.return_value.feed.assert_called_once()
         m_store.assert_called_with("interstellar")
@@ -104,7 +143,11 @@ class Test_create_sheet_task():
         assert type(res["time"]) == datetime
 
         # query created archive entry
-        inserted = db_session.query(models.Archive).filter(models.Archive.url == self.URL).one()
+        inserted = (
+            db_session.query(models.Archive)
+            .filter(models.Archive.url == self.URL)
+            .one()
+        )
         assert inserted is not None
         assert inserted.url == self.URL
         assert len(inserted.tags) == 1
@@ -122,7 +165,13 @@ def test_get_all_urls(db_session):
     m2 = meta.add_media(Media("fn2.txt", urls=["outcome2.com"]))
     m3 = meta.add_media(Media("fn3.txt", urls=["outcome3.com"]))
     m1.set("screenshot", Media("screenshot.png", urls=["screenshot.com"]))
-    m2.set("thumbnails", [Media("thumb1.png", urls=["thumb1.com"]), Media("thumb2.png", urls=["thumb2.com"])])
+    m2.set(
+        "thumbnails",
+        [
+            Media("thumb1.png", urls=["thumb1.com"]),
+            Media("thumb2.png", urls=["thumb2.com"]),
+        ],
+    )
     m3.set("ssl_data", Media("ssl_data.txt", urls=["ssl_data.com"]).to_dict())
     m3.set("bad_data", {"bad": "dict is ignored"})
 

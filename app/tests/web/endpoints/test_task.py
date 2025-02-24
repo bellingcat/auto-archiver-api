@@ -16,13 +16,12 @@ def test_get_status_success(mock_async_result, client_with_auth):
     assert response.json() == {
         "id": "test-task-id",
         "status": "SUCCESS",
-        "result": {"data": "some result"}
+        "result": {"data": "some result"},
     }
 
 
 @patch("app.web.endpoints.task.AsyncResult")
 def test_get_status_failure(mock_async_result, client_with_auth):
-
     mock_async_result.return_value.status = "FAILURE"
     mock_async_result.return_value.result = Exception("Some error")
 
@@ -32,7 +31,7 @@ def test_get_status_failure(mock_async_result, client_with_auth):
     assert response.json() == {
         "id": "test-task-id",
         "status": "FAILURE",
-        "result": {"error": "Some error"}
+        "result": {"error": "Some error"},
     }
 
 
@@ -47,5 +46,5 @@ def test_get_status_pending(mock_async_result, client_with_auth):
     assert response.json() == {
         "id": "test-task-id",
         "status": "PENDING",
-        "result": None
+        "result": None,
     }
