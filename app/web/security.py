@@ -78,7 +78,7 @@ def authenticate_user(access_token):
                 return False, f"email '{email}' not allowed"
             return True, email
         except exceptions.FirebaseError as e:
-            logger.warning(f"Error verifying ID token: {str(e)}")
+            logger.warning(f"Error verifying ID token: {str(e)[:80]}...")
 
     # https://cloud.google.com/docs/authentication/token-types#access
     if type(access_token) != str or len(access_token) < 10: return False, "invalid access_token"
