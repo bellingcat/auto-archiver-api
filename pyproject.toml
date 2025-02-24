@@ -30,6 +30,7 @@ dependencies = [
     "sqlalchemy (>=2.0.38,<3.0.0)",
     "requests (>=2.25.1)",
     "pyopenssl (>=23.3.0)",
+    "pre-commit (>=4.1.0,<5.0.0)",
 ]
 [tool.poetry.group.worker.dependencies]
 watchdog = ">=6.0.0,<7.0.0"
