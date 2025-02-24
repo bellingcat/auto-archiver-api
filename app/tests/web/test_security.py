@@ -1,3 +1,4 @@
+from unittest import mock
 from unittest.mock import Mock, patch
 
 from fastapi import HTTPException
@@ -96,6 +97,37 @@ async def test_authenticate_user():
         mock_get.return_value.json.return_value = {"email": "summer@example.com", "azp": "test_app_id_2", "email_verified": "true", "expires_in": 100}
         assert authenticate_user("this-will-call-requests") == (True, "summer@example.com")
         assert mock_get.call_count == 9
+
+
+@mock.patch("app.web.security.FIREBASE_OAUTH_ENABLED", True)
+@mock.patch("app.web.security.firebase_admin.initialize_app")
+@pytest.mark.asyncio
+async def test_authenticate_user_with_id_token(m_init):
+    from firebase_admin import exceptions
+    from app.web.security import authenticate_user
+
+    with pytest.raises(ValueError) as e:
+        authenticate_user("test")
+    assert "The default Firebase app does not exist." in str(e.value)
+
+    with patch("app.web.security.auth.verify_id_token") as mock_verify:
+        # missing email
+        mock_verify.return_value = {"email": None}
+        assert authenticate_user("fake_token") == (False, "email not found in token")
+        assert mock_verify.call_count == 1
+
+        # blocked email
+        mock_verify.return_value = {"email": "blocked@example.com", }
+        assert authenticate_user("fake_token") == (False, "email 'blocked@example.com' not allowed")
+        assert mock_verify.call_count == 2
+
+        # valid email
+        mock_verify.return_value = {"email": "rick@example.com"}
+        assert authenticate_user("fake_token") == (True, "rick@example.com")
+        assert mock_verify.call_count == 3
+
+        mock_verify.side_effect = exceptions.FirebaseError(2, "mocked error")
+        assert authenticate_user("fake_token") == (False, "invalid token")
 
 
 @pytest.mark.asyncio

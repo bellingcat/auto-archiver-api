@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: Annotated[Set[str], Len(min_length=1)]
     CHROME_APP_IDS: Annotated[Set[Annotated[str, Len(min_length=10)]], Len(min_length=1)]
     BLOCKED_EMAILS: Annotated[Set[str], Len(min_length=0)] = set()
+    # if not provided only OAUTH access_tokens are allowed
+    FIREBASE_SERVICE_ACCOUNT_JSON: str = ""
 
     # redis
     REDIS_PASSWORD: str = ""
