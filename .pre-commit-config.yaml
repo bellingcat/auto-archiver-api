@@ -28,6 +28,7 @@ repos:
       - id: check-merge-conflict
       - id: check-xml
       - id: check-yaml
+        exclude: app/tests/user-groups.test.broken.yaml
       - id: end-of-file-fixer
       - id: check-symlinks
       - id: mixed-line-ending
