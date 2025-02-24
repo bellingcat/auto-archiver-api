@@ -1,14 +1,15 @@
 
-from functools import lru_cache
 import os
+from functools import lru_cache
+from typing import Annotated, Set
+
+from annotated_types import Len
 from fastapi_mail import ConnectionConfig
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Annotated, Set
-from annotated_types import Len
 
 
 class Settings(BaseSettings):
-    
+
     model_config = SettingsConfigDict(env_file=os.environ.get("ENVIRONMENT_FILE") , env_file_encoding='utf-8', extra='ignore', str_strip_whitespace=True)
 
 	# general
@@ -37,14 +38,14 @@ class Settings(BaseSettings):
         if self.REDIS_PASSWORD:
             return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOSTNAME}:6379"
         return f"redis://{self.REDIS_HOSTNAME}:6379"
-    
+
     # cronjobs
     CRON_ARCHIVE_SHEETS: bool = False
     CRON_DELETE_STALE_SHEETS: bool = False
     DELETE_STALE_SHEETS_DAYS: int = 14
     CRON_DELETE_SCHEDULED_ARCHIVES: bool = False
     DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS: int = 7
-    
+
 	# observability
     REPEAT_COUNT_METRICS_SECONDS: int = 30
 

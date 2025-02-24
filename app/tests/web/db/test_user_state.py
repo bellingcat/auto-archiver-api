@@ -1,5 +1,6 @@
 
 from unittest.mock import MagicMock, PropertyMock, patch
+
 import pytest
 
 from app.shared.db import models

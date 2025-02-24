@@ -1,8 +1,9 @@
 
 from functools import lru_cache
-from celery import Celery
-import redis
 
+from celery import Celery
+
+import redis
 from app.shared.settings import get_settings
 
 

@@ -1,8 +1,8 @@
 from unittest.mock import Mock, patch
 
+import pytest
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
-import pytest
 
 from app.web.config import ALLOW_ANY_EMAIL
 
@@ -108,8 +108,8 @@ async def test_authenticate_user_exception():
 
 
 def test_get_user_state():
-    from app.web.security import get_user_state
     from app.web.db.user_state import UserState
+    from app.web.security import get_user_state
 
     mock_session = Mock()
     test_email = "test@example.com"

@@ -1,8 +1,10 @@
-from sqlalchemy.orm import Session
 from datetime import datetime
 
-from app.shared.db import models
+from sqlalchemy.orm import Session
+
 from app.shared import schemas
+from app.shared.db import models
+
 
 # TODO: isolate database operations away from worker and into WEB
 # ONLY WORKER

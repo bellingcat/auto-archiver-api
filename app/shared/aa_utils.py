@@ -1,10 +1,12 @@
 # TODO: code in this file should eventually be moved to the auto-archiver code base
 
 from typing import List
-from loguru import logger
+
 from auto_archiver.core import Media, Metadata
+from loguru import logger
 
 from app.shared.db import models
+
 
 def get_all_urls(result: Metadata) -> List[models.ArchiveUrl]:
     db_urls = []
@@ -29,4 +31,3 @@ def convert_if_media(media):
         except Exception as e:
             logger.debug(f"error parsing {media} : {e}")
     return False
-

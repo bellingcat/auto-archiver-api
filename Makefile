@@ -1,3 +1,7 @@
+.PHONY: lint
+lint:
+	poetry run pre-commit run --all-files
+
 clean-dev:
 	@echo -n "Are you sure? [yes/N] (this will delete volumes) " && read ans && [ $${ans:-N} = yes ]
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml down --volumes --remove-orphans

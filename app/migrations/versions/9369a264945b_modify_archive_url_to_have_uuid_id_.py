@@ -1,11 +1,12 @@
 """modify archive url to have uuid id instead of url unique constraint
 
 Revision ID: 9369a264945b
-Revises: 
+Revises:
 Create Date: 2023-12-20 17:24:59.320691
 
 """
 from alembic import op
+
 
 # revision identifiers, used by Alembic.
 revision = '9369a264945b'

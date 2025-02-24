@@ -1,10 +1,10 @@
 import os
-from unittest.mock import patch
-from fastapi.testclient import TestClient
-
 import shutil
+from unittest.mock import patch
 
 import pytest
+from fastapi.testclient import TestClient
+
 
 def test_lifespan(app):
     with TestClient(app) as client:
@@ -25,7 +25,7 @@ def test_logging_middleware(m1, client_with_auth):
         client_with_auth.delete("/url/123")
     # creates one empty and one from above
     assert len(EXCEPTION_COUNTER.collect()[0].samples) == 2
-    
+
 
 def test_serve_local_archive_logic(get_settings):
     # create a test file first
@@ -38,7 +38,7 @@ def test_serve_local_archive_logic(get_settings):
         get_settings.SERVE_LOCAL_ARCHIVE = "/app/local_archive_test"
         from app.web.main import app_factory
         app = app_factory(get_settings)
-        
+
         # test
         client = TestClient(app)
         r = client.get("/app/local_archive_test/temp.txt")

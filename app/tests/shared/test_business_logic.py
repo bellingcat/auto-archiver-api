@@ -1,7 +1,12 @@
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
+
 import pytest
-from app.shared.business_logic import get_store_archive_until, get_store_archive_until_or_never
+
+from app.shared.business_logic import (
+    get_store_archive_until,
+    get_store_archive_until_or_never,
+)
 
 
 class Test_get_store_archive_until:
