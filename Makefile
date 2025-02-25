@@ -25,6 +25,6 @@ prod:
 	docker image prune -f
 	docker system df
 
-.PHONY: stop-dev
+.PHONY: stop-prod
 stop-prod:
 	docker compose down
