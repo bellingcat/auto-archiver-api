@@ -13,20 +13,20 @@ from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db import crud
 
 
-authors = ["rick@example.com", "morty@example.com", "jerry@example.com"]
+AUTHOR_EMAILS = ["rick@example.com", "morty@example.com", "jerry@example.com"]
 
 
 @pytest.fixture()
 def test_data(db_session):
     # creates 3 users
-    for email in authors:
+    for email in AUTHOR_EMAILS:
         db_session.add(models.User(email=email))
     db_session.commit()
     assert db_session.query(models.User).count() == 3
 
     # creates 100 archives for 3 users over 2 months with repeating URLs
     for i in range(100):
-        author = authors[i % 3]
+        author = AUTHOR_EMAILS[i % 3]
         archive = models.Archive(
             id=f"archive-id-456-{i}",
             url=f"https://example-{i % 3}.com",
@@ -53,7 +53,7 @@ def test_data(db_session):
         db_session.add(archive)
 
     # creates a sheet for each user
-    for i, email in enumerate(authors):
+    for i, email in enumerate(AUTHOR_EMAILS):
         db_session.add(
             models.Sheet(
                 id=f"sheet-{i}",
@@ -798,28 +798,28 @@ async def test_get_sheets_by_id_hash(async_db_session):
         models.Sheet(
             id="sheet-0",
             name="sheet-0",
-            author_id=authors[0],
+            author_id=AUTHOR_EMAILS[0],
             group_id=None,
             frequency="daily",
         ),
         models.Sheet(
             id="sheet-0-2",
             name="sheet-0-2",
-            author_id=authors[0],
+            author_id=AUTHOR_EMAILS[0],
             group_id="spaceship",
             frequency="hourly",
         ),
         models.Sheet(
             id="sheet-1",
             name="sheet-1",
-            author_id=authors[1],
+            author_id=AUTHOR_EMAILS[1],
             group_id=None,
             frequency="daily",
         ),
         models.Sheet(
             id="sheet-2",
             name="sheet-2",
-            author_id=authors[2],
+            author_id=AUTHOR_EMAILS[2],
             group_id=None,
             frequency="daily",
         ),
