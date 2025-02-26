@@ -11,6 +11,13 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
+
+    services:
+      redis:
+        image: redis:6-alpine
+        ports:
+          - 6379:6379
+
     steps:
       - name: Set up Python
         uses: actions/setup-python@v4
