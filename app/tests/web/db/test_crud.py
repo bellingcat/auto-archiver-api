@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 import yaml
+from sqlalchemy import true
 
 from app.shared.db import models
 from app.shared.settings import Settings
@@ -25,7 +26,7 @@ def test_data(db_session):
         author = authors[i % 3]
         archive = models.Archive(
             id=f"archive-id-456-{i}",
-            url=f"https://example-{i%3}.com",
+            url=f"https://example-{i % 3}.com",
             result={},
             public=author == "jerry@example.com",
             author_id=author,
@@ -521,7 +522,7 @@ def test_soft_delete(test_data, db_session):
     )
     assert (
         db_session.query(models.Archive)
-        .filter(models.Archive.deleted is True)
+        .filter(models.Archive.deleted.is_(true()))
         .count()
         == 0
     )
@@ -537,7 +538,7 @@ def test_soft_delete(test_data, db_session):
     # ensure soft delete
     assert (
         db_session.query(models.Archive)
-        .filter(models.Archive.deleted is True)
+        .filter(models.Archive.deleted.is_(true()))
         .count()
         == 1
     )
