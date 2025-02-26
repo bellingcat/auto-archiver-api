@@ -30,4 +30,6 @@ jobs:
         run: echo "ENVIRONMENT_FILE=.env.test" >> $GITHUB_ENV
 
       - name: Run tests
-        run: poetry run pytest app/tests/
+        run: |
+          export PYTHONPATH=$(pwd)/app
+          poetry run pytest tests
