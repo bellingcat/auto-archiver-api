@@ -5,8 +5,8 @@ Revises: fa012ec405b8
 Create Date: 2024-11-04 11:12:30.237299
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.engine.reflection import Inspector
 
 

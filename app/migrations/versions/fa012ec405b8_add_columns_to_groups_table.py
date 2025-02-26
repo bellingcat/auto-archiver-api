@@ -5,8 +5,8 @@ Revises: 93a611e4c066
 Create Date: 2024-10-31 09:36:50.360710
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.engine.reflection import Inspector
 
 

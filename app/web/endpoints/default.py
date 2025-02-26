@@ -1,13 +1,15 @@
 
 from typing import Dict
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
-from app.web.config import VERSION, BREAKING_CHANGES
 from app.shared.schemas import ActiveUser, UsageResponse
+from app.shared.user_groups import GroupInfo
+from app.web.config import BREAKING_CHANGES, VERSION
 from app.web.db.user_state import UserState
 from app.web.security import get_user_state
-from app.shared.user_groups import GroupInfo
+
 
 default_router = APIRouter()
 
@@ -42,7 +44,7 @@ def get_user_usage(
     if not user.active:
         raise HTTPException(status_code=403, detail="User is not active.")
     return user.usage()
-    
+
 
 
 @default_router.get('/favicon.ico', include_in_schema=False)

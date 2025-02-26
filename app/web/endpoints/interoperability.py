@@ -1,19 +1,19 @@
 import json
+
+import sqlalchemy
+from auto_archiver.core import Metadata
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from loguru import logger
-import sqlalchemy
-from auto_archiver.core import Metadata
 from sqlalchemy.orm import Session
 
-from app.shared.aa_utils import get_all_urls
-from app.web.config import ALLOW_ANY_EMAIL
 from app.shared import business_logic, schemas
-from app.shared.db import worker_crud
+from app.shared.aa_utils import get_all_urls
+from app.shared.db import models, worker_crud
 from app.shared.db.database import get_db_dependency
-from app.web.security import token_api_key_auth
-from app.shared.db import models
 from app.shared.log import log_error
+from app.web.config import ALLOW_ANY_EMAIL
+from app.web.security import token_api_key_auth
 
 
 interoperability_router = APIRouter(prefix="/interop", tags=["Interoperability endpoints."])

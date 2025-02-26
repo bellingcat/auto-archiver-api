@@ -15,7 +15,7 @@ configurations:
   gsheet_feeder:
     service_account: "app/tests/fake_service_account.json"
   cli_feeder:
-    urls: 
+    urls:
       - "url1"
   hash_enricher:
     algorithm: "SHA-256"

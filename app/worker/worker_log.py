@@ -1,8 +1,10 @@
-from loguru import logger
-from celery import Celery
 import sys
 
+from celery import Celery
+from loguru import logger
+
 from app.shared.task_messaging import get_celery
+
 
 celery = get_celery("worker")
 
@@ -22,7 +24,7 @@ def setup_celery_logger(celery):
 			if message.strip():
 				logger.info(message.strip())
 		# Required to prevent issues with buffered output
-		def flush(self): pass  
+		def flush(self): pass
 		def isatty(self): return False
 
 	sys.stdout = InterceptHandler()

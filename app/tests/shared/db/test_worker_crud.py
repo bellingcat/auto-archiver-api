@@ -1,9 +1,8 @@
-from app.shared.db import models
-from app.shared.db import worker_crud, models
 from datetime import datetime
 
-
+from app.shared.db import models, worker_crud
 from app.tests.web.db.test_crud import test_data
+
 
 def test_update_sheet_last_url_archived_at(db_session):
 
@@ -19,7 +18,7 @@ def test_update_sheet_last_url_archived_at(db_session):
     db_session.refresh(test_sheet)
     assert isinstance(test_sheet.last_url_archived_at, datetime)
     assert test_sheet.last_url_archived_at > before
-    
+
     # Test non-existent sheet
     assert worker_crud.update_sheet_last_url_archived_at(db_session, "non-existent-sheet") is False
 
@@ -73,8 +72,8 @@ def test_create_tag(db_session):
 
 
 def test_create_task(db_session):
-    from app.shared.db import worker_crud
     from app.shared import schemas
+    from app.shared.db import worker_crud
 
     task = schemas.ArchiveCreate(
         id="archive-id-456-101",

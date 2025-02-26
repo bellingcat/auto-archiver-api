@@ -1,7 +1,16 @@
-from sqlalchemy import Column, String, JSON, DateTime, Boolean, Table, ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, declarative_base
 import uuid
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    String,
+    Table,
+)
+from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.sql import func
 
 
 Base = declarative_base()

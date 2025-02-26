@@ -1,22 +1,32 @@
 import asyncio
-from collections import defaultdict
 import datetime
 import logging
+from collections import defaultdict
+from contextlib import asynccontextmanager
+
 import alembic.config
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
+from fastapi_mail import FastMail, MessageSchema, MessageType
 from fastapi_utils.tasks import repeat_every
 from loguru import logger
-from fastapi_mail import FastMail, MessageSchema, MessageType
 
-from app.shared.db import models
-from app.shared.db.database import get_db, get_db_async, make_engine, wal_checkpoint
 from app.shared import schemas
+from app.shared.db import models
+from app.shared.db.database import (
+    get_db,
+    get_db_async,
+    make_engine,
+    wal_checkpoint,
+)
 from app.shared.settings import get_settings
 from app.shared.task_messaging import get_celery
 from app.web.db import crud
 from app.web.middleware import increase_exceptions_counter
-from app.web.utils.metrics import measure_regular_metrics, redis_subscribe_worker_exceptions
+from app.web.utils.metrics import (
+    measure_regular_metrics,
+    redis_subscribe_worker_exceptions,
+)
+
 
 celery = get_celery()
 

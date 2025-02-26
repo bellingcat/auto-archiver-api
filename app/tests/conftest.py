@@ -1,12 +1,14 @@
 import os
 from typing import AsyncGenerator
-from fastapi.testclient import TestClient
-import pytest
 from unittest.mock import patch
+
+import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
-from app.web.config import ALLOW_ANY_EMAIL
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+
 from app.shared.settings import Settings
+from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db.user_state import UserState
 
 
@@ -65,10 +67,11 @@ def db_session(test_db):
 
 @pytest_asyncio.fixture()
 async def async_test_db(get_settings: Settings):
+    import asyncio
+
     from app.shared.db import models
     from app.shared.db.database import make_async_engine
     from app.web.db.crud import get_user_group_names
-    import asyncio
 
     get_user_group_names.cache_clear()
     engine = await make_async_engine(get_settings.ASYNC_DATABASE_PATH)
@@ -108,8 +111,8 @@ async def async_db_session(async_test_db: AsyncEngine) -> AsyncGenerator[AsyncSe
 
 @pytest.fixture()
 def app(db_session):
-    from app.web.main import app_factory
     from app.web.db import crud
+    from app.web.main import app_factory
     app = app_factory()
     crud.upsert_user_groups(db_session)
     return app
@@ -123,7 +126,11 @@ def client(app):
 
 @pytest.fixture()
 def app_with_auth(app, db_session):
-    from app.web.security import get_token_or_user_auth, get_user_auth, get_user_state
+    from app.web.security import (
+        get_token_or_user_auth,
+        get_user_auth,
+        get_user_state,
+    )
     app.dependency_overrides[get_token_or_user_auth] = lambda: "rick@example.com"
     app.dependency_overrides[get_user_auth] = lambda: "morty@example.com"
     app.dependency_overrides[get_user_state] = lambda: UserState(db_session, "MORTY@example.com")
@@ -138,7 +145,7 @@ def client_with_auth(app_with_auth):
 
 @pytest.fixture()
 def app_with_token(app):
-    from app.web.security import token_api_key_auth, get_token_or_user_auth
+    from app.web.security import get_token_or_user_auth, token_api_key_auth
     app.dependency_overrides[token_api_key_auth] = lambda: ALLOW_ANY_EMAIL
     app.dependency_overrides[get_token_or_user_auth] = lambda: ALLOW_ANY_EMAIL
     return app

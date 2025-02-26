@@ -11,7 +11,7 @@ def test_fnv1a_hash_mod():
 
     # Test different modulos
     hash1 = fnv1a_hash_mod("test", 5)
-    hash2 = fnv1a_hash_mod("test", 10) 
+    hash2 = fnv1a_hash_mod("test", 10)
     assert 0 <= hash1 < 5
     assert 0 <= hash2 < 10
 

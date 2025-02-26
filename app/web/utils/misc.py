@@ -1,4 +1,5 @@
 import base64
+
 from fastapi.encoders import jsonable_encoder
 
 

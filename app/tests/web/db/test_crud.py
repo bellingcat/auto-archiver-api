@@ -3,10 +3,12 @@ from unittest.mock import patch
 
 import pytest
 import yaml
+
 from app.shared.db import models
 from app.shared.settings import Settings
-
 from app.web.db import crud
+
+
 authors = ["rick@example.com", "morty@example.com", "jerry@example.com"]
 
 
@@ -373,6 +375,7 @@ async def test_get_sheets_by_id_hash(async_db_session):
 @pytest.mark.asyncio
 async def test_delete_stale_sheets(async_db_session):
     from datetime import datetime, timedelta
+
     from sqlalchemy.sql import select
 
     now = datetime.now()

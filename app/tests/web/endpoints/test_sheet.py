@@ -1,5 +1,5 @@
-from datetime import datetime
 import json
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -45,8 +45,8 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     assert response.json() == {"detail": "User does not have access to this group."}
 
     # switch to jerry who's got less quota/permissions
-    from app.web.security import get_user_state
     from app.web.db.user_state import UserState
+    from app.web.security import get_user_state
     app_with_auth.dependency_overrides[get_user_state] = lambda: UserState(db_session, "jerry@example.com")
     client_jerry = TestClient(app_with_auth)
 

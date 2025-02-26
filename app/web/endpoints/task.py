@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from app.shared.task_messaging import get_celery
-from app.web.security import get_token_or_user_auth
 from app.shared import schemas
 from app.shared.log import log_error
+from app.shared.task_messaging import get_celery
+from app.web.security import get_token_or_user_auth
 from app.web.utils.misc import custom_jsonable_encoder
 
 

@@ -5,7 +5,7 @@ volumes:
 name: "auto-archiver-api"
 services:
   web:
-    build: 
+    build:
       context: .
       dockerfile: web.Dockerfile
     restart: always
@@ -29,7 +29,7 @@ services:
       retries: 3
 
   worker:
-    build: 
+    build:
       context: .
       dockerfile: worker.Dockerfile
     restart: always

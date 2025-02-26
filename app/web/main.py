@@ -1,24 +1,23 @@
 import os
-from fastapi import FastAPI, Depends
-from fastapi.staticfiles import StaticFiles
+
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
+from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.web.middleware import logging_middleware
-from app.shared.task_messaging import get_celery
-
-from app.web.security import token_api_key_auth
-from app.web.config import VERSION, API_DESCRIPTION
-from app.web.events import lifespan
 from app.shared.settings import get_settings
-
-
+from app.shared.task_messaging import get_celery
+from app.web.config import API_DESCRIPTION, VERSION
 from app.web.endpoints.default import default_router
-from app.web.endpoints.url import url_router
+from app.web.endpoints.interoperability import interoperability_router
 from app.web.endpoints.sheet import sheet_router
 from app.web.endpoints.task import task_router
-from app.web.endpoints.interoperability import interoperability_router
+from app.web.endpoints.url import url_router
+from app.web.events import lifespan
+from app.web.middleware import logging_middleware
+from app.web.security import token_api_key_auth
+
 
 celery = get_celery()
 

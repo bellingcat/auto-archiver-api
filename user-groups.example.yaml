@@ -59,4 +59,3 @@ groups:
     permissions:
       read: ["default"]
       read_public: true
-  

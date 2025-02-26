@@ -1,21 +1,21 @@
 
+from datetime import datetime
+from urllib.parse import urlparse
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from datetime import datetime
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from app.web.config import ALLOW_ANY_EMAIL
 from app.shared import schemas
+from app.shared.db.database import get_db_dependency
 from app.shared.task_messaging import get_celery
-from app.web.security import get_token_or_user_auth, get_user_state
+from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db import crud
 from app.web.db.user_state import UserState
-from app.shared.db.database import get_db_dependency
-
-from urllib.parse import urlparse
-
+from app.web.security import get_token_or_user_auth, get_user_state
 from app.web.utils.misc import convert_priority_to_queue_dict
+
 
 url_router = APIRouter(prefix="/url", tags=["Single URL operations"])
 
@@ -47,7 +47,7 @@ def archive_url(
     else:
         archive_create.author_id = archive.author_id or email
         group_queue = convert_priority_to_queue_dict("high")
-    
+
 
     task = celery.signature("create_archive_task", args=[archive_create.model_dump_json()]).apply_async(**group_queue)
     task_response = schemas.Task(id=task.id)
@@ -74,8 +74,8 @@ def search_by_url(
 
 @url_router.delete("/{id}", summary="Delete a single URL archive by id.")
 def delete_archive(
-    id:str, 
-    user: UserState = Depends(get_user_state), 
+    id:str,
+    user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency)
 ) -> schemas.DeleteResponse:
     logger.info(f"deleting url archive task {id} request by {user.email}")

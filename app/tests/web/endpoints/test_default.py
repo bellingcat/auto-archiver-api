@@ -1,10 +1,12 @@
 from unittest.mock import MagicMock
-from fastapi.testclient import TestClient
+
 import pytest
+from fastapi.testclient import TestClient
+
 from app.shared.schemas import Usage, UsageResponse
 from app.shared.user_groups import GroupInfo
-from app.web.config import VERSION
 from app.tests.web.db.test_crud import test_data
+from app.web.config import VERSION
 
 
 def test_endpoint_home(client_with_auth):

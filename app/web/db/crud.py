@@ -1,18 +1,19 @@
 from collections import defaultdict
-from functools import lru_cache
-from sqlalchemy.orm import Session, load_only
-from sqlalchemy import Column, or_, func, select
-from loguru import logger
 from datetime import datetime, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
+from functools import lru_cache
+
 from cachetools import LRUCache, cached
 from cachetools.keys import hashkey
+from loguru import logger
+from sqlalchemy import Column, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session, load_only
 
-from app.web.config import ALLOW_ANY_EMAIL
 from app.shared.db import models
 from app.shared.settings import get_settings
 from app.shared.user_groups import UserGroups
 from app.shared.utils.misc import fnv1a_hash_mod
+from app.web.config import ALLOW_ANY_EMAIL
 from app.web.utils.misc import convert_priority_to_queue_dict
 
 
@@ -117,7 +118,7 @@ async def get_group_priority_async(db: AsyncSession, group_id: str) -> dict:
 @cached(cache=LRUCache(maxsize=128), key=lambda db, email: hashkey(email))
 def get_user_group_names(db: Session, email: str) -> list[str]:
     """
-    given an email retrieves the user groups from the DB and then the email-domain groups from a global variable, the email does not need to belong to an existing user. 
+    given an email retrieves the user groups from the DB and then the email-domain groups from a global variable, the email does not need to belong to an existing user.
     """
     # TODO: the read: [group1, group2] permissions don't currently work
     if not email or not len(email) or "@" not in email: return []
@@ -173,7 +174,7 @@ def upsert_user_groups(db: Session):
     def display_email_pii(email: str):
         return f"'{email[0:3]}...@{email.split('@')[1]}'"
     """
-    reads the user_groups yaml file and inserts any new users, groups, 
+    reads the user_groups yaml file and inserts any new users, groups,
     along with new participation of users in groups
     """
     filename = get_settings().USER_GROUPS_FILENAME
@@ -192,6 +193,7 @@ def upsert_user_groups(db: Session):
         for group in explicit_groups:
             group_domains[group].add(domain)
     import json
+
     # upsert groups and save a map of groupid -> dbobject
     for group_id, g in ug.groups.items():
         upsert_group(db, group_id, g.description, g.orchestrator, g.orchestrator_sheet, g.service_account_email, json.loads(g.permissions.model_dump_json()), list(group_domains.get(group_id, [])))

@@ -1,12 +1,11 @@
 from datetime import datetime
-
 from unittest.mock import patch
 
 import pytest
-
-from app.shared.db import models
-from app.shared import schemas
 from auto_archiver.core import Media, Metadata
+
+from app.shared import schemas
+from app.shared.db import models
 
 
 class Test_create_archive_task():
