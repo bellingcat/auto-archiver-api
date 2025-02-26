@@ -215,7 +215,7 @@ def test_search_archives_by_url(test_data, db_session):
         == 16
     )
 
-    # jerry's archives are public
+    # Jerry's archives are public
     assert (
         len(
             crud.search_archives_by_url(
