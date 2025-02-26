@@ -14,8 +14,8 @@ def test_update_sheet_last_url_archived_at(db_session):
     assert isinstance(test_sheet.last_url_archived_at, datetime)
     before = test_sheet.last_url_archived_at
     assert (
-        worker_crud.update_sheet_last_url_archived_at(db_session, "sheet-123")
-        is True
+            worker_crud.update_sheet_last_url_archived_at(db_session, "sheet-123")
+            is True
     )
     db_session.refresh(test_sheet)
     assert isinstance(test_sheet.last_url_archived_at, datetime)
@@ -23,15 +23,14 @@ def test_update_sheet_last_url_archived_at(db_session):
 
     # Test non-existent sheet
     assert (
-        worker_crud.update_sheet_last_url_archived_at(
-            db_session, "non-existent-sheet"
-        )
-        is False
+            worker_crud.update_sheet_last_url_archived_at(
+                db_session, "non-existent-sheet"
+            )
+            is False
     )
 
 
 def test_get_group(test_data, db_session):
-
     assert worker_crud.get_group(db_session, "spaceship") is not None
     assert worker_crud.get_group(db_session, "interdimensional") is not None
     assert worker_crud.get_group(db_session, "animated-characters") is not None
@@ -39,27 +38,24 @@ def test_get_group(test_data, db_session):
 
 
 def test_create_or_get_user(test_data, db_session):
-
-
     assert db_session.query(models.User).count() == 3
 
     # already exists
     assert (
-        u1 := worker_crud.create_or_get_user(db_session, "rick@example.com")
-    ) is not None
+               u1 := worker_crud.create_or_get_user(db_session, "rick@example.com")
+           ) is not None
     assert u1.email == "rick@example.com"
 
     # new user
     assert (
-        u2 := worker_crud.create_or_get_user(db_session, "beth@example.com")
-    ) is not None
+               u2 := worker_crud.create_or_get_user(db_session, "beth@example.com")
+           ) is not None
     assert u2.email == "beth@example.com"
 
     assert db_session.query(models.User).count() == 4
 
 
 def test_create_tag(db_session):
-
     assert db_session.query(models.Tag).count() == 0
 
     # create first
@@ -68,8 +64,8 @@ def test_create_tag(db_session):
     assert create_tag.id == "tag-101"
     assert db_session.query(models.Tag).count() == 1
     assert (
-        db_session.query(models.Tag).filter(models.Tag.id == "tag-101").first()
-        == create_tag
+            db_session.query(models.Tag).filter(models.Tag.id == "tag-101").first()
+            == create_tag
     )
 
     # same id does not add new db entry
@@ -85,7 +81,6 @@ def test_create_tag(db_session):
 
 
 def test_create_task(db_session):
-
     task = schemas.ArchiveCreate(
         id="archive-id-456-101",
         url="https://example-0.com",
