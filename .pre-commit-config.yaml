@@ -5,7 +5,7 @@ repos:
       - id: nbqa-ruff
         args:
           - --fix
-          - --target-version=py311
+          - --target-version=py310
           - --ignore=E721,E722
           - --line-length=80
       - id: nbqa-black
