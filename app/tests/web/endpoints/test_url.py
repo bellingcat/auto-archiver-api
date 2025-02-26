@@ -37,7 +37,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
     response = client_with_auth.post(
         "/url/archive", json={"url": "example.com"}
     )
-    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.json()["detail"] == "Invalid URL received."
 
     # valid request
