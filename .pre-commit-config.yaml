@@ -61,19 +61,19 @@ repos:
           - --profile=black
           - --line-length=80
 
-#  - repo: https://github.com/astral-sh/ruff-pre-commit
-#    rev: v0.4.10
-#    hooks:
-#      - id: ruff
-#        types_or: [python,pyi]
-#        args:
-#          - --fix
-#          - --target-version=py311
-#          - --select=B,C,E,F,W,B9
-#          - --line-length=80
-#          - --ignore=E203,E402,E501,E261
-#      - id: ruff-format
-#        types_or: [ python,pyi]
-#        args:
-#          - --target-version=py311
-#          - --line-length=80
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.10
+    hooks:
+      - id: ruff
+        types_or: [python,pyi]
+        args:
+          - --fix
+          - --target-version=py311
+          - --select=B,C,E,F,W,B9
+          - --line-length=80
+          - --ignore=E203,E402,E501,E261
+      - id: ruff-format
+        types_or: [ python,pyi]
+        args:
+          - --target-version=py311
+          - --line-length=80
