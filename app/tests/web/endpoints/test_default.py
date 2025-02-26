@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 from app.shared.schemas import Usage, UsageResponse
 from app.shared.user_groups import GroupInfo
 from app.web.config import VERSION
+from app.web.security import get_user_state
+from app.web.utils.metrics import measure_regular_metrics
 
 
 def test_endpoint_home(client_with_auth):
@@ -83,8 +85,6 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     assert 'disk_utilization{type="used"}' not in r.text
 
     # after metrics calculation
-    from app.web.utils.metrics import measure_regular_metrics
-
     await measure_regular_metrics(
         get_settings.DATABASE_PATH, 60 * 60 * 24 * 31 * 12 * 100
     )
@@ -109,8 +109,6 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     )
 
     # 30s window, should not change the gauges nor the total in the counters
-    from app.web.utils.metrics import measure_regular_metrics
-
     await measure_regular_metrics(get_settings.DATABASE_PATH, 30)
     r3 = client_with_token.get("/metrics")
     assert 'database_metrics{query="count_archives"} 100.0' in r3.text
@@ -135,8 +133,6 @@ def test_endpoint_get_user_permissions_no_user_auth(client, test_no_auth):
 
 
 def test_endpoint_get_user_permissions(app):
-    from app.web.security import get_user_state
-
     m_user_state = MagicMock()
     rv = {
         "all": GroupInfo(read=True),
@@ -165,8 +161,6 @@ def test_endpoint_get_user_usage_no_user_auth(client, test_no_auth):
 
 
 def test_endpoint_get_user_usage_inactive(app):
-    from app.web.security import get_user_state
-
     m_user_state = MagicMock()
     m_user_state.active = False
 
@@ -179,8 +173,6 @@ def test_endpoint_get_user_usage_inactive(app):
 
 
 def test_endpoint_get_user_usage_active(app):
-    from app.web.security import get_user_state
-
     m_user_state = MagicMock()
     m_user_state.active = True
     mock_usage = UsageResponse(
