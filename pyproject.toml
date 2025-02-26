@@ -7,6 +7,7 @@ description = "API wrapper for Bellingcat's Auto Archiver, supports users, group
 authors = [
     { name = "Bellingcat", email = "contact-tech@bellingcat.com" },
 ]
+version = "0.1.0"
 license = {text = "MIT"}
 readme = "README.md"
 keywords = ["archive", "oosi", "osint", "scraping"]
