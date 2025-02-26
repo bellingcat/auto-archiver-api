@@ -24,7 +24,7 @@ jobs:
         run: pipx install poetry
 
       - name: Install dependencies
-        run: poetry install --no-interaction --with dev && poetry run pip install -e .
+        run: poetry install --no-interaction --with dev
 
       - name: Set dev environment variable
         run: echo "ENVIRONMENT_FILE=.env.test" >> $GITHUB_ENV
