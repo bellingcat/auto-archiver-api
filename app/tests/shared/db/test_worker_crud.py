@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.shared import schemas
 from app.shared.db import models, worker_crud
 
 
@@ -30,7 +31,6 @@ def test_update_sheet_last_url_archived_at(db_session):
 
 
 def test_get_group(test_data, db_session):
-    from app.shared.db import worker_crud
 
     assert worker_crud.get_group(db_session, "spaceship") is not None
     assert worker_crud.get_group(db_session, "interdimensional") is not None
@@ -39,7 +39,7 @@ def test_get_group(test_data, db_session):
 
 
 def test_create_or_get_user(test_data, db_session):
-    from app.shared.db import worker_crud
+
 
     assert db_session.query(models.User).count() == 3
 
@@ -59,7 +59,6 @@ def test_create_or_get_user(test_data, db_session):
 
 
 def test_create_tag(db_session):
-    from app.shared.db import worker_crud
 
     assert db_session.query(models.Tag).count() == 0
 
@@ -86,8 +85,6 @@ def test_create_tag(db_session):
 
 
 def test_create_task(db_session):
-    from app.shared import schemas
-    from app.shared.db import worker_crud
 
     task = schemas.ArchiveCreate(
         id="archive-id-456-101",
