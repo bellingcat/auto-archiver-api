@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,7 +14,7 @@ from app.web.utils.metrics import measure_regular_metrics
 
 def test_endpoint_home(client_with_auth):
     r = client_with_auth.get("/")
-    assert r.status_code == 200
+    assert r.status_code == HTTPStatus.OK
     j = r.json()
     assert "version" in j and j["version"] == VERSION
     assert "breakingChanges" in j
@@ -22,7 +23,7 @@ def test_endpoint_home(client_with_auth):
 
 def test_endpoint_health(client_with_auth):
     r = client_with_auth.get("/health")
-    assert r.status_code == 200
+    assert r.status_code == HTTPStatus.OK
     assert r.json() == {"status": "ok"}
 
 
@@ -39,25 +40,25 @@ def test_endpoint_active(app):
     m_user_state.active = False
     client = TestClient(app)
     r = client.get("/user/active")
-    assert r.status_code == 200
+    assert r.status_code == HTTPStatus.OK
     assert r.json() == {"active": False}
 
     # active user
     m_user_state.active = True
     client = TestClient(app)
     r = client.get("/user/active")
-    assert r.status_code == 200
+    assert r.status_code == HTTPStatus.OK
     assert r.json() == {"active": True}
 
 
 def test_no_serve_local_archive_by_default(client_with_auth):
     r = client_with_auth.get("/app/local_archive_test/temp.txt")
-    assert r.status_code == 404
+    assert r.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_favicon(client_with_auth):
     r = client_with_auth.get("/favicon.ico")
-    assert r.status_code == 200
+    assert r.status_code == HTTPStatus.OK
     assert r.headers["content-type"] == "image/vnd.microsoft.icon"
 
 
@@ -73,7 +74,7 @@ def test_endpoint_test_prometheus_no_user_auth(client_with_auth, test_no_auth):
 async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     # before metrics calculation
     r = client_with_token.get("/metrics")
-    assert r.status_code == 200
+    assert r.status_code == HTTPStatus.OK
     assert (
         r.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
     )
@@ -145,7 +146,7 @@ def test_endpoint_get_user_permissions(app):
 
     client = TestClient(app)
     r = client.get("/user/permissions")
-    assert r.status_code == 200
+    assert r.status_code == HTTPStatus.OK
     response = r.json()
     assert response.keys() == {"all", "group1"}
     assert response["all"]["read"]
@@ -166,7 +167,7 @@ def test_endpoint_get_user_usage_inactive(app):
 
     client = TestClient(app)
     r = client.get("/user/usage")
-    assert r.status_code == 403
+    assert r.status_code == HTTPStatus.FORBIDDEN
     assert r.json() == {"detail": "User is not active."}
 
 
@@ -188,5 +189,5 @@ def test_endpoint_get_user_usage_active(app):
 
     client = TestClient(app)
     r = client.get("/user/usage")
-    assert r.status_code == 200
+    assert r.status_code == HTTPStatus.OK
     assert UsageResponse(**r.json()) == mock_usage

@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 import pytest
@@ -37,7 +38,7 @@ async def test_get_token_or_user_auth_with_user():
     e: pytest.ExceptionInfo = None
     with pytest.raises(HTTPException):
         await get_token_or_user_auth(bad_user)
-    assert e.value.status_code == 401
+    assert e.value.status_code == HTTPStatus.UNAUTHORIZED
     assert e.value.detail == "invalid access_token"
 
 
@@ -64,7 +65,7 @@ async def test_token_api_key_auth_exception(m1):
             ),
             auto_error=True,
         )
-    assert e.value.status_code == 401
+    assert e.value.status_code == HTTPStatus.UNAUTHORIZED
     assert e.value.detail == "Wrong auth credentials"
 
 
@@ -75,7 +76,7 @@ async def test_authenticate_user():
 
     with patch("app.web.security.requests.get") as mock_get:
         # bad response from oauth2
-        mock_get.return_value.status_code = 403
+        mock_get.return_value.status_code = HTTPStatus.FORBIDDEN
         assert authenticate_user("this-will-call-requests") == (
             False,
             "invalid token",
@@ -83,7 +84,7 @@ async def test_authenticate_user():
         assert mock_get.call_count == 1
 
         # 200 but invalid json
-        mock_get.return_value.status_code = 200
+        mock_get.return_value.status_code = HTTPStatus.OK
         assert authenticate_user("this-will-call-requests") == (
             False,
             "token does not belong to valid APP_ID",
@@ -169,7 +170,7 @@ async def test_authenticate_user():
 @pytest.mark.asyncio
 async def test_authenticate_user_exception():
     with patch("app.web.security.requests.get") as mock_get:
-        mock_get.return_value.status_code = 200
+        mock_get.return_value.status_code = HTTPStatus.OK
         mock_get.return_value.json.side_effect = Exception("mocked error")
         assert authenticate_user("this-will-call-requests") == (
             False,

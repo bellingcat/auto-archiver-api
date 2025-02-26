@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from http import HTTPStatus
 from unittest.mock import MagicMock, patch
 
 from app.shared.db import models
@@ -39,7 +40,7 @@ def test_submit_manual_archive(m1, client_with_token, db_session):
             "url": "http://example.com",
         },
     )
-    assert r.status_code == 201
+    assert r.status_code == HTTPStatus.CREATED
     assert "id" in r.json()
 
     inserted = (
@@ -79,7 +80,7 @@ def test_submit_manual_archive(m1, client_with_token, db_session):
             "url": "http://example.com",
         },
     )
-    assert r.status_code == 422
+    assert r.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert r.json() == {
         "detail": "Cannot insert into DB due to integrity error, likely duplicate urls."
     }
@@ -97,7 +98,7 @@ def test_submit_manual_archive_invalid_json(client_with_token):
             "url": "http://example.com",
         },
     )
-    assert r.status_code == 422
+    assert r.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert r.json() == {"detail": "Invalid JSON in result field."}
 
 
@@ -126,7 +127,7 @@ def test_submit_manual_archive_no_store_until(
             "url": "http://example.com",
         },
     )
-    assert r.status_code == 201
+    assert r.status_code == HTTPStatus.CREATED
     assert len(r.json()["id"]) == 36
     res = (
         db_session.query(models.Archive)

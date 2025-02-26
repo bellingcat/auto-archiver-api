@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from unittest.mock import patch
 
 
@@ -12,7 +13,7 @@ def test_get_status_success(mock_async_result, client_with_auth):
 
     response = client_with_auth.get("/task/test-task-id")
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {
         "id": "test-task-id",
         "status": "SUCCESS",
@@ -27,7 +28,7 @@ def test_get_status_failure(mock_async_result, client_with_auth):
 
     response = client_with_auth.get("/task/test-task-id")
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {
         "id": "test-task-id",
         "status": "FAILURE",
@@ -42,7 +43,7 @@ def test_get_status_pending(mock_async_result, client_with_auth):
 
     response = client_with_auth.get("/task/test-task-id")
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {
         "id": "test-task-id",
         "status": "PENDING",

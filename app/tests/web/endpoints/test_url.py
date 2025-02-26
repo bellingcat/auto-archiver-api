@@ -1,4 +1,5 @@
 import json
+from http import HTTPStatus
 from unittest.mock import MagicMock, patch
 
 from app.shared import schemas
@@ -25,7 +26,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
 
     # url is too short
     response = client_with_auth.post("/url/archive", json={"url": "bad"})
-    assert response.status_code == 422
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert (
         response.json()["detail"][0]["msg"]
         == "String should have at least 5 characters"
@@ -36,7 +37,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
     response = client_with_auth.post(
         "/url/archive", json={"url": "example.com"}
     )
-    assert response.status_code == 400
+    assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json()["detail"] == "Invalid URL received."
 
     # valid request
@@ -45,7 +46,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
     response = client_with_auth.post(
         "/url/archive", json={"url": "https://example.com"}
     )
-    assert response.status_code == 201
+    assert response.status_code == HTTPStatus.CREATED
     assert response.json() == {"id": "123-456-789"}
     m_celery.signature.assert_called_once()
     m_signature.apply_async.assert_called_once()
@@ -73,7 +74,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
         "/url/archive",
         json={"url": "https://example.com", "group_id": "new-group"},
     )
-    assert response.status_code == 403
+    assert response.status_code == HTTPStatus.FORBIDDEN
     assert (
         response.json()["detail"] == "User does not have access to this group."
     )
@@ -85,7 +86,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
         "/url/archive",
         json={"url": "https://example.com", "group_id": "spaceship"},
     )
-    assert response.status_code == 201
+    assert response.status_code == HTTPStatus.CREATED
     assert response.json() == {"id": "123-456-789"}
     assert m_celery.signature.call_count == 2
     assert m_signature.apply_async.call_count == 2
@@ -100,7 +101,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
         "/url/archive",
         json={"url": "https://example.com", "group_id": "spaceship"},
     )
-    assert response.status_code == 429
+    assert response.status_code == HTTPStatus.TOO_MANY_REQUESTS
     assert (
         response.json()["detail"] == "User has reached their monthly URL quota."
     )
@@ -113,7 +114,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
         "/url/archive",
         json={"url": "https://example.com", "group_id": "spacesuit"},
     )
-    assert response.status_code == 429
+    assert response.status_code == HTTPStatus.TOO_MANY_REQUESTS
     assert (
         response.json()["detail"] == "User has reached their monthly MB quota."
     )
@@ -132,7 +133,7 @@ def test_archive_url_quotas(m1, client_with_auth):
     response = client_with_auth.post(
         "/url/archive", json={"url": "https://example.com"}
     )
-    assert response.status_code == 429
+    assert response.status_code == HTTPStatus.TOO_MANY_REQUESTS
     assert (
         response.json()["detail"] == "User has reached their monthly URL quota."
     )
@@ -144,7 +145,7 @@ def test_archive_url_quotas(m1, client_with_auth):
     response = client_with_auth.post(
         "/url/archive", json={"url": "https://example.com"}
     )
-    assert response.status_code == 429
+    assert response.status_code == HTTPStatus.TOO_MANY_REQUESTS
     assert (
         response.json()["detail"] == "User has reached their monthly MB quota."
     )
@@ -162,7 +163,7 @@ def test_archive_url_with_api_token(m_celery, client_with_token):
         "/url/archive",
         json={"url": "https://example.com", "author_id": "someone@example.com"},
     )
-    assert response.status_code == 201
+    assert response.status_code == HTTPStatus.CREATED
     assert response.json() == {"id": "123-456-789"}
     m_celery.signature.assert_called_once()
     m_signature.apply_async.assert_called_once()
@@ -185,7 +186,7 @@ def test_archive_url_with_api_token(m_celery, client_with_token):
     response = client_with_token.post(
         "/url/archive", json={"url": "https://example.com", "author_id": None}
     )
-    assert response.status_code == 201
+    assert response.status_code == HTTPStatus.CREATED
     called_val = m_celery.signature.call_args
     assert called_val[0][0] == "create_archive_task"
     assert json.loads(called_val[1]["args"][0]) == {
@@ -209,11 +210,11 @@ def test_search_by_url_unauthenticated(client, test_no_auth):
 def test_search_by_url(client_with_auth, client_with_token, db_session):
     # tests the search endpoint, including through some db data for the endpoint params
     response = client_with_auth.get("/url/search")
-    assert response.status_code == 422
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json()["detail"][0]["msg"] == "Field required"
 
     response = client_with_auth.get("/url/search?url=https://example.com")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == []
 
     for i in range(11):
@@ -234,7 +235,7 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
         # NB: this insertion is too fast for the ordering to be correct as they are within the same second
 
     response = client_with_auth.get("/url/search?url=https://example.com")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert len(j := response.json()) == 10
     assert "url-456-0" in [i["id"] for i in j]
     assert "url-456-9" in [i["id"] for i in j]
@@ -244,32 +245,32 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     response = client_with_auth.get(
         "/url/search?url=https://example.com&limit=5"
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert len(response.json()) == 5
 
     response = client_with_auth.get(
         "/url/search?url=https://example.com&skip=5&limit=2"
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert len(response.json()) == 2
 
     response = client_with_auth.get(
         "/url/search?url=https://example.com&archived_before=2010-01-01"
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert len(response.json()) == 0
 
     response = client_with_auth.get(
         "/url/search?url=https://example.com&archived_after=2010-01-01"
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert len(response.json()) == 10
 
     # API token will also work
     response = client_with_token.get(
         "/url/search?url=https://example.com&archived_after=2010-01-01"
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert len(response.json()) == 10
 
 
@@ -279,7 +280,7 @@ def test_search_no_read_access(mock_user_state, client_with_auth):
     mock_user_state.return_value.read_public = False
 
     response = client_with_auth.get("/url/search?url=https://example.com")
-    assert response.status_code == 403
+    assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {"detail": "User does not have read access."}
 
 
@@ -289,7 +290,7 @@ def test_delete_task_unauthenticated(client, test_no_auth):
 
 def test_delete_task(client_with_auth, db_session):
     response = client_with_auth.delete("/url/delete-123-456-789")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {"id": "delete-123-456-789", "deleted": False}
 
     worker_crud.create_archive(
@@ -306,5 +307,5 @@ def test_delete_task(client_with_auth, db_session):
     )
 
     response = client_with_auth.delete("/url/delete-123-456-789")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {"id": "delete-123-456-789", "deleted": True}

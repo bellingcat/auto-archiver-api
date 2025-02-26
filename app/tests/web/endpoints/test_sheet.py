@@ -1,4 +1,5 @@
 from datetime import datetime
+from http import HTTPStatus
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -27,7 +28,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
 
     # with good data
     response = client_with_auth.post("/sheet/create", json=good_data)
-    assert response.status_code == 201
+    assert response.status_code == HTTPStatus.CREATED
     j = response.json()
     assert datetime.fromisoformat(j.pop("created_at"))
     assert datetime.fromisoformat(j.pop("last_url_archived_at"))
@@ -36,7 +37,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
 
     # already exists
     response = client_with_auth.post("/sheet/create", json=good_data)
-    assert response.status_code == 400
+    assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {
         "detail": "Sheet with this ID is already being archived."
     }
@@ -45,7 +46,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     bad_data = good_data.copy()
     bad_data["group_id"] = "not a group"
     response = client_with_auth.post("/sheet/create", json=bad_data)
-    assert response.status_code == 403
+    assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {
         "detail": "User does not have access to this group."
     }
@@ -62,7 +63,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     jerry_data["frequency"] = "hourly"
     jerry_data["id"] = "jerry-sheet-id"
     response = client_jerry.post("/sheet/create", json=jerry_data)
-    assert response.status_code == 422
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json() == {
         "detail": "Invalid frequency selected for this group."
     }
@@ -70,10 +71,10 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     jerry_data["frequency"] = "daily"
     # success for the first sheet, bad quota on second
     response = client_jerry.post("/sheet/create", json=jerry_data)
-    assert response.status_code == 201
+    assert response.status_code == HTTPStatus.CREATED
 
     response = client_jerry.post("/sheet/create", json=jerry_data)
-    assert response.status_code == 429
+    assert response.status_code == HTTPStatus.TOO_MANY_REQUESTS
     assert response.json() == {
         "detail": "User has reached their sheet quota for this group."
     }
@@ -82,7 +83,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
 def test_get_user_sheets_endpoint(client_with_auth, db_session):
     # no data
     response = client_with_auth.get("/sheet/mine")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == []
 
     # with data
@@ -117,7 +118,7 @@ def test_get_user_sheets_endpoint(client_with_auth, db_session):
     db_session.commit()
 
     response = client_with_auth.get("/sheet/mine")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     r = response.json()
     assert isinstance(r, list)
     assert len(r) == 2
@@ -144,7 +145,7 @@ def test_get_user_sheets_endpoint(client_with_auth, db_session):
 def test_delete_sheet_endpoint(client_with_auth, db_session):
     # missing sheet
     response = client_with_auth.delete("/sheet/123-sheet-id")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {"id": "123-sheet-id", "deleted": False}
 
     # add sheets for deletion
@@ -170,15 +171,15 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
 
     # morty can delete his
     response = client_with_auth.delete("/sheet/123-sheet-id")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {"id": "123-sheet-id", "deleted": True}
     # but only once
     response = client_with_auth.delete("/sheet/123-sheet-id")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {"id": "123-sheet-id", "deleted": False}
-    # and not rick's
+    # and not Rick's
     response = client_with_auth.delete("/sheet/456-sheet-id")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {"id": "456-sheet-id", "deleted": False}
 
 
@@ -203,7 +204,7 @@ class TestArchiveUserSheetEndpoint:
         m_celery.signature.return_value = m_signature
 
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
-        assert r.status_code == 201
+        assert r.status_code == HTTPStatus.CREATED
         assert r.json() == {"id": "123-taskid"}
         m_celery.signature.assert_called_once()
         m_signature.apply_async.assert_called_once()
@@ -213,7 +214,7 @@ class TestArchiveUserSheetEndpoint:
 
     def test_missing_data(self, client_with_auth):
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
-        assert r.status_code == 403
+        assert r.status_code == HTTPStatus.FORBIDDEN
         assert r.json() == {"detail": "No access to this sheet."}
 
     def test_no_access(self, client_with_auth, db_session):
@@ -228,7 +229,7 @@ class TestArchiveUserSheetEndpoint:
         )
         db_session.commit()
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
-        assert r.status_code == 403
+        assert r.status_code == HTTPStatus.FORBIDDEN
         assert r.json() == {"detail": "No access to this sheet."}
 
     def test_user_not_in_group(self, client_with_auth, db_session):
@@ -243,7 +244,7 @@ class TestArchiveUserSheetEndpoint:
         )
         db_session.commit()
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
-        assert r.status_code == 403
+        assert r.status_code == HTTPStatus.FORBIDDEN
         assert r.json() == {
             "detail": "User does not have access to this group."
         }
@@ -260,7 +261,7 @@ class TestArchiveUserSheetEndpoint:
         )
         db_session.commit()
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
-        assert r.status_code == 429
+        assert r.status_code == HTTPStatus.TOO_MANY_REQUESTS
         assert r.json() == {
             "detail": "User cannot manually trigger sheet archiving in this group."
         }
