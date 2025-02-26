@@ -2,8 +2,11 @@ import os
 import shutil
 from unittest.mock import patch
 
+import alembic.config
 import pytest
 from fastapi.testclient import TestClient
+
+from app.web.utils.metrics import EXCEPTION_COUNTER
 
 
 def test_lifespan(app):
@@ -14,8 +17,6 @@ def test_lifespan(app):
 
 
 def test_alembic(db_session):
-    import alembic.config
-
     alembic.config.main(argv=["--raiseerr", "upgrade", "head"])
     alembic.config.main(argv=["--raiseerr", "downgrade", "base"])
 
@@ -25,8 +26,6 @@ def test_alembic(db_session):
     side_effect=Exception("mocked error"),
 )
 def test_logging_middleware(m1, client_with_auth):
-    from app.web.utils.metrics import EXCEPTION_COUNTER
-
     assert len(EXCEPTION_COUNTER.collect()[0].samples) == 0
     with pytest.raises(Exception, match="mocked error"):
         client_with_auth.delete("/url/123")

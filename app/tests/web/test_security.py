@@ -5,19 +5,24 @@ from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app.web.config import ALLOW_ANY_EMAIL
+from app.web.db.user_state import UserState
+from app.web.security import (
+    authenticate_user,
+    get_token_or_user_auth,
+    get_user_auth,
+    get_user_state,
+    secure_compare,
+    token_api_key_auth,
+)
 
 
 def test_secure_compare():
-    from app.web.security import secure_compare
-
     assert secure_compare("test", "test")
     assert not secure_compare("test", "test2")
 
 
 @pytest.mark.asyncio
 async def test_get_token_or_user_auth_with_api():
-    from app.web.security import get_token_or_user_auth
-
     mock_api = HTTPAuthorizationCredentials(
         scheme="lorem", credentials="this_is_the_test_api_token"
     )
@@ -26,13 +31,11 @@ async def test_get_token_or_user_auth_with_api():
 
 @pytest.mark.asyncio
 async def test_get_token_or_user_auth_with_user():
-    from app.web.security import get_token_or_user_auth
-
     bad_user = HTTPAuthorizationCredentials(
         scheme="ipsum", credentials="invalid"
     )
     e: pytest.ExceptionInfo = None
-    with pytest.raises(HTTPException) as e:
+    with pytest.raises(HTTPException):
         await get_token_or_user_auth(bad_user)
     assert e.value.status_code == 401
     assert e.value.detail == "invalid access_token"
@@ -44,8 +47,6 @@ async def test_get_token_or_user_auth_with_user():
 )
 @pytest.mark.asyncio
 async def test_get_user_auth(m1):
-    from app.web.security import get_user_auth
-
     good_user = HTTPAuthorizationCredentials(
         scheme="ipsum", credentials="valid-and-good"
     )
@@ -55,10 +56,8 @@ async def test_get_user_auth(m1):
 @patch("app.web.security.secure_compare", return_value=False)
 @pytest.mark.asyncio
 async def test_token_api_key_auth_exception(m1):
-    from app.web.security import token_api_key_auth
-
     e: pytest.ExceptionInfo = None
-    with pytest.raises(HTTPException) as e:
+    with pytest.raises(HTTPException):
         await token_api_key_auth(
             HTTPAuthorizationCredentials(
                 scheme="ipsum", credentials="does-not-matter"
@@ -71,8 +70,6 @@ async def test_token_api_key_auth_exception(m1):
 
 @pytest.mark.asyncio
 async def test_authenticate_user():
-    from app.web.security import authenticate_user
-
     assert authenticate_user("test") == (False, "invalid access_token")
     assert authenticate_user(123) == (False, "invalid access_token")
 
@@ -171,8 +168,6 @@ async def test_authenticate_user():
 
 @pytest.mark.asyncio
 async def test_authenticate_user_exception():
-    from app.web.security import authenticate_user
-
     with patch("app.web.security.requests.get") as mock_get:
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.side_effect = Exception("mocked error")
@@ -183,9 +178,6 @@ async def test_authenticate_user_exception():
 
 
 def test_get_user_state():
-    from app.web.db.user_state import UserState
-    from app.web.security import get_user_state
-
     mock_session = Mock()
     test_email = "test@example.com"
 
