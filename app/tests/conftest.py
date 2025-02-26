@@ -15,7 +15,7 @@ from app.web.db.user_state import UserState
 @pytest.fixture(autouse=True)
 def mock_logger_add():
     """Fixture to mock loguru.logger.add for all tests."""
-    with patch('loguru.logger.add') as mock_add:
+    with patch("loguru.logger.add") as mock_add:
         yield mock_add  # This makes the mock available to tests
 
 
@@ -26,7 +26,10 @@ def get_settings():
 
 @pytest.fixture(autouse=True)
 def mock_settings():
-    with patch('app.shared.settings.Settings', return_value=Settings(_env_file=".env.test")) as mock_settings:
+    with patch(
+        "app.shared.settings.Settings",
+        return_value=Settings(_env_file=".env.test"),
+    ) as mock_settings:
         yield mock_settings
 
 
@@ -42,7 +45,7 @@ def test_db(get_settings: Settings):
 
     fs = get_settings.DATABASE_PATH.replace("sqlite:///", "")
     if not os.path.exists(fs):
-        open(fs, 'w').close()
+        open(fs, "w").close()
 
     models.Base.metadata.create_all(engine)
 
@@ -60,6 +63,7 @@ def test_db(get_settings: Settings):
 @pytest.fixture()
 def db_session(test_db):
     from app.shared.db.database import make_session_local
+
     session_local = make_session_local(test_db)
     with session_local() as session:
         yield session
@@ -67,8 +71,6 @@ def db_session(test_db):
 
 @pytest_asyncio.fixture()
 async def async_test_db(get_settings: Settings):
-    import asyncio
-
     from app.shared.db import models
     from app.shared.db.database import make_async_engine
     from app.web.db.crud import get_user_group_names
@@ -78,7 +80,7 @@ async def async_test_db(get_settings: Settings):
 
     fs = get_settings.ASYNC_DATABASE_PATH.replace("sqlite+aiosqlite:///", "")
     if not os.path.exists(fs):
-        open(fs, 'w').close()
+        open(fs, "w").close()
 
     async def create_all():
         async with engine.begin() as conn:
@@ -102,8 +104,11 @@ async def async_test_db(get_settings: Settings):
 
 
 @pytest_asyncio.fixture()
-async def async_db_session(async_test_db: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
+async def async_db_session(
+    async_test_db: AsyncEngine,
+) -> AsyncGenerator[AsyncSession, None]:
     from app.shared.db.database import make_async_session_local
+
     session_local = await make_async_session_local(async_test_db)
     async with session_local() as session:
         yield session
@@ -113,6 +118,7 @@ async def async_db_session(async_test_db: AsyncEngine) -> AsyncGenerator[AsyncSe
 def app(db_session):
     from app.web.db import crud
     from app.web.main import app_factory
+
     app = app_factory()
     crud.upsert_user_groups(db_session)
     return app
@@ -131,9 +137,14 @@ def app_with_auth(app, db_session):
         get_user_auth,
         get_user_state,
     )
-    app.dependency_overrides[get_token_or_user_auth] = lambda: "rick@example.com"
+
+    app.dependency_overrides[get_token_or_user_auth] = (
+        lambda: "rick@example.com"
+    )
     app.dependency_overrides[get_user_auth] = lambda: "morty@example.com"
-    app.dependency_overrides[get_user_state] = lambda: UserState(db_session, "MORTY@example.com")
+    app.dependency_overrides[get_user_state] = lambda: UserState(
+        db_session, "MORTY@example.com"
+    )
     return app
 
 
@@ -146,6 +157,7 @@ def client_with_auth(app_with_auth):
 @pytest.fixture()
 def app_with_token(app):
     from app.web.security import get_token_or_user_auth, token_api_key_auth
+
     app.dependency_overrides[token_api_key_auth] = lambda: ALLOW_ANY_EMAIL
     app.dependency_overrides[get_token_or_user_auth] = lambda: ALLOW_ANY_EMAIL
     return app
@@ -164,4 +176,5 @@ def test_no_auth():
         response = http_method(endpoint)
         assert response.status_code == 403
         assert response.json() == {"detail": "Not authenticated"}
+
     return no_auth
