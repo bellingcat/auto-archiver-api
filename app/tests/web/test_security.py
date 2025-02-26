@@ -38,7 +38,7 @@ async def test_get_token_or_user_auth_with_user():
     e: pytest.ExceptionInfo = None
     with pytest.raises(HTTPException):
         await get_token_or_user_auth(bad_user)
-    assert e.value.status_code == HTTPStatus.UNAUTHORIZED
+    assert e.value.status_code == 401
     assert e.value.detail == "invalid access_token"
 
 
@@ -65,7 +65,7 @@ async def test_token_api_key_auth_exception(m1):
             ),
             auto_error=True,
         )
-    assert e.value.status_code == HTTPStatus.UNAUTHORIZED
+    assert e.value.status_code == 401
     assert e.value.detail == "Wrong auth credentials"
 
 
