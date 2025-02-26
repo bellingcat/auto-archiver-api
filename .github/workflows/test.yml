@@ -30,4 +30,4 @@ jobs:
         run: echo "ENVIRONMENT_FILE=.env.test" >> $GITHUB_ENV
 
       - name: Run tests
-        run: poetry run pytest app/tests
+        run: poetry run pytest tests
