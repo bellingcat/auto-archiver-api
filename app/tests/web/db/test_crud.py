@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-from sqlalchemy import true
+from sqlalchemy import false, true
 
 from app.shared.db import models
 from app.shared.settings import Settings
@@ -542,12 +542,13 @@ def test_soft_delete(test_data, db_session):
         .count()
         == 1
     )
-    # assert (
-    #     db_session.query(models.Archive)
-    #     .filter(models.Archive.id == "archive-id-456-0")
-    #     .first()
-    #     is None
-    # )
+    assert (
+        db_session.query(models.Archive)
+        .filter(models.Archive.id == "archive-id-456-0")
+        .filter(models.Archive.deleted.is_(false()))
+        .first()
+        is None
+    )
 
     # already deleted
     assert (
