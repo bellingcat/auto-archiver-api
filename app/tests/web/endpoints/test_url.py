@@ -1,6 +1,8 @@
 import json
 from unittest.mock import MagicMock, patch
 
+from app.shared import schemas
+from app.shared.db import worker_crud
 from app.shared.schemas import ArchiveCreate, TaskResult
 from app.web.config import ALLOW_ANY_EMAIL
 
@@ -214,9 +216,6 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     assert response.status_code == 200
     assert response.json() == []
 
-    from app.shared import schemas
-    from app.shared.db import worker_crud
-
     for i in range(11):
         worker_crud.create_archive(
             db_session,
@@ -292,8 +291,6 @@ def test_delete_task(client_with_auth, db_session):
     response = client_with_auth.delete("/url/delete-123-456-789")
     assert response.status_code == 200
     assert response.json() == {"id": "delete-123-456-789", "deleted": False}
-
-    from app.shared.db import worker_crud
 
     worker_crud.create_archive(
         db_session,

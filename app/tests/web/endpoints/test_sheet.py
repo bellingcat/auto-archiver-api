@@ -3,7 +3,10 @@ from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
+from app.shared.db import models
 from app.shared.schemas import TaskResult
+from app.web.db.user_state import UserState
+from app.web.security import get_user_state
 
 
 def test_endpoints_no_auth(client, test_no_auth):
@@ -48,9 +51,6 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
     }
 
     # switch to jerry who's got less quota/permissions
-    from app.web.db.user_state import UserState
-    from app.web.security import get_user_state
-
     app_with_auth.dependency_overrides[get_user_state] = lambda: UserState(
         db_session, "jerry@example.com"
     )
@@ -86,8 +86,6 @@ def test_get_user_sheets_endpoint(client_with_auth, db_session):
     assert response.json() == []
 
     # with data
-    from app.shared.db import models
-
     db_session.add(
         models.Sheet(
             id="123",
@@ -150,8 +148,6 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
     assert response.json() == {"id": "123-sheet-id", "deleted": False}
 
     # add sheets for deletion
-    from app.shared.db import models
-
     db_session.add_all(
         [
             models.Sheet(
@@ -189,8 +185,6 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
 class TestArchiveUserSheetEndpoint:
     @patch("app.web.endpoints.sheet.celery", return_value=MagicMock())
     def test_normal_flow(self, m_celery, client_with_auth, db_session):
-        from app.shared.db import models
-
         db_session.add(
             models.Sheet(
                 id="123-sheet-id",
@@ -223,8 +217,6 @@ class TestArchiveUserSheetEndpoint:
         assert r.json() == {"detail": "No access to this sheet."}
 
     def test_no_access(self, client_with_auth, db_session):
-        from app.shared.db import models
-
         db_session.add(
             models.Sheet(
                 id="123-sheet-id",
@@ -240,8 +232,6 @@ class TestArchiveUserSheetEndpoint:
         assert r.json() == {"detail": "No access to this sheet."}
 
     def test_user_not_in_group(self, client_with_auth, db_session):
-        from app.shared.db import models
-
         db_session.add(
             models.Sheet(
                 id="123-sheet-id",
@@ -259,8 +249,6 @@ class TestArchiveUserSheetEndpoint:
         }
 
     def test_user_cannot_manually_trigger(self, client_with_auth, db_session):
-        from app.shared.db import models
-
         db_session.add(
             models.Sheet(
                 id="123-sheet-id",
