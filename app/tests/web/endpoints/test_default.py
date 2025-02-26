@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.shared.schemas import Usage, UsageResponse
 from app.shared.user_groups import GroupInfo
-from tests.web.db.test_crud import test_data
+from app.tests.web.db.test_crud import test_data
 from app.web.config import VERSION
 
 

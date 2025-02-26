@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from app.shared.db import models, worker_crud
-from tests.web.db.test_crud import test_data
+from app.tests.web.db.test_crud import test_data
 
 
 def test_update_sheet_last_url_archived_at(db_session):
