@@ -666,7 +666,9 @@ def test_upsert_user_groups(db_session):
 
     bad_settings = Settings(_env_file=".env.test")
 
-    bad_settings.USER_GROUPS_FILENAME = "app/tests/user-groups.test.missing.yaml"
+    bad_settings.USER_GROUPS_FILENAME = (
+        "app/tests/user-groups.test.missing.yaml"
+    )
     test_missing_yaml(db_session)
 
     bad_settings.USER_GROUPS_FILENAME = "app/tests/user-groups.test.broken.yaml"

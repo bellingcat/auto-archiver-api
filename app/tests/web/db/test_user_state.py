@@ -5,6 +5,7 @@ import pytest
 from app.shared.db import models
 from app.shared.user_groups import GroupInfo, GroupPermissions
 from app.web.db.user_state import UserState
+from app.web.utils.misc import convert_priority_to_queue_dict
 
 
 def fresh_user_state():
@@ -802,8 +803,6 @@ def test_is_sheet_frequency_allowed(user_state):
 
 
 def test_priority_group(user_state):
-    from app.web.utils.misc import convert_priority_to_queue_dict
-
     with patch.object(
         UserState,
         "user_groups",
