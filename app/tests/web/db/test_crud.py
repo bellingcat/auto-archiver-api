@@ -2,11 +2,14 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+import sqlalchemy
 import yaml
 from sqlalchemy import false, true
+from sqlalchemy.sql import select
 
 from app.shared.db import models
 from app.shared.settings import Settings
+from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db import crud
 
 
@@ -85,7 +88,6 @@ def test_data(db_session):
 
     # setup groups
     assert db_session.query(models.Group).count() == 0
-    from app.web.db import crud
 
     crud.upsert_user_groups(db_session)
     assert db_session.query(models.Group).count() == 4
@@ -93,9 +95,7 @@ def test_data(db_session):
 
 
 def test_search_archives_by_url(test_data, db_session):
-    from app.web.config import ALLOW_ANY_EMAIL
-
-    # rick's archives are private
+    # Rick's archives are private
     assert (
         len(
             crud.search_archives_by_url(
@@ -452,8 +452,6 @@ def test_search_archives_by_url(test_data, db_session):
 
 
 def test_search_archives_by_email(test_data, db_session):
-    from app.web.config import ALLOW_ANY_EMAIL
-
     # lower/upper case
     assert (
         len(crud.search_archives_by_email(db_session, "rick@example.com")) == 34
@@ -475,8 +473,6 @@ def test_search_archives_by_email(test_data, db_session):
 
 @patch("app.web.db.crud.DATABASE_QUERY_LIMIT", new=25)
 def test_max_query_limit(test_data, db_session):
-    from app.web.config import ALLOW_ANY_EMAIL
-
     assert (
         len(
             crud.search_archives_by_url(
@@ -595,8 +591,6 @@ def test_count_users(test_data, db_session):
 
 
 def test_count_by_users_since(test_data, db_session):
-    from app.web.db import crud
-
     # 100y window
     assert (
         len(
@@ -660,22 +654,22 @@ def test_upsert_group(test_data, db_session):
 
 
 def test_upsert_user_groups(db_session):
-    @patch("app.web.db.crud.get_settings", new=lambda: bad_setings)
+    @patch("app.web.db.crud.get_settings", new=lambda: bad_settings)
     def test_missing_yaml(db_session):
         with pytest.raises(FileNotFoundError):
             crud.upsert_user_groups(db_session)
 
-    @patch("app.web.db.crud.get_settings", new=lambda: bad_setings)
+    @patch("app.web.db.crud.get_settings", new=lambda: bad_settings)
     def test_broken_yaml(db_session):
         with pytest.raises(yaml.YAMLError):
             crud.upsert_user_groups(db_session)
 
-    bad_setings = Settings(_env_file=".env.test")
+    bad_settings = Settings(_env_file=".env.test")
 
-    bad_setings.USER_GROUPS_FILENAME = "app/tests/user-groups.test.missing.yaml"
+    bad_settings.USER_GROUPS_FILENAME = "app/tests/user-groups.test.missing.yaml"
     test_missing_yaml(db_session)
 
-    bad_setings.USER_GROUPS_FILENAME = "app/tests/user-groups.test.broken.yaml"
+    bad_settings.USER_GROUPS_FILENAME = "app/tests/user-groups.test.broken.yaml"
     test_broken_yaml(db_session)
 
 
@@ -698,9 +692,6 @@ def test_create_sheet(db_session):
     assert s.frequency == "hourly"
 
     assert db_session.query(models.Sheet).count() == 1
-
-    # duplicate id
-    import sqlalchemy
 
     with pytest.raises(sqlalchemy.exc.IntegrityError):
         crud.create_sheet(
@@ -870,10 +861,6 @@ async def test_get_sheets_by_id_hash(async_db_session):
 
 @pytest.mark.asyncio
 async def test_delete_stale_sheets(async_db_session):
-    from datetime import datetime, timedelta
-
-    from sqlalchemy.sql import select
-
     now = datetime.now()
     active_date = now - timedelta(days=5)
     stale_date = now - timedelta(days=15)
