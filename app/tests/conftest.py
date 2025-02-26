@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from http import HTTPStatus
 from typing import AsyncGenerator
 from unittest.mock import patch
@@ -172,3 +173,89 @@ def test_no_auth():
         assert response.json() == {"detail": "Not authenticated"}
 
     return no_auth
+
+
+@pytest.fixture()
+def test_data(db_session):
+    author_emails = [
+        "rick@example.com",
+        "morty@example.com",
+        "jerry@example.com",
+    ]
+
+    # creates 3 users
+    for email in author_emails:
+        db_session.add(models.User(email=email))
+    db_session.commit()
+    assert db_session.query(models.User).count() == 3
+
+    # creates 100 archives for 3 users over 2 months with repeating URLs
+    for i in range(100):
+        author = author_emails[i % 3]
+        archive = models.Archive(
+            id=f"archive-id-456-{i}",
+            url=f"https://example-{i % 3}.com",
+            result={},
+            public=author == "jerry@example.com",
+            author_id=author,
+            group_id="spaceship"
+            if author == "morty@example.com" and i % 2 == 0
+            else None,
+            created_at=datetime(2021, (i % 2) + 1, (i % 25) + 1),
+        )
+        if i % 5 == 0:
+            archive.tags.append(models.Tag(id=f"tag-{i}"))
+        if i % 10 == 0:
+            archive.tags.append(models.Tag(id=f"tag-second-{i}"))
+        if i % 4 == 0:
+            archive.tags.append(models.Tag(id=f"tag-third-{i}"))
+        for j in range(10):
+            archive.urls.append(
+                models.ArchiveUrl(
+                    url=f"https://example-{i}.com/{j}", key=f"media_{j}"
+                )
+            )
+        db_session.add(archive)
+
+    # creates a sheet for each user
+    for i, email in enumerate(
+        ["rick@example.com", "morty@example.com", "jerry@example.com"]
+    ):
+        db_session.add(
+            models.Sheet(
+                id=f"sheet-{i}",
+                name=f"sheet-{i}",
+                author_id=email,
+                group_id=None,
+                frequency="daily",
+            )
+        )
+        if email == "rick@example.com":
+            db_session.add(
+                models.Sheet(
+                    id=f"sheet-{i}-2",
+                    name=f"sheet-{i}-2",
+                    author_id=email,
+                    group_id="spaceship",
+                    frequency="hourly",
+                )
+            )
+
+    db_session.commit()
+
+    assert db_session.query(models.Archive).count() == 100
+    assert db_session.query(models.Tag).count() == 20 + 10 + 25
+    assert db_session.query(models.ArchiveUrl).count() == 1000
+    assert (
+        db_session.query(models.ArchiveUrl)
+        .filter(models.ArchiveUrl.archive_id == "archive-id-456-0")
+        .count()
+        == 10
+    )
+
+    # setup groups
+    assert db_session.query(models.Group).count() == 0
+
+    crud.upsert_user_groups(db_session)
+    assert db_session.query(models.Group).count() == 4
+    assert db_session.query(models.User).count() == 3
