@@ -68,7 +68,6 @@ repos:
 #        types_or: [python,pyi]
 #        args:
 #          - --fix
-#          - --target-version=py310
 #          - --select=B,C,E,F,W,B9
 #          - --line-length=80
 #          - --ignore=E203,E402,E501,E261

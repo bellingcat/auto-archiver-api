@@ -6,6 +6,7 @@ from auto_archiver.core import Media, Metadata
 
 from app.shared import schemas
 from app.shared.db import models
+from app.worker.main import create_archive_task, create_sheet_task, get_all_urls
 
 
 class TestCreateArchiveTask:
@@ -36,8 +37,6 @@ class TestCreateArchiveTask:
         m_orchestrator,
         db_session,
     ):
-        from app.worker.main import create_archive_task
-
         m_req.id = "this-just-in"
         m_orchestrator.return_value.feed.return_value = iter(
             [Metadata().set_url(self.URL).success()]
@@ -57,16 +56,12 @@ class TestCreateArchiveTask:
         assert len(task["media"]) == 0
 
     def test_raise_invalid(self):
-        from app.worker.main import create_archive_task
-
         with pytest.raises(Exception) as _:
             create_archive_task(self.archive.model_dump_json())
 
     @patch("app.worker.main.ArchivingOrchestrator")
     @patch("app.worker.main.get_orchestrator_args")
     def test_raise_db_error(self, m_args, m_orchestrator):
-        from app.worker.main import create_archive_task
-
         m_orchestrator.return_value.feed.side_effect = Exception(
             "Orchestrator failed"
         )
@@ -81,8 +76,6 @@ class TestCreateArchiveTask:
     @patch("app.worker.main.insert_result_into_db", return_value=None)
     @patch("app.worker.main.get_orchestrator_args")
     def test_raise_empty_result(self, m_args, m_insert, m_orchestrator):
-        from app.worker.main import create_archive_task
-
         m_orchestrator.return_value.feed.return_value = iter([None])
 
         with pytest.raises(Exception) as e:
@@ -108,8 +101,6 @@ class TestCreateSheetTask:
     def test_success(
         self, m_args, m_store, m_uuid, m_orchestrator, m_urls, db_session
     ):
-        from app.worker.main import create_sheet_task
-
         assert (
             db_session.query(models.Archive)
             .filter(models.Archive.url == self.URL)
@@ -158,8 +149,6 @@ class TestCreateSheetTask:
 
 
 def test_get_all_urls(db_session):
-    from app.worker.main import get_all_urls
-
     meta = Metadata().set_url("https://example.com")
     m1 = meta.add_media(Media("fn1.txt", urls=["outcome1.com"]))
     m2 = meta.add_media(Media("fn2.txt", urls=["outcome2.com"]))
