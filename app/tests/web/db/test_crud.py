@@ -521,7 +521,7 @@ def test_soft_delete(test_data, db_session):
     )
     assert (
         db_session.query(models.Archive)
-        .filter(models.Archive.deleted is True)
+        .filter(models.Archive.deleted == True)
         .count()
         == 0
     )
