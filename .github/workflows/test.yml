@@ -1,0 +1,33 @@
+name: Run-Tests
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.11', '3.12', '3.13' ]
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --with dev
+
+      - name: Set dev environment variable
+        run: echo "ENVIRONMENT_FILE=.env.test" >> $GITHUB_ENV
+
+      - name: Run tests
+        run: poetry run -m pytest app/tests/
