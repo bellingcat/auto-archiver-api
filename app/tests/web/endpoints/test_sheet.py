@@ -37,7 +37,7 @@ def test_create_sheet_endpoint(app_with_auth, db_session):
 
     # already exists
     response = client_with_auth.post("/sheet/create", json=good_data)
-    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.json() == {
         "detail": "Sheet with this ID is already being archived."
     }
