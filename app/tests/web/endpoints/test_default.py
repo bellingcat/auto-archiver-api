@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
+from loguru import logger
 
 from app.shared.schemas import Usage, UsageResponse
 from app.shared.user_groups import GroupInfo
@@ -31,8 +32,6 @@ def test_endpoint_active_no_auth(client, test_no_auth):
 
 def test_endpoint_active(app):
     m_user_state = MagicMock()
-
-    from app.web.security import get_user_state
 
     app.dependency_overrides[get_user_state] = lambda: m_user_state
 
@@ -138,7 +137,6 @@ def test_endpoint_get_user_permissions(app):
         "all": GroupInfo(read=True),
         "group1": GroupInfo(archive_url=True),
     }
-    from loguru import logger
 
     logger.info(rv)
     m_user_state.permissions = rv
