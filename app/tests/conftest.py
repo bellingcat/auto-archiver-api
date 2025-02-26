@@ -7,9 +7,25 @@ import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+from app.shared.db import models
+from app.shared.db.database import (
+    make_async_engine,
+    make_async_session_local,
+    make_engine,
+    make_session_local,
+)
 from app.shared.settings import Settings
 from app.web.config import ALLOW_ANY_EMAIL
+from app.web.db import crud
+from app.web.db.crud import get_user_group_names
 from app.web.db.user_state import UserState
+from app.web.main import app_factory
+from app.web.security import (
+    get_token_or_user_auth,
+    get_user_auth,
+    get_user_state,
+    token_api_key_auth,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -35,10 +51,6 @@ def mock_settings():
 
 @pytest.fixture()
 def test_db(get_settings: Settings):
-    from app.shared.db import models
-    from app.shared.db.database import make_engine
-    from app.web.db.crud import get_user_group_names
-
     get_user_group_names.cache_clear()
     make_engine.cache_clear()
     engine = make_engine(get_settings.DATABASE_PATH)
@@ -62,8 +74,6 @@ def test_db(get_settings: Settings):
 
 @pytest.fixture()
 def db_session(test_db):
-    from app.shared.db.database import make_session_local
-
     session_local = make_session_local(test_db)
     with session_local() as session:
         yield session
@@ -71,10 +81,6 @@ def db_session(test_db):
 
 @pytest_asyncio.fixture()
 async def async_test_db(get_settings: Settings):
-    from app.shared.db import models
-    from app.shared.db.database import make_async_engine
-    from app.web.db.crud import get_user_group_names
-
     get_user_group_names.cache_clear()
     engine = await make_async_engine(get_settings.ASYNC_DATABASE_PATH)
 
@@ -107,8 +113,6 @@ async def async_test_db(get_settings: Settings):
 async def async_db_session(
     async_test_db: AsyncEngine,
 ) -> AsyncGenerator[AsyncSession, None]:
-    from app.shared.db.database import make_async_session_local
-
     session_local = await make_async_session_local(async_test_db)
     async with session_local() as session:
         yield session
@@ -116,9 +120,6 @@ async def async_db_session(
 
 @pytest.fixture()
 def app(db_session):
-    from app.web.db import crud
-    from app.web.main import app_factory
-
     app = app_factory()
     crud.upsert_user_groups(db_session)
     return app
@@ -132,12 +133,6 @@ def client(app):
 
 @pytest.fixture()
 def app_with_auth(app, db_session):
-    from app.web.security import (
-        get_token_or_user_auth,
-        get_user_auth,
-        get_user_state,
-    )
-
     app.dependency_overrides[get_token_or_user_auth] = (
         lambda: "rick@example.com"
     )
@@ -156,8 +151,6 @@ def client_with_auth(app_with_auth):
 
 @pytest.fixture()
 def app_with_token(app):
-    from app.web.security import get_token_or_user_auth, token_api_key_auth
-
     app.dependency_overrides[token_api_key_auth] = lambda: ALLOW_ANY_EMAIL
     app.dependency_overrides[get_token_or_user_auth] = lambda: ALLOW_ANY_EMAIL
     return app
