@@ -30,14 +30,14 @@ def test_update_sheet_last_url_archived_at(db_session):
     )
 
 
-def test_get_group(test_data, db_session):
+def test_get_group(db_session):
     assert worker_crud.get_group(db_session, "spaceship") is not None
     assert worker_crud.get_group(db_session, "interdimensional") is not None
     assert worker_crud.get_group(db_session, "animated-characters") is not None
     assert worker_crud.get_group(db_session, "non-existent!@#!%!") is None
 
 
-def test_create_or_get_user(test_data, db_session):
+def test_create_or_get_user(db_session):
     assert db_session.query(models.User).count() == 3
 
     # already exists
