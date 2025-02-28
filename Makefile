@@ -2,10 +2,6 @@
 lint:
 	poetry run pre-commit run --all-files
 
-.PHONY: test
-test:
-	poetry run pytest app/tests
-
 .PHONY: clean-dev
 clean-dev:
 	@echo -n "Are you sure? [yes/N] (this will delete volumes) " && read ans && [ $${ans:-N} = yes ]
