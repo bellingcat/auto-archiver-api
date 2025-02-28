@@ -1,7 +1,6 @@
 import os
 import shutil
 from http import HTTPStatus
-from pathlib import Path
 from unittest.mock import patch
 
 import alembic.config
@@ -19,8 +18,24 @@ def test_lifespan(app):
 
 
 def test_alembic(db_session):
-    alembic.config.main(argv=["-c", "./app/migrations/alembic.ini", "--raiseerr", "upgrade", "head"])
-    alembic.config.main(argv=["-c", "./app/migrations/alembic.ini", "--raiseerr", "downgrade", "base"])
+    alembic.config.main(
+        argv=[
+            "-c",
+            "./app/migrations/alembic.ini",
+            "--raiseerr",
+            "upgrade",
+            "head",
+        ]
+    )
+    alembic.config.main(
+        argv=[
+            "-c",
+            "./app/migrations/alembic.ini",
+            "--raiseerr",
+            "downgrade",
+            "base",
+        ]
+    )
 
 
 @patch(
