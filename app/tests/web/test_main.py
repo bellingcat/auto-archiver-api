@@ -20,9 +20,9 @@ def test_lifespan(app):
 
 def test_alembic(db_session):
     print(os.getcwd())
-    print(Path(".app/migrations/alembic.ini").is_file())
-    alembic.config.main(argv=["-c .app/migrations/alembic.ini", "--raiseerr", "upgrade", "head"])
-    alembic.config.main(argv=["-c .app/migrations/alembic.ini", "--raiseerr", "downgrade", "base"])
+    print(os.listdir("./app/migrations"))
+    alembic.config.main(argv=["-c ./app/migrations/alembic.ini", "--raiseerr", "upgrade", "head"])
+    alembic.config.main(argv=["-c ./app/migrations/alembic.ini", "--raiseerr", "downgrade", "base"])
 
 
 @patch(
