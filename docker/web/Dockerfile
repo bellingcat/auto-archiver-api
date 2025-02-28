@@ -14,7 +14,7 @@ COPY ../../pyproject.toml ../../poetry.lock ../../README.md ./
 RUN poetry install --with web --no-interaction --no-ansi --no-cache
 
 # Copy the application code and configurations
-COPY ../../alembic.ini ./
+COPY ../../app/migrations/alembic.ini ./
 COPY ../../app ./app/
 COPY ../../user-groups.* ./app/
 

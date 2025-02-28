@@ -26,7 +26,7 @@ RUN ./poetry-venv/bin/poetry install --without dev --no-root --no-cache
 # install dependencies
 
 # copy source code and .env files over
-COPY ../../alembic.ini ./
+COPY ../../app/migrations/alembic.ini ./
 COPY ../../app ./app/
 COPY ../../user-groups.* ./app/
 
