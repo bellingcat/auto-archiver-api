@@ -35,6 +35,9 @@ dependencies = [
 [tool.pytest.ini_options]
 pythonpath = "."
 
+[tool.coverage.run]
+omit = ["app/migrations/*"]
+
 [tool.poetry.group.worker.dependencies]
 watchdog = ">=6.0.0,<7.0.0"
 setuptools = "^75.8.0"
