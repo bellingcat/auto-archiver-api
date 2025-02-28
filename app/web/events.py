@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     # STARTUP
     engine = make_engine(get_settings().DATABASE_PATH)
     models.Base.metadata.create_all(bind=engine)
-    alembic.config.main(prog="alembic", argv=['-c ./app/migrations/alembic.ini', '--raiseerr', 'upgrade', 'head'])
+    alembic.config.main(prog="alembic", argv=['--raiseerr', 'upgrade', 'head'])
     logging.getLogger("uvicorn.access").disabled = True  # loguru
     asyncio.create_task(redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL))
     asyncio.create_task(repeat_measure_regular_metrics())
