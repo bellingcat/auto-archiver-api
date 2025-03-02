@@ -20,8 +20,6 @@ def test_lifespan(app):
 def test_alembic(db_session):
     alembic.config.main(
         argv=[
-            "-c",
-            "./app/migrations/alembic.ini",
             "--raiseerr",
             "upgrade",
             "head",
@@ -29,8 +27,6 @@ def test_alembic(db_session):
     )
     alembic.config.main(
         argv=[
-            "-c",
-            "./app/migrations/alembic.ini",
             "--raiseerr",
             "downgrade",
             "base",
