@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     DATABASE_QUERY_LIMIT: int = 100
 
     @property
-    def ASYNC_DATABASE_PATH(self) -> str:
+    def async_database_path(self) -> str:
         return self.DATABASE_PATH.replace("sqlite://", "sqlite+aiosqlite://")
 
     # security
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     REDIS_EXCEPTIONS_CHANNEL: str = "exceptions-channel"
 
     @property
-    def CELERY_BROKER_URL(self) -> str:
+    def celery_broker_url(self) -> str:
         if self.REDIS_PASSWORD:
             return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOSTNAME}:6379"
         return f"redis://{self.REDIS_HOSTNAME}:6379"
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     MAIL_SSL_TLS: bool = True
 
     @property
-    def MAIL_CONFIG(self) -> str:
+    def mail_config(self) -> ConnectionConfig:
         return ConnectionConfig(
             MAIL_FROM=self.MAIL_FROM,
             MAIL_FROM_NAME=self.MAIL_FROM_NAME,

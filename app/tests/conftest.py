@@ -84,9 +84,9 @@ def db_session(test_db):
 @pytest_asyncio.fixture()
 async def async_test_db(get_settings: Settings):
     get_user_group_names.cache_clear()
-    engine = await make_async_engine(get_settings.ASYNC_DATABASE_PATH)
+    engine = await make_async_engine(get_settings.async_database_path)
 
-    fs = get_settings.ASYNC_DATABASE_PATH.replace("sqlite+aiosqlite:///", "")
+    fs = get_settings.async_database_path.replace("sqlite+aiosqlite:///", "")
     if not os.path.exists(fs):
         open(fs, "w").close()
 

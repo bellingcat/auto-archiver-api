@@ -83,7 +83,7 @@ async def make_async_session_local(engine: AsyncEngine) -> AsyncSession:
 
 @asynccontextmanager
 async def get_db_async():
-    engine = await make_async_engine(get_settings().ASYNC_DATABASE_PATH)
+    engine = await make_async_engine(get_settings().async_database_path)
     async_session = await make_async_session_local(engine)
     async with async_session() as session:
         try:

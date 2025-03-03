@@ -1,4 +1,5 @@
 import datetime
+from typing import Union
 
 from sqlalchemy.orm import Session
 
@@ -9,7 +10,9 @@ from app.shared.db import worker_crud
 #  decide
 
 
-def get_store_archive_until(db: Session, group_id: str) -> datetime.datetime:
+def get_store_archive_until(
+    db: Session, group_id: str
+) -> Union[datetime.datetime, None]:
     group = worker_crud.get_group(db, group_id)
     assert group, f"Group {group_id} not found."
     assert group.permissions and isinstance(group.permissions, dict), (
@@ -25,7 +28,7 @@ def get_store_archive_until(db: Session, group_id: str) -> datetime.datetime:
 
 def get_store_archive_until_or_never(
     db: Session, group_id: str
-) -> datetime.datetime:
+) -> Union[datetime.datetime, None]:
     try:
         return get_store_archive_until(db, group_id)
     except AssertionError:
