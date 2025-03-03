@@ -61,7 +61,7 @@ def test_serve_local_archive_logic(get_settings):
         get_settings.SERVE_LOCAL_ARCHIVE = "/app/local_archive_test"
         from app.web.main import app_factory
 
-        app = app_factory(get_settings)
+        app = app_factory()
 
         # test
         client = TestClient(app)

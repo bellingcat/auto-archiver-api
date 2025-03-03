@@ -22,7 +22,9 @@ from app.web.security import token_api_key_auth
 celery = get_celery()
 
 
-def app_factory(settings=get_settings()):
+def app_factory():
+    settings = get_settings()
+
     app = FastAPI(
         title="Auto-Archiver API",
         description=API_DESCRIPTION,
