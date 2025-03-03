@@ -1,4 +1,3 @@
-
 from functools import lru_cache
 
 from celery import Celery
@@ -11,14 +10,14 @@ from app.shared.settings import get_settings
 def get_celery(name: str = "") -> Celery:
     return Celery(
         name,
-        broker_url=get_settings().CELERY_BROKER_URL,
-        result_backend=get_settings().CELERY_BROKER_URL,
+        broker_url=get_settings().celery_broker_url,
+        result_backend=get_settings().celery_broker_url,
         broker_connection_retry_on_startup=False,
         broker_transport_options={
-            'queue_order_strategy': 'priority',
-        }
+            "queue_order_strategy": "priority",
+        },
     )
 
 
 def get_redis() -> redis.Redis:
-    return redis.Redis.from_url(get_settings().CELERY_BROKER_URL)
+    return redis.Redis.from_url(get_settings().celery_broker_url)

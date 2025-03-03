@@ -18,9 +18,9 @@ def make_engine(database_url: str):
     engine = create_engine(
         database_url,
         connect_args={"check_same_thread": False},
-        pool_size=15,       # Increase pool size
-        max_overflow=20,    # Allow more temporary connections
-        pool_recycle=1800   # Recycle connections every 30 minutes
+        pool_size=15,  # Increase pool size
+        max_overflow=20,  # Allow more temporary connections
+        pool_recycle=1800,  # Recycle connections every 30 minutes
     )
 
     @event.listens_for(engine, "connect")
@@ -40,8 +40,10 @@ def make_session_local(engine: Engine):
 @contextmanager
 def get_db():
     session = make_session_local(make_engine(get_settings().DATABASE_PATH))()
-    try: yield session
-    finally: session.close()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 def get_db_dependency():
@@ -59,22 +61,32 @@ def wal_checkpoint():
 
 # ASYNC connections
 async def make_async_engine(database_url: str) -> AsyncEngine:
-    engine = create_async_engine(database_url, connect_args={"check_same_thread": False})
+    engine = create_async_engine(
+        database_url, connect_args={"check_same_thread": False}
+    )
 
     async with engine.begin() as conn:
-        await conn.run_sync(lambda sync_conn: sync_conn.execute(text("PRAGMA journal_mode=WAL;")))
+        await conn.run_sync(
+            lambda sync_conn: sync_conn.execute(
+                text("PRAGMA journal_mode=WAL;")
+            )
+        )
 
     return engine
 
 
 async def make_async_session_local(engine: AsyncEngine) -> AsyncSession:
-    return async_sessionmaker(engine, expire_on_commit=False, autoflush=False, autocommit=False)
+    return async_sessionmaker(
+        engine, expire_on_commit=False, autoflush=False, autocommit=False
+    )
 
 
 @asynccontextmanager
 async def get_db_async():
-    engine = await make_async_engine(get_settings().ASYNC_DATABASE_PATH)
+    engine = await make_async_engine(get_settings().async_database_path)
     async_session = await make_async_session_local(engine)
     async with async_session() as session:
-        try: yield session
-        finally: await engine.dispose()
+        try:
+            yield session
+        finally:
+            await engine.dispose()

@@ -160,7 +160,7 @@ async def notify_about_expired_archives():
         user_archives[archive.author_id].append(archive)
 
     if user_archives:
-        fastmail = FastMail(get_settings().MAIL_CONFIG)
+        fastmail = FastMail(get_settings().mail_config)
         # notify users
         for email in user_archives:
             list_of_archives = "\n".join(
@@ -224,7 +224,7 @@ async def delete_stale_sheets():
     if not user_sheets:
         return
 
-    fastmail = FastMail(get_settings().MAIL_CONFIG)
+    fastmail = FastMail(get_settings().mail_config)
     # notify users
     for email in user_sheets:
         list_of_sheets = "\n".join(

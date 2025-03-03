@@ -11,12 +11,14 @@ class SubmitSheet(BaseModel):
     group_id: str = "default"
     tags: set[str] | None = set()
 
+
 class ArchiveUrl(BaseModel):
     url: str
     public: bool = False
     author_id: str | None
     group_id: str | None
     tags: set[str] | None = set()
+
 
 class ArchiveResult(BaseModel):
     id: str
