@@ -55,6 +55,7 @@ class GroupPermissions(BaseModel):
     max_monthly_mbs: int = 0
     priority: str = "low"
 
+    @classmethod
     @field_validator(
         "max_sheets",
         "max_archive_lifespan_months",
@@ -62,15 +63,16 @@ class GroupPermissions(BaseModel):
         "max_monthly_mbs",
         mode="before",
     )
-    def validate_max_values(self, v):
+    def validate_max_values(cls, v):
         if v < -1:
             raise ValueError(
                 "max_* values should be positive integers or -1 (for no limit)."
             )
         return v
 
+    @classmethod
     @field_validator("sheet_frequency", mode="before")
-    def validate_sheet_frequency(self, v):
+    def validate_sheet_frequency(cls, v):
         if not v:
             return []
         allowed = ["daily", "hourly"]
@@ -81,8 +83,9 @@ class GroupPermissions(BaseModel):
                 )
         return v
 
+    @classmethod
     @field_validator("priority", mode="before")
-    def validate_priority(self, v):
+    def validate_priority(cls, v):
         v = v.lower()
         if v not in ["low", "high"]:
             raise ValueError("priority must be either 'low' or 'high'.")
@@ -95,8 +98,9 @@ class GroupModel(BaseModel):
     orchestrator_sheet: str
     permissions: GroupPermissions
 
+    @classmethod
     @field_validator("orchestrator", "orchestrator_sheet", mode="before")
-    def validate_orchestrator(self, v):
+    def validate_orchestrator(cls, v):
         if not os.path.exists(v):
             raise ValueError(f"Orchestrator file not found with this path: {v}")
         return v
@@ -139,8 +143,8 @@ class UserGroupModel(BaseModel):
     domains: Dict[str, List[str]] = Field(default_factory=dict)
     groups: Dict[str, GroupModel] = Field(default_factory=dict)
 
-    @field_validator("users", mode="before")
     @classmethod
+    @field_validator("users", mode="before")
     def validate_emails(cls, v):
         for email in v.keys():
             if "@" not in email:
@@ -159,8 +163,8 @@ class UserGroupModel(BaseModel):
             for k, v in v.items()
         }
 
-    @field_validator("domains", mode="before")
     @classmethod
+    @field_validator("domains", mode="before")
     def validate_domains(cls, v):
         for domain, members in v.items():
             if "." not in domain:
@@ -176,8 +180,8 @@ class UserGroupModel(BaseModel):
             for k, v in v.items()
         }
 
-    @field_validator("groups", mode="before")
     @classmethod
+    @field_validator("groups", mode="before")
     def validate_groups(cls, v):
         if "default" not in v.keys():
             raise ValueError("Please include a 'default' group.")
