@@ -19,7 +19,8 @@ class UserGroups:
         user_groups = self.read_yaml(filename)
         self.validate_and_load(user_groups)
 
-    def read_yaml(self, user_groups_filename):
+    @staticmethod
+    def read_yaml(user_groups_filename):
         # read yaml safely
         with open(user_groups_filename) as inf:
             try:
@@ -61,7 +62,7 @@ class GroupPermissions(BaseModel):
         "max_monthly_mbs",
         mode="before",
     )
-    def validate_max_values(cls, v):
+    def validate_max_values(self, v):
         if v < -1:
             raise ValueError(
                 "max_* values should be positive integers or -1 (for no limit)."
@@ -69,7 +70,7 @@ class GroupPermissions(BaseModel):
         return v
 
     @field_validator("sheet_frequency", mode="before")
-    def validate_sheet_frequency(cls, v):
+    def validate_sheet_frequency(self, v):
         if not v:
             return []
         allowed = ["daily", "hourly"]
@@ -81,7 +82,7 @@ class GroupPermissions(BaseModel):
         return v
 
     @field_validator("priority", mode="before")
-    def validate_priority(cls, v):
+    def validate_priority(self, v):
         v = v.lower()
         if v not in ["low", "high"]:
             raise ValueError("priority must be either 'low' or 'high'.")
@@ -95,7 +96,7 @@ class GroupModel(BaseModel):
     permissions: GroupPermissions
 
     @field_validator("orchestrator", "orchestrator_sheet", mode="before")
-    def validate_orchestrator(cls, v):
+    def validate_orchestrator(self, v):
         if not os.path.exists(v):
             raise ValueError(f"Orchestrator file not found with this path: {v}")
         return v
@@ -171,7 +172,7 @@ class UserGroupModel(BaseModel):
                     f"Domain {domain} should have at least one member."
                 )
         return {
-            k.lower().strip(): list(set([g.lower().strip() for g in v]))
+            k.lower().strip(): list({[g.lower().strip() for g in v]})
             for k, v in v.items()
         }
 
@@ -189,15 +190,14 @@ class UserGroupModel(BaseModel):
 
     @model_validator(mode="after")
     def check_groups_consistency(self) -> Self:
-        groups_in_domains = set(
-            [g for domain in self.domains for g in self.domains[domain]]
-        )
-        groups_in_users = set(
-            [g for user in self.users for g in self.users[user]]
-        )
+        groups_in_domains = {
+            g for domain in self.domains for g in self.domains[domain]
+        }
+        groups_in_users = {g for user in self.users for g in self.users[user]}
         configured_groups = set(self.groups.keys())
 
-        # groups mentioned in domains and users should be defined, but this is not a ValueError since historical DB data may require it
+        # groups mentioned in domains and users should be defined, but this is
+        # not a ValueError since historical DB data may require it
         if groups_in_domains - configured_groups:
             logger.warning(
                 f"These groups are associated to DOMAINS but not defined in the GROUPS section, the domains settings may not work as expected: {groups_in_domains - configured_groups}"
