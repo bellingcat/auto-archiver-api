@@ -4,7 +4,7 @@ from typing import Dict
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
-from app.shared.schemas import ActiveUser
+from app.shared.schemas import ActiveUser, UsageResponse
 from app.shared.user_groups import GroupInfo
 from app.web.config import BREAKING_CHANGES, VERSION
 from app.web.db.user_state import UserState
@@ -51,7 +51,7 @@ def get_user_permissions(
 )
 def get_user_usage(
     user: UserState = get_user_state,
-) -> dict:
+) -> UsageResponse:
     if not user.active:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="User is not active."
