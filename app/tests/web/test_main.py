@@ -7,6 +7,7 @@ import alembic.config
 import pytest
 from fastapi.testclient import TestClient
 
+from app.web.main import app_factory
 from app.web.utils.metrics import EXCEPTION_COUNTER
 
 
@@ -59,7 +60,6 @@ def test_serve_local_archive_logic(get_settings):
     try:
         # modify the settings
         get_settings.SERVE_LOCAL_ARCHIVE = "/app/local_archive_test"
-        from app.web.main import app_factory
 
         app = app_factory(get_settings)
 
