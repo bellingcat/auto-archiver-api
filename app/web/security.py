@@ -1,10 +1,10 @@
 import secrets
+from http import HTTPStatus
 
 import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from loguru import logger
-from sqlalchemy.orm import Session
 
 from app.shared.db.database import get_db_dependency
 from app.shared.settings import get_settings
@@ -72,13 +72,13 @@ async def get_user_auth(
 
 def authenticate_user(access_token):
     # https://cloud.google.com/docs/authentication/token-types#access
-    if type(access_token) != str or len(access_token) < 10:
+    if not isinstance(access_token, str) or len(access_token) < 10:
         return False, "invalid access_token"
     r = requests.get(
         "https://oauth2.googleapis.com/tokeninfo",
         {"access_token": access_token},
     )
-    if r.status_code != 200:
+    if r.status_code != HTTPStatus.OK:
         return False, "invalid token"
     try:
         j = r.json()
@@ -99,8 +99,5 @@ def authenticate_user(access_token):
         return False, "exception occurred"
 
 
-def get_user_state(
-    email: str = Depends(get_user_auth),
-    db: Session = Depends(get_db_dependency),
-):
-    return UserState(db, email)
+def get_user_state():
+    return UserState(Depends(get_db_dependency), Depends(get_user_auth))

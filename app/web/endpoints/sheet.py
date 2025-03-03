@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.shared import schemas
 from app.shared.db.database import get_db_dependency
+from app.shared.db.models import Sheet
 from app.shared.task_messaging import get_celery
 from app.web.db import crud
 from app.web.db.user_state import UserState
@@ -27,7 +28,7 @@ celery = get_celery()
 )
 def create_sheet(
     sheet: schemas.SheetAdd,
-    user: UserState = Depends(get_user_state),
+    user: UserState = get_user_state,
     db: Session = Depends(get_db_dependency),
 ) -> schemas.SheetResponse:
     if not user.in_group(sheet.group_id):
@@ -70,35 +71,35 @@ def create_sheet(
     summary="Get the authenticated user's Google Sheets.",
 )
 def get_user_sheets(
-    user: UserState = Depends(get_user_state),
+    user: UserState = get_user_state,
     db: Session = Depends(get_db_dependency),
-) -> list[schemas.SheetResponse]:
+) -> list[Sheet]:
     return crud.get_user_sheets(db, user.email)
 
 
-@sheet_router.delete("/{id}", summary="Delete a Google Sheet by ID.")
+@sheet_router.delete("/{sheet_id}", summary="Delete a Google Sheet by ID.")
 def delete_sheet(
-    id: str,
+    sheet_id: str,
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> schemas.DeleteResponse:
+) -> JSONResponse:
     return JSONResponse(
-        {"id": id, "deleted": crud.delete_sheet(db, id, user.email)}
+        {"id": id, "deleted": crud.delete_sheet(db, sheet_id, user.email)}
     )
 
 
 @sheet_router.post(
-    "/{id}/archive",
+    "/{sheet_id}/archive",
     status_code=HTTPStatus.CREATED,
     summary="Trigger an archiving task for a GSheet you own.",
     response_description="task_id for the archiving task.",
 )
 def archive_user_sheet(
-    id: str,
+    sheet_id: str,
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> schemas.Task:
-    sheet = crud.get_user_sheet(db, user.email, sheet_id=id)
+) -> JSONResponse:
+    sheet = crud.get_user_sheet(db, user.email, sheet_id=sheet_id)
     if not sheet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="No access to this sheet."
@@ -121,7 +122,7 @@ def archive_user_sheet(
         "create_sheet_task",
         args=[
             schemas.SubmitSheet(
-                sheet_id=id, author_id=user.email, group_id=sheet.group_id
+                sheet_id=sheet_id, author_id=user.email, group_id=sheet.group_id
             ).model_dump_json()
         ],
     ).apply_async(**group_queue)
