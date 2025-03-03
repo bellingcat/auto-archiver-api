@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.shared.settings import get_settings
+from app.shared.settings import Settings, get_settings
 from app.shared.task_messaging import get_celery
 from app.web.config import API_DESCRIPTION, VERSION
 from app.web.endpoints.default import default_router
@@ -22,8 +22,11 @@ from app.web.security import token_api_key_auth
 celery = get_celery()
 
 
-def app_factory():
-    settings = get_settings()
+def app_factory(settings: Settings = None):
+    # TODO: Create dev, test, and prod versions of settings that do not have
+    # TODO: to be passed in as a parameter
+    if settings is None:
+        settings = get_settings()
 
     app = FastAPI(
         title="Auto-Archiver API",
