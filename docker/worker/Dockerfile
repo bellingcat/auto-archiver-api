@@ -20,14 +20,14 @@ RUN apt update -y && \
 	python3 -m venv ./poetry-venv && \
     ./poetry-venv/bin/python -m pip install --upgrade pip && \
     ./poetry-venv/bin/python -m pip install "poetry>=2.0.0,<3.0.0"
-COPY pyproject.toml poetry.lock ./
+COPY ../../pyproject.toml ../../poetry.lock ./
 RUN ./poetry-venv/bin/poetry install --without dev --no-root --no-cache
 
 # install dependencies
 
 # copy source code and .env files over
-COPY alembic.ini ./
-COPY ./app/ ./app/
-COPY user-groups.* ./app/
+COPY ../../alembic.ini ./
+COPY ../../app ./app/
+COPY ../../user-groups.* ./app/
 
 ENTRYPOINT ["./poetry-venv/bin/poetry", "run"]
