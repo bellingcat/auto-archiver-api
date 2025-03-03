@@ -38,7 +38,7 @@ def submit_manual_archive(
         log_error(e)
         raise HTTPException(
             status_code=422, detail="Invalid JSON in result field."
-        )
+        ) from e
     manual.author_id = manual.author_id or ALLOW_ANY_EMAIL
     manual.tags.add("manual")
 
@@ -72,4 +72,4 @@ def submit_manual_archive(
         raise HTTPException(
             status_code=422,
             detail="Cannot insert into DB due to integrity error, likely duplicate urls.",
-        )
+        ) from e
