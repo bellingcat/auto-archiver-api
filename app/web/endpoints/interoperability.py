@@ -1,4 +1,5 @@
 import json
+from http import HTTPStatus
 
 import sqlalchemy
 from auto_archiver.core import Metadata
@@ -24,7 +25,7 @@ interoperability_router = APIRouter(
 # ----- endpoint to submit data archived elsewhere
 @interoperability_router.post(
     "/submit-archive",
-    status_code=201,
+    status_code=HTTPStatus.CREATED,
     summary="Submit a manual archive entry, for data that was archived elsewhere.",
 )
 def submit_manual_archive(
@@ -37,7 +38,8 @@ def submit_manual_archive(
     except json.JSONDecodeError as e:
         log_error(e)
         raise HTTPException(
-            status_code=422, detail="Invalid JSON in result field."
+            status_code=HTTPStatus.PRECONDITION_FAILED,
+            detail="Invalid JSON in result field.",
         ) from e
     manual.author_id = manual.author_id or ALLOW_ANY_EMAIL
     manual.tags.add("manual")
@@ -66,10 +68,12 @@ def submit_manual_archive(
         logger.debug(
             f"[MANUAL ARCHIVE STORED] {db_archive.author_id} {db_archive.url}"
         )
-        return JSONResponse({"id": db_archive.id}, status_code=201)
+        return JSONResponse(
+            {"id": db_archive.id}, status_code=HTTPStatus.CREATED
+        )
     except sqlalchemy.exc.IntegrityError as e:
         log_error(e)
         raise HTTPException(
-            status_code=422,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail="Cannot insert into DB due to integrity error, likely duplicate urls.",
         ) from e
