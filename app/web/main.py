@@ -21,13 +21,17 @@ from app.web.security import token_api_key_auth
 
 celery = get_celery()
 
-def app_factory(settings = get_settings()):
+
+def app_factory(settings=get_settings()):
     app = FastAPI(
         title="Auto-Archiver API",
         description=API_DESCRIPTION,
         version=VERSION,
-        contact={"name": "GitHub", "url": "https://github.com/bellingcat/auto-archiver-api"},
-        lifespan=lifespan
+        contact={
+            "name": "GitHub",
+            "url": "https://github.com/bellingcat/auto-archiver-api",
+        },
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -46,14 +50,30 @@ def app_factory(settings = get_settings()):
     app.include_router(interoperability_router)
 
     # prometheus exposed in /metrics with authentication
-    Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics", "/health", "/openapi.json", "/favicon.ico"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
+    Instrumentator(
+        should_group_status_codes=False,
+        excluded_handlers=[
+            "/metrics",
+            "/health",
+            "/openapi.json",
+            "/favicon.ico",
+        ],
+    ).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
 
     if settings.SERVE_LOCAL_ARCHIVE:
         local_dir = settings.SERVE_LOCAL_ARCHIVE
-        if not os.path.isdir(local_dir) and os.path.isdir(local_dir.replace("/app", ".")):
+        if not os.path.isdir(local_dir) and os.path.isdir(
+            local_dir.replace("/app", ".")
+        ):
             local_dir = local_dir.replace("/app", ".")
         if len(settings.SERVE_LOCAL_ARCHIVE) > 1 and os.path.isdir(local_dir):
-            logger.warning(f"MOUNTing local archive, use this in development only {settings.SERVE_LOCAL_ARCHIVE}")
-            app.mount(settings.SERVE_LOCAL_ARCHIVE, StaticFiles(directory=local_dir), name=settings.SERVE_LOCAL_ARCHIVE)
+            logger.warning(
+                f"MOUNTing local archive, use this in development only {settings.SERVE_LOCAL_ARCHIVE}"
+            )
+            app.mount(
+                settings.SERVE_LOCAL_ARCHIVE,
+                StaticFiles(directory=local_dir),
+                name=settings.SERVE_LOCAL_ARCHIVE,
+            )
 
     return app

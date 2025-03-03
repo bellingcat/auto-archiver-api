@@ -1,4 +1,3 @@
-
 from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,7 +15,9 @@ default_router = APIRouter()
 
 @default_router.get("/")
 async def home():
-    return JSONResponse({"version": VERSION, "breakingChanges": BREAKING_CHANGES})
+    return JSONResponse(
+        {"version": VERSION, "breakingChanges": BREAKING_CHANGES}
+    )
 
 
 @default_router.get("/health")
@@ -24,20 +25,29 @@ async def health():
     return JSONResponse({"status": "ok"})
 
 
-@default_router.get("/user/active", summary="Check if the user is active and can use the tool.")
+@default_router.get(
+    "/user/active", summary="Check if the user is active and can use the tool."
+)
 async def active(
     user: UserState = Depends(get_user_state),
 ) -> ActiveUser:
     return {"active": user.active}
 
 
-@default_router.get("/user/permissions", summary="Get the user's global 'all' permissions and the permissions for each group they belong to.")
+@default_router.get(
+    "/user/permissions",
+    summary="Get the user's global 'all' permissions and the permissions for each group they belong to.",
+)
 def get_user_permissions(
     user: UserState = Depends(get_user_state),
 ) -> Dict[str, GroupInfo]:
     return user.permissions
 
-@default_router.get("/user/usage", summary="Get the user's monthly URLs/MBs usage along with the total active sheets, breakdown by group.")
+
+@default_router.get(
+    "/user/usage",
+    summary="Get the user's monthly URLs/MBs usage along with the total active sheets, breakdown by group.",
+)
 def get_user_usage(
     user: UserState = Depends(get_user_state),
 ) -> UsageResponse:
@@ -46,7 +56,6 @@ def get_user_usage(
     return user.usage()
 
 
-
-@default_router.get('/favicon.ico', include_in_schema=False)
+@default_router.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> FileResponse:
     return FileResponse("app/web/static/favicon.ico")
