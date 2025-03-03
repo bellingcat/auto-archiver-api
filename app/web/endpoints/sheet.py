@@ -28,7 +28,7 @@ celery = get_celery()
 )
 def create_sheet(
     sheet: schemas.SheetAdd,
-    user: UserState = get_user_state,
+    user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
 ) -> schemas.SheetResponse:
     if not user.in_group(sheet.group_id):
@@ -71,7 +71,7 @@ def create_sheet(
     summary="Get the authenticated user's Google Sheets.",
 )
 def get_user_sheets(
-    user: UserState = get_user_state,
+    user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
 ) -> list[Sheet]:
     return crud.get_user_sheets(db, user.email)
