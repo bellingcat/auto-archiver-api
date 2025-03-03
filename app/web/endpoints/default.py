@@ -4,6 +4,7 @@ from typing import Dict
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
+from app.shared.schemas import ActiveUser
 from app.shared.user_groups import GroupInfo
 from app.web.config import BREAKING_CHANGES, VERSION
 from app.web.db.user_state import UserState
@@ -30,7 +31,7 @@ async def health():
 )
 async def active(
     user: UserState = get_user_state,
-) -> dict[str, bool]:
+) -> ActiveUser:
     return {"active": user.active}
 
 
