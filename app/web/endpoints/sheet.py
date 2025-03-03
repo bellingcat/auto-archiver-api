@@ -73,7 +73,7 @@ def create_sheet(
 def get_user_sheets(
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> list[Sheet]:
+) -> list[schemas.SheetResponse]:
     return crud.get_user_sheets(db, user.email)
 
 
