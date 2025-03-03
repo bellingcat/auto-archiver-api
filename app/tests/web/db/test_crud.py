@@ -712,7 +712,11 @@ async def test_find_by_store_until(async_db_session):
 
 @pytest.mark.asyncio
 async def test_get_sheets_by_id_hash(async_db_session):
-    author_emails = ["rick@example.com", "morty@example.com", "jerry@example.com"]
+    author_emails = [
+        "rick@example.com",
+        "morty@example.com",
+        "jerry@example.com",
+    ]
 
     # Add test data
     sheets = [
