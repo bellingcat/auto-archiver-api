@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from cachetools import LRUCache, cached
 from cachetools.keys import hashkey
 from loguru import logger
-from sqlalchemy import Column, func, or_, select
+from sqlalchemy import Column, false, func, not_, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, load_only
 
@@ -31,7 +31,7 @@ def base_query(db: Session):
     # .with_entities() if needed
     return (
         db.query(models.Archive)
-        .filter(models.Archive.deleted == False)
+        .filter(not_(models.Archive.deleted))
         .options(
             load_only(
                 models.Archive.id,
@@ -62,8 +62,8 @@ def search_archives_by_url(
     if email != ALLOW_ANY_EMAIL:
         or_filters = [models.Archive.author_id == email]
         if read_public:
-            or_filters.append(models.Archive.public == True)
-        if read_groups == True:
+            or_filters.append(models.Archive.public.is_(true()))
+        if read_groups is True:
             or_filters.append(models.Archive.group_id.isnot(None))
         else:
             or_filters.append(models.Archive.group_id.in_(read_groups))
@@ -104,7 +104,7 @@ def soft_delete_archive(db: Session, id: str, email: str) -> bool:
         .filter(
             models.Archive.id == id,
             models.Archive.author_id == email,
-            models.Archive.deleted == False,
+            models.Archive.deleted.is_(false()),
         )
         .first()
     )
@@ -143,14 +143,14 @@ async def find_by_store_until(
 ) -> list[models.Archive]:
     res = await db.execute(
         select(models.Archive).filter(
-            models.Archive.deleted == False,
+            models.Archive.deleted.is_(false()),
             models.Archive.store_until < store_until_is_before,
         )
     )
     return res.scalars()
 
 
-async def soft_delete_expired_archives(db: AsyncSession) -> dict:
+async def soft_delete_expired_archives(db: AsyncSession) -> int:
     to_delete = await find_by_store_until(db, datetime.now())
     counter = 0
     for archive in to_delete:
