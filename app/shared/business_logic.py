@@ -11,7 +11,7 @@ from app.shared.db import worker_crud
 def get_store_archive_until(db: Session, group_id: str) -> datetime.datetime:
     group = worker_crud.get_group(db, group_id)
     assert group, f"Group {group_id} not found."
-    assert group.permissions and type(group.permissions) == dict, (
+    assert group.permissions and isinstance(group.permissions, dict), (
         f"Group {group_id} has no permissions."
     )
 
