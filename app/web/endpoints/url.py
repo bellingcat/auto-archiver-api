@@ -1,4 +1,5 @@
 from datetime import datetime
+from http import HTTPStatus
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -23,7 +24,7 @@ celery = get_celery()
 
 @url_router.post(
     "/archive",
-    status_code=201,
+    status_code=HTTPStatus.CREATED,
     summary="Submit a single URL archive request, starts an archiving task.",
     response_description="task_id for the archiving task, will match the archive id.",
 )
@@ -38,7 +39,9 @@ def archive_url(
 
     parsed_url = urlparse(archive.url)
     if not all([parsed_url.scheme, parsed_url.netloc]):
-        raise HTTPException(status_code=400, detail="Invalid URL received.")
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid URL received."
+        )
 
     archive_create = schemas.ArchiveCreate(**archive.model_dump())
     if email != ALLOW_ANY_EMAIL:
@@ -46,17 +49,17 @@ def archive_url(
         user = UserState(db, email)
         if archive.group_id and not user.in_group(archive.group_id):
             raise HTTPException(
-                status_code=403,
+                status_code=HTTPStatus.FORBIDDEN,
                 detail="User does not have access to this group.",
             )
         if not user.has_quota_max_monthly_urls(archive.group_id):
             raise HTTPException(
-                status_code=429,
+                status_code=HTTPStatus.TOO_MANY_REQUESTS,
                 detail="User has reached their monthly URL quota.",
             )
         if not user.has_quota_max_monthly_mbs(archive.group_id):
             raise HTTPException(
-                status_code=429,
+                status_code=HTTPStatus.TOO_MANY_REQUESTS,
                 detail="User has reached their monthly MB quota.",
             )
         group_queue = user.priority_group(archive_create.group_id)
@@ -68,7 +71,9 @@ def archive_url(
         "create_archive_task", args=[archive_create.model_dump_json()]
     ).apply_async(**group_queue)
     task_response = schemas.Task(id=task.id)
-    return JSONResponse(task_response.model_dump(), status_code=201)
+    return JSONResponse(
+        task_response.model_dump(), status_code=HTTPStatus.CREATED
+    )
 
 
 @url_router.get("/search", summary="Search for archive entries by URL.")
@@ -86,7 +91,8 @@ def search_by_url(
         user = UserState(db, email)
         if not user.read and not user.read_public:
             raise HTTPException(
-                status_code=403, detail="User does not have read access."
+                status_code=HTTPStatus.FORBIDDEN,
+                detail="User does not have read access.",
             )
         read_groups = user.read
         read_public = user.read_public

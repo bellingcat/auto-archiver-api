@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import exc
@@ -20,7 +22,7 @@ celery = get_celery()
 
 @sheet_router.post(
     "/create",
-    status_code=201,
+    status_code=HTTPStatus.CREATED,
     summary="Store a new Google Sheet for regular archiving.",
 )
 def create_sheet(
@@ -30,18 +32,20 @@ def create_sheet(
 ) -> schemas.SheetResponse:
     if not user.in_group(sheet.group_id):
         raise HTTPException(
-            status_code=403, detail="User does not have access to this group."
+            status_code=HTTPStatus.FORBIDDEN,
+            detail="User does not have access to this group.",
         )
 
     if not user.has_quota_monthly_sheets(sheet.group_id):
         raise HTTPException(
-            status_code=429,
+            status_code=HTTPStatus.TOO_MANY_REQUESTS,
             detail="User has reached their sheet quota for this group.",
         )
 
     if not user.is_sheet_frequency_allowed(sheet.group_id, sheet.frequency):
         raise HTTPException(
-            status_code=422, detail="Invalid frequency selected for this group."
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail="Invalid frequency selected for this group.",
         )
 
     try:
@@ -55,14 +59,14 @@ def create_sheet(
         )
     except exc.IntegrityError as e:
         raise HTTPException(
-            status_code=400,
+            status_code=HTTPStatus.BAD_REQUEST,
             detail="Sheet with this ID is already being archived.",
         ) from e
 
 
 @sheet_router.get(
     "/mine",
-    status_code=200,
+    status_code=HTTPStatus.OK,
     summary="Get the authenticated user's Google Sheets.",
 )
 def get_user_sheets(
@@ -85,7 +89,7 @@ def delete_sheet(
 
 @sheet_router.post(
     "/{id}/archive",
-    status_code=201,
+    status_code=HTTPStatus.CREATED,
     summary="Trigger an archiving task for a GSheet you own.",
     response_description="task_id for the archiving task.",
 )
@@ -96,16 +100,19 @@ def archive_user_sheet(
 ) -> schemas.Task:
     sheet = crud.get_user_sheet(db, user.email, sheet_id=id)
     if not sheet:
-        raise HTTPException(status_code=403, detail="No access to this sheet.")
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="No access to this sheet."
+        )
 
     if not user.in_group(sheet.group_id):
         raise HTTPException(
-            status_code=403, detail="User does not have access to this group."
+            status_code=HTTPStatus.FORBIDDEN,
+            detail="User does not have access to this group.",
         )
 
     if not user.can_manually_trigger(sheet.group_id):
         raise HTTPException(
-            status_code=429,
+            status_code=HTTPStatus.TOO_MANY_REQUESTS,
             detail="User cannot manually trigger sheet archiving in this group.",
         )
 
@@ -119,4 +126,4 @@ def archive_user_sheet(
         ],
     ).apply_async(**group_queue)
 
-    return JSONResponse({"id": task.id}, status_code=201)
+    return JSONResponse({"id": task.id}, status_code=HTTPStatus.CREATED)
