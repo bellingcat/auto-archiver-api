@@ -38,7 +38,7 @@ def submit_manual_archive(
     except json.JSONDecodeError as e:
         log_error(e)
         raise HTTPException(
-            status_code=HTTPStatus.PRECONDITION_FAILED,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail="Invalid JSON in result field.",
         ) from e
     manual.author_id = manual.author_id or ALLOW_ANY_EMAIL
