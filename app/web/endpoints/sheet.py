@@ -83,7 +83,7 @@ def delete_sheet(
     db: Session = Depends(get_db_dependency),
 ) -> JSONResponse:
     return JSONResponse(
-        {"id": id, "deleted": crud.delete_sheet(db, sheet_id, user.email)}
+        {"id": sheet_id, "deleted": crud.delete_sheet(db, sheet_id, user.email)}
     )
 
 
