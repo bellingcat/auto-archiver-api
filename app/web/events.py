@@ -27,7 +27,6 @@ from app.web.utils.metrics import (
     redis_subscribe_worker_exceptions,
 )
 
-
 celery = get_celery()
 
 
@@ -38,9 +37,14 @@ async def lifespan(app: FastAPI):
     # STARTUP
     engine = make_engine(get_settings().DATABASE_PATH)
     models.Base.metadata.create_all(bind=engine)
-    alembic.config.main(prog="alembic", argv=['--raiseerr', 'upgrade', 'head'])
+    alembic.config.main(prog="alembic", argv=["-c",
+                                              "./app/migrations/alembic.ini",
+                                              '--raiseerr',
+                                              'upgrade',
+                                              'head'])
     logging.getLogger("uvicorn.access").disabled = True  # loguru
-    asyncio.create_task(redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL))
+    asyncio.create_task(
+        redis_subscribe_worker_exceptions(get_settings().REDIS_EXCEPTIONS_CHANNEL))
     asyncio.create_task(repeat_measure_regular_metrics())
     with get_db() as db:
         crud.upsert_user_groups(db)
@@ -71,9 +75,11 @@ async def lifespan(app: FastAPI):
 
 
 # CRON JOBS
-@repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS, on_exception=increase_exceptions_counter)
+@repeat_every(seconds=get_settings().REPEAT_COUNT_METRICS_SECONDS,
+              on_exception=increase_exceptions_counter)
 async def repeat_measure_regular_metrics():
-    await measure_regular_metrics(get_settings().DATABASE_PATH, get_settings().REPEAT_COUNT_METRICS_SECONDS)
+    await measure_regular_metrics(get_settings().DATABASE_PATH,
+                                  get_settings().REPEAT_COUNT_METRICS_SECONDS)
 
 
 @repeat_every(seconds=60, wait_first=120, on_exception=increase_exceptions_counter)
@@ -90,22 +96,29 @@ async def archive_sheets_cronjob(frequency: str, interval: int, current_time_uni
     triggered_jobs = []
 
     async with get_db_async() as db:
-        sheets = await crud.get_sheets_by_id_hash(db, frequency, interval, current_time_unit)
+        sheets = await crud.get_sheets_by_id_hash(db, frequency, interval,
+                                                  current_time_unit)
         for s in sheets:
             group_queue = await crud.get_group_priority_async(db, s.group_id)
-            task = celery.signature("create_sheet_task", args=[schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id, group_id=s.group_id).model_dump_json()]).apply_async(**group_queue)
+            task = celery.signature("create_sheet_task", args=[
+                schemas.SubmitSheet(sheet_id=s.id, author_id=s.author_id,
+                                    group_id=s.group_id).model_dump_json()]).apply_async(
+                **group_queue)
 
             triggered_jobs.append({"sheet_id": s.id, "task_id": task.id})
-    logger.debug(f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")
+    logger.debug(
+        f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}")
 
 
 # TODO: on exception should logerror but also prometheus counter
 DELETE_WINDOW = get_settings().DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS * 24 * 60 * 60
 
 
-@repeat_every(seconds=DELETE_WINDOW, wait_first=180, on_exception=increase_exceptions_counter)
+@repeat_every(seconds=DELETE_WINDOW, wait_first=180,
+              on_exception=increase_exceptions_counter)
 async def notify_about_expired_archives():
-    notify_from = datetime.datetime.now() + datetime.timedelta(days=get_settings().DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS)
+    notify_from = datetime.datetime.now() + datetime.timedelta(
+        days=get_settings().DELETE_SCHEDULED_ARCHIVES_CHECK_EVERY_N_DAYS)
     async with get_db_async() as db:
         scheduled_deletions = await crud.find_by_store_until(db, notify_from)
 
@@ -117,7 +130,9 @@ async def notify_about_expired_archives():
         fastmail = FastMail(get_settings().MAIL_CONFIG)
         # notify users
         for email in user_archives:
-            list_of_archives = "\n".join([f'{a.url}, {a.id}, {a.store_until.isoformat()}<br/>' for a in user_archives[email]])
+            list_of_archives = "\n".join(
+                [f'{a.url}, {a.id}, {a.store_until.isoformat()}<br/>' for a in
+                 user_archives[email]])
             # TODO: how can users download them in bulk?
             message = MessageSchema(
                 subject="Auto Archiver: Archives Scheduled for Deletion",
@@ -140,13 +155,15 @@ async def notify_about_expired_archives():
                 subtype=MessageType.html
             )
             await fastmail.send_message(message)
-            logger.debug(f"[CRON] Email sent to {email} about {len(user_archives[email])} scheduled archives deletion.")
+            logger.debug(
+                f"[CRON] Email sent to {email} about {len(user_archives[email])} scheduled archives deletion.")
 
     # now schedule the deletion event
     asyncio.create_task(delete_expired_archives())
 
 
-@repeat_every(max_repetitions=1, wait_first=10, seconds=0, on_exception=increase_exceptions_counter)
+@repeat_every(max_repetitions=1, wait_first=10, seconds=0,
+              on_exception=increase_exceptions_counter)
 async def delete_expired_archives():
     async with get_db_async() as db:
         count_deleted = await crud.soft_delete_expired_archives(db)
@@ -166,7 +183,9 @@ async def delete_stale_sheets():
     fastmail = FastMail(get_settings().MAIL_CONFIG)
     # notify users
     for email in user_sheets:
-        list_of_sheets = "\n".join([f'<li><a href="https://docs.google.com/spreadsheets/d/{s.id}">{s.name}</a></li>' for s in user_sheets[email]])
+        list_of_sheets = "\n".join([
+                                       f'<li><a href="https://docs.google.com/spreadsheets/d/{s.id}">{s.name}</a></li>'
+                                       for s in user_sheets[email]])
         message = MessageSchema(
             subject="Auto Archiver: Stale Sheets Removed",
             recipients=[email],
