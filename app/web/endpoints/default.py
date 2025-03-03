@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from typing import Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.shared.schemas import ActiveUser, UsageResponse
@@ -30,7 +30,7 @@ async def health():
     "/user/active", summary="Check if the user is active and can use the tool."
 )
 async def active(
-    user: UserState = get_user_state,
+    user: UserState = Depends(get_user_state),
 ) -> ActiveUser:
     return {"active": user.active}
 
@@ -40,7 +40,7 @@ async def active(
     summary="Get the user's global 'all' permissions and the permissions for each group they belong to.",
 )
 def get_user_permissions(
-    user: UserState = get_user_state,
+    user: UserState = Depends(get_user_state),
 ) -> Dict[str, GroupInfo]:
     return user.permissions
 
@@ -50,7 +50,7 @@ def get_user_permissions(
     summary="Get the user's monthly URLs/MBs usage along with the total active sheets, breakdown by group.",
 )
 def get_user_usage(
-    user: UserState = get_user_state,
+    user: UserState = Depends(get_user_state),
 ) -> UsageResponse:
     if not user.active:
         raise HTTPException(

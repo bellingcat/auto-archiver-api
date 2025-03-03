@@ -5,6 +5,7 @@ import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from loguru import logger
+from sqlalchemy.orm import Session
 
 from app.shared.db.database import get_db_dependency
 from app.shared.settings import get_settings
@@ -42,7 +43,7 @@ def api_key_auth(api_key):
     return auth
 
 
-# --------------------- Token Auth for AA itself to query the API, AA setup tool and Prometheus
+# --- Token Auth for AA itself to query the API, AA setup tool and Prometheus
 token_api_key_auth = api_key_auth(settings.API_BEARER_TOKEN)
 
 
@@ -99,5 +100,8 @@ def authenticate_user(access_token):
         return False, "exception occurred"
 
 
-def get_user_state():
-    return UserState(Depends(get_db_dependency), Depends(get_user_auth))
+def get_user_state(
+    email: str = Depends(get_user_auth),
+    db: Session = Depends(get_db_dependency),
+):
+    return UserState(db, email)
