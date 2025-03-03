@@ -116,7 +116,7 @@ async def archive_sheets_cronjob(
 
     async with get_db_async() as db:
         sheets = await crud.get_sheets_by_id_hash(
-            db, frequency, interval, current_time_unit
+            db, frequency, str(interval), current_time_unit
         )
         for s in sheets:
             group_queue = await crud.get_group_priority_async(db, s.group_id)
