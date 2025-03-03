@@ -8,6 +8,7 @@ from app.shared.db import worker_crud
 # TODO: temporary file for this code, maybe other code belongs here, maybe not. do
 #  decide
 
+
 def get_store_archive_until(db: Session, group_id: str) -> datetime.datetime:
     group = worker_crud.get_group(db, group_id)
     assert group, f"Group {group_id} not found."
@@ -23,7 +24,7 @@ def get_store_archive_until(db: Session, group_id: str) -> datetime.datetime:
 
 
 def get_store_archive_until_or_never(
-        db: Session, group_id: str
+    db: Session, group_id: str
 ) -> datetime.datetime:
     try:
         return get_store_archive_until(db, group_id)
