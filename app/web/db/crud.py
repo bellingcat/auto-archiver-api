@@ -1,14 +1,26 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
+from typing import Any
 
 from cachetools import LRUCache, cached
 from cachetools.keys import hashkey
 from loguru import logger
-from sqlalchemy import Column, false, func, not_, or_, select, true
+from sqlalchemy import (
+    Column,
+    ColumnElement,
+    ScalarResult,
+    false,
+    func,
+    not_,
+    or_,
+    select,
+    true,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, load_only
 
 from app.shared.db import models
+from app.shared.db.models import Archive
 from app.shared.settings import get_settings
 from app.shared.user_groups import UserGroups
 from app.shared.utils.misc import fnv1a_hash_mod
@@ -140,7 +152,7 @@ def count_by_user_since(db: Session, seconds_delta: int = 15):
 
 async def find_by_store_until(
     db: AsyncSession, store_until_is_before: datetime
-) -> list[models.Archive]:
+) -> ScalarResult[Archive]:
     res = await db.execute(
         select(models.Archive).filter(
             models.Archive.deleted.is_(false()),
@@ -172,7 +184,9 @@ async def get_group_priority_async(db: AsyncSession, group_id: str) -> dict:
 
 
 @cached(cache=LRUCache(maxsize=128), key=lambda db, email: hashkey(email))
-def get_user_group_names(db: Session, email: str) -> list[str]:
+def get_user_group_names(
+    db: Session, email: str
+) -> list[Any] | list[ColumnElement[Any]]:
     """
     given an email retrieves the user groups from the DB and then the
     email-domain groups from a global variable, the email does not need to
@@ -308,7 +322,8 @@ def upsert_user_groups(db: Session):
             )
 
     # reinsert users in their EXPLICITLY DEFINED groups
-    # domain groups are check live, as there may be new users that are not explicitly registered but belong to a domain
+    # domain groups are check live, as there may be new users that are not
+    # explicitly registered but belong to a domain
     for email, explicit_groups in ug.users.items():
         explicit_groups = explicit_groups or []
         logger.info(f"EXPLICIT {display_email_pii(email)} => {explicit_groups}")
