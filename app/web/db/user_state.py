@@ -20,14 +20,14 @@ class UserState:
     def __init__(self, db: Session, email: str):
         self.db = db
         self.email = email.lower()
+        self._permissions = {}
 
     @property
     def permissions(self) -> Dict[str, GroupInfo]:
         """
         Returns a dict of all group permissions and a special {"all": read/archive_url/archive_sheet} key
         """
-        if not hasattr(self, "_permissions"):
-            self._permissions = {}
+        if not self._permissions:
             self._permissions["all"] = GroupInfo(
                 read=self.read,
                 read_public=self.read_public,
