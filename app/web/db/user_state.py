@@ -217,7 +217,7 @@ class UserState:
     def in_group(self, group_id: str) -> bool:
         return group_id in self.user_groups_names
 
-    def usage(self) -> Dict:
+    def usage(self) -> UsageResponse:
         """
         returns the monthly quotas for the URLs/MBs and the totals for Sheets
         """
@@ -419,7 +419,7 @@ class UserState:
 
         return frequency in self.permissions[group_id].sheet_frequency
 
-    def priority_group(self, group_id: str) -> str:
+    def priority_group(self, group_id: str) -> dict:
         priority = "low"
         for group in self.user_groups:
             if group.id != group_id:
