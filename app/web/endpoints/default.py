@@ -15,14 +15,14 @@ default_router = APIRouter()
 
 
 @default_router.get("/")
-async def home():
+async def home() -> JSONResponse:
     return JSONResponse(
         {"version": VERSION, "breakingChanges": BREAKING_CHANGES}
     )
 
 
 @default_router.get("/health")
-async def health():
+async def health() -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
