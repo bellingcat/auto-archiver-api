@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Type
 
 from cachetools import LRUCache, cached
 from cachetools.keys import hashkey
@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, load_only
 
 from app.shared.db import models
-from app.shared.db.models import Archive
+from app.shared.db.models import Archive, Group
 from app.shared.settings import get_settings
 from app.shared.user_groups import UserGroups
 from app.shared.utils.misc import fnv1a_hash_mod
@@ -67,7 +67,7 @@ def search_archives_by_url(
     archived_after: datetime = None,
     archived_before: datetime = None,
     absolute_search: bool = False,
-) -> list[models.Archive]:
+) -> list[Type[Archive]]:
     # searches for partial URLs, if email is * no ownership
     # (or read/read_public) filtering happens
     query = base_query(db)
@@ -220,7 +220,7 @@ def get_user_group_names(
 
 def get_user_groups_by_name(
     db: Session, groups: list[str]
-) -> list[models.Group]:
+) -> list[Type[Group]]:
     return db.query(models.Group).filter(models.Group.id.in_(groups)).all()
 
 
@@ -395,7 +395,7 @@ async def get_sheets_by_id_hash(
     )
     filtered = []
     for sheet in result.scalars():
-        if fnv1a_hash_mod(sheet.id, modulo) == id_hash:
+        if fnv1a_hash_mod(sheet.id, int(modulo)) == id_hash:
             filtered.append(sheet)
     return filtered
 
