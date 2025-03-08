@@ -32,7 +32,7 @@ def archive_url(
     archive: schemas.ArchiveTrigger,
     email=Depends(get_token_or_user_auth),
     db: Session = Depends(get_db_dependency),
-) -> schemas.Task:
+) -> JSONResponse:
     logger.info(
         f"new {archive.public=} task for {email=} and {archive.group_id=}: {archive.url}"
     )
@@ -114,7 +114,7 @@ def delete_archive(
     id: str,
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> schemas.DeleteResponse:
+) -> JSONResponse:
     logger.info(f"deleting url archive task {id} request by {user.email}")
     return JSONResponse(
         {"id": id, "deleted": crud.soft_delete_archive(db, id, user.email)}
