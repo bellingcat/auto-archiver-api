@@ -17,7 +17,7 @@ settings = get_settings()
 bearer_security = HTTPBearer()
 
 
-def secure_compare(token, api_key):
+def secure_compare(token, api_key) -> bool:
     return secrets.compare_digest(token.encode("utf8"), api_key.encode("utf8"))
 
 
@@ -71,7 +71,7 @@ async def get_user_auth(
     )
 
 
-def authenticate_user(access_token):
+def authenticate_user(access_token) -> (bool, str):
     # https://cloud.google.com/docs/authentication/token-types#access
     if not isinstance(access_token, str) or len(access_token) < 10:
         return False, "invalid access_token"
@@ -103,5 +103,5 @@ def authenticate_user(access_token):
 def get_user_state(
     email: str = Depends(get_user_auth),
     db: Session = Depends(get_db_dependency),
-):
+) -> UserState:
     return UserState(db, email)
