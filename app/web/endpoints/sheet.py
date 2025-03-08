@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.shared import schemas
 from app.shared.db.database import get_db_dependency
-from app.shared.db.models import Sheet
 from app.shared.task_messaging import get_celery
 from app.web.db import crud
 from app.web.db.user_state import UserState
@@ -73,7 +72,7 @@ def create_sheet(
 def get_user_sheets(
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> list[Sheet]:
+) -> list[schemas.SheetResponse]:
     return crud.get_user_sheets(db, user.email)
 
 
