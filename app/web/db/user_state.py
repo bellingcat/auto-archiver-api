@@ -52,6 +52,7 @@ class UserState:
     @property
     def user_groups_names(self):
         if not hasattr(self, "_user_groups_names"):
+            # TODO: Define hidden properties in __init__ method
             self._user_groups_names = crud.get_user_group_names(
                 self.db, self.email
             ) + ["default"]
