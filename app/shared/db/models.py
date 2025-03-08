@@ -20,7 +20,7 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
-# many to many association tables
+# many-to-many association tables
 association_table_archive_tags = Table(
     "mtm_archives_tags",
     Base.metadata,
