@@ -25,7 +25,8 @@ class UserState:
     @property
     def permissions(self) -> Dict[str, GroupInfo]:
         """
-        Returns a dict of all group permissions and a special {"all": read/archive_url/archive_sheet} key
+        Returns a dict of all group permissions and a special
+        {"all": read/archive_url/archive_sheet} key
         """
         if not self._permissions:
             self._permissions["all"] = GroupInfo(
@@ -201,7 +202,9 @@ class UserState:
         self, permission_name: str
     ) -> int:
         """
-        Iterates one of the numerical permissions where -1 means no restrictions and returns either -1 or the maximum value, defaults according to GroupPermissions
+        Iterates one of the numerical permissions where -1 means no restrictions
+        and returns either -1 or the maximum value, defaults according to
+        GroupPermissions
         """
         default = GroupPermissions.model_fields[permission_name].default
         max_value = default
@@ -220,7 +223,7 @@ class UserState:
 
     def usage(self) -> UsageResponse:
         """
-        returns the monthly quotas for the URLs/MBs and the totals for Sheets
+        Returns the monthly quotas for the URLs/MBs and the totals for Sheets
         """
         current_month = datetime.now().month
         current_year = datetime.now().year
@@ -321,7 +324,8 @@ class UserState:
 
     def has_quota_max_monthly_urls(self, group_id: str) -> bool:
         """
-        checks if a user has reached their monthly url quota for a group, if global then group should be empty string
+        Checks if a user has reached their monthly url quota for a group, if
+        global then group should be empty string
         """
         quota = 0
         if not group_id:
@@ -352,7 +356,8 @@ class UserState:
 
     def has_quota_max_monthly_mbs(self, group_id: str) -> bool:
         """
-        checks if a user has reached their monthly MBs quota for a group, if global then group should be empty string
+        Checks if a user has reached their monthly MBs quota for a group, if
+        global then group should be empty string
         """
         quota = 0
         if not group_id:
@@ -404,7 +409,7 @@ class UserState:
 
     def can_manually_trigger(self, group_id: str) -> bool:
         """
-        checks if a user is allowed to manually trigger a sheet
+        Checks if a user is allowed to manually trigger a sheet
         """
         if group_id not in self.permissions:
             return False
@@ -413,7 +418,8 @@ class UserState:
 
     def is_sheet_frequency_allowed(self, group_id: str, frequency: str) -> bool:
         """
-        checks if a user is allowed to create a sheet with this frequency for this group
+        Checks if a user is allowed to create a sheet with this frequency for
+        this group
         """
         if group_id not in self.permissions:
             return False
