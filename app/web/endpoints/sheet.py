@@ -5,8 +5,13 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from app.shared import schemas
 from app.shared.db.database import get_db_dependency
+from app.shared.schemas import (
+    DeleteResponse,
+    SheetAdd,
+    SheetResponse,
+    SubmitSheet,
+)
 from app.shared.task_messaging import get_celery
 from app.web.db import crud
 from app.web.db.user_state import UserState
@@ -26,10 +31,10 @@ celery = get_celery()
     summary="Store a new Google Sheet for regular archiving.",
 )
 def create_sheet(
-    sheet: schemas.SheetAdd,
+    sheet: SheetAdd,
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> schemas.SheetResponse:
+) -> SheetResponse:
     if not user.in_group(sheet.group_id):
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
@@ -72,7 +77,7 @@ def create_sheet(
 def get_user_sheets(
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> list[schemas.SheetResponse]:
+) -> list[SheetResponse]:
     return crud.get_user_sheets(db, user.email)
 
 
@@ -81,9 +86,9 @@ def delete_sheet(
     sheet_id: str,
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> JSONResponse:
-    return JSONResponse(
-        {"id": sheet_id, "deleted": crud.delete_sheet(db, sheet_id, user.email)}
+) -> DeleteResponse:
+    return DeleteResponse(
+        id=sheet_id, deleted=crud.delete_sheet(db, sheet_id, user.email)
     )
 
 
@@ -120,7 +125,7 @@ def archive_user_sheet(
     task = celery.signature(
         "create_sheet_task",
         args=[
-            schemas.SubmitSheet(
+            SubmitSheet(
                 sheet_id=sheet_id, author_id=user.email, group_id=sheet.group_id
             ).model_dump_json()
         ],

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.shared import schemas
 from app.shared.db.database import get_db_dependency
+from app.shared.schemas import DeleteResponse
 from app.shared.task_messaging import get_celery
 from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db import crud
@@ -116,13 +117,11 @@ def delete_archive(
     archive_id: str,
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
-) -> JSONResponse:
+) -> DeleteResponse:
     logger.info(
         f"deleting url archive task {archive_id} request by {user.email}"
     )
-    return JSONResponse(
-        {
-            "id": archive_id,
-            "deleted": crud.soft_delete_archive(db, archive_id, user.email),
-        }
+    return DeleteResponse(
+        id=archive_id,
+        deleted=crud.soft_delete_archive(db, archive_id, user.email),
     )

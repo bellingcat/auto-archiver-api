@@ -38,6 +38,7 @@ class TaskResult(Task):
 
 
 class DeleteResponse(Task):
+    id: str
     deleted: bool
 
 
