@@ -32,7 +32,7 @@ async def health() -> JSONResponse:
 async def active(
     user: UserState = Depends(get_user_state),
 ) -> ActiveUser:
-    return ActiveUser(id=user.active)
+    return ActiveUser(active=user.active)
 
 
 @default_router.get(
