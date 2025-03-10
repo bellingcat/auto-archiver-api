@@ -109,13 +109,20 @@ def search_by_url(
     )
 
 
-@url_router.delete("/{id}", summary="Delete a single URL archive by id.")
+@url_router.delete(
+    "/{archive_id}", summary="Delete a single URL archive by id."
+)
 def delete_archive(
-    id: str,
+    archive_id: str,
     user: UserState = Depends(get_user_state),
     db: Session = Depends(get_db_dependency),
 ) -> JSONResponse:
-    logger.info(f"deleting url archive task {id} request by {user.email}")
+    logger.info(
+        f"deleting url archive task {archive_id} request by {user.email}"
+    )
     return JSONResponse(
-        {"id": id, "deleted": crud.soft_delete_archive(db, id, user.email)}
+        {
+            "id": archive_id,
+            "deleted": crud.soft_delete_archive(db, archive_id, user.email),
+        }
     )
