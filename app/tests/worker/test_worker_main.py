@@ -6,7 +6,8 @@ from auto_archiver.core import Media, Metadata
 
 from app.shared import schemas
 from app.shared.db import models
-from app.worker.main import create_archive_task, create_sheet_task, get_all_urls
+from app.web.utils.misc import get_all_urls
+from app.worker.main import create_archive_task, create_sheet_task
 
 
 class TestCreateArchiveTask:

@@ -8,12 +8,12 @@ from loguru import logger
 from sqlalchemy import exc
 
 from app.shared import business_logic, schemas
-from app.shared.aa_utils import get_all_urls
 from app.shared.db import models, worker_crud
 from app.shared.db.database import get_db
 from app.shared.log import log_error
 from app.shared.settings import get_settings
 from app.shared.task_messaging import get_celery, get_redis
+from app.web.utils.misc import get_all_urls
 from app.worker.worker_log import setup_celery_logger
 
 
