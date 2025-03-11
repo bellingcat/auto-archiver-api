@@ -37,11 +37,11 @@ DATABASE_METRICS_COUNTER = Counter(
 )
 
 
-async def redis_subscribe_worker_exceptions(REDIS_EXCEPTIONS_CHANNEL: str):
+async def redis_subscribe_worker_exceptions(redis_exceptions_channel: str):
     # Subscribe to Redis channel and increment the counter for each exception with info on the exception and task
     Redis = get_redis()
     PubSubExceptions = Redis.pubsub()
-    PubSubExceptions.subscribe(REDIS_EXCEPTIONS_CHANNEL)
+    PubSubExceptions.subscribe(redis_exceptions_channel)
     while True:
         message = PubSubExceptions.get_message()
         if message and message["type"] == "message":
