@@ -10,7 +10,8 @@ from app.web.utils.metrics import EXCEPTION_COUNTER
 async def logging_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
-        # TODO: use Origin to have summary prometheus metrics on where requests come from
+        # TODO: use Origin to have summary prometheus metrics on where
+        #  requests come from
         # origin = request.headers.get("origin")
         logger.info(
             f"{request.client.host}:{request.client.port} {request.method} {request.url._url} - HTTP {response.status_code}"
@@ -25,7 +26,9 @@ async def logging_middleware(request: Request, call_next):
         raise e
 
 
-async def increase_exceptions_counter(e: Exception, location: str = "cronjob"):
+async def increase_exceptions_counter(
+    e: Exception, location: str = "cronjob"
+) -> None:
     if location == "cronjob":
         try:
             last_trace = traceback.extract_tb(e.__traceback__)[-1]

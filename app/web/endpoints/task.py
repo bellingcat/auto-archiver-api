@@ -26,7 +26,8 @@ def get_status(
     try:
         if task.status == "FAILURE":
             # *FAILURE* The task raised an exception, or has exceeded the retry limit.
-            # The :attr:`result` attribute then contains the exception raised by the task.
+            # The :attr:`result` attribute then contains the exception raised by
+            # the task.
             # https://docs.celeryq.dev/en/stable/_modules/celery/result.html#AsyncResult
             raise task.result
 
