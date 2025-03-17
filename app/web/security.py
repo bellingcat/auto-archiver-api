@@ -1,9 +1,11 @@
 import secrets
 from http import HTTPStatus
 
+import firebase_admin
 import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from firebase_admin import auth, credentials, exceptions
 from loguru import logger
 from sqlalchemy.orm import Session
 
@@ -15,6 +17,13 @@ from app.web.db.user_state import UserState
 
 settings = get_settings()
 bearer_security = HTTPBearer()
+
+FIREBASE_OAUTH_ENABLED = settings.FIREBASE_SERVICE_ACCOUNT_JSON != ""
+if FIREBASE_OAUTH_ENABLED:
+    logger.debug("Firebase OAUTH enabled, initializing...")
+    firebase_admin.initialize_app(
+        credentials.Certificate(settings.FIREBASE_SERVICE_ACCOUNT_JSON)
+    )
 
 
 def secure_compare(token, api_key) -> bool:
@@ -72,6 +81,12 @@ async def get_user_auth(
 
 
 def authenticate_user(access_token) -> (bool, str):
+    if FIREBASE_OAUTH_ENABLED:
+        try:
+            return firebase_login_attempt(access_token)
+        except exceptions.FirebaseError as e:
+            logger.warning(f"Error verifying ID token: {str(e)[:80]}...")
+
     # https://cloud.google.com/docs/authentication/token-types#access
     if not isinstance(access_token, str) or len(access_token) < 10:
         return False, "invalid access_token"
@@ -98,6 +113,17 @@ def authenticate_user(access_token) -> (bool, str):
     except Exception as e:
         logger.warning(f"AUTH EXCEPTION occurred: {e}")
         return False, "exception occurred"
+
+
+def firebase_login_attempt(access_token) -> (bool, str):
+    j = auth.verify_id_token(access_token)
+    email = j.get("email", None)
+    logger.debug(f"Successfully verified the ID token for {email}")
+    if email is None:
+        return False, "email not found in token"
+    if email in settings.BLOCKED_EMAILS:
+        return False, f"email '{email}' not allowed"
+    return True, email
 
 
 def get_user_state(
