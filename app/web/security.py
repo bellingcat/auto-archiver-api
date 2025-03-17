@@ -59,7 +59,7 @@ async def get_token_or_user_auth(
 async def get_user_auth(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_security),
 ):
-    # validates the Bearer token in the case that it requires it
+    # Validates the Bearer token in the case that it requires it
     valid_user, info = authenticate_user(credentials.credentials)
     if valid_user:
         return info.lower()
