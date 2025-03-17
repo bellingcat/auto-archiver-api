@@ -108,6 +108,24 @@ Make sure environment and user-groups files are up to date.
 Then `make prod`.
 
 
+## Development
+```bash
+# make sure all development dependencies are installed
+poetry install --with dev
+
+# this project uses pre-commit to enforce code style and formatting, set that up locally
+poetry run pre-commit install
+
+# you can test pre-commit with
+poetry run pre-commit run --all-files
+
+# this means pre-commit will always run with git commit, to skip it use
+git commit --no-verify
+
+# see the Makefile for more commands, but linting and formatting can be done with
+make lint
+```
+
 ### Testing
 ```bash
 # set the testing environment variables
