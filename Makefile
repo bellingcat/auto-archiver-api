@@ -2,6 +2,12 @@
 lint:
 	poetry run pre-commit run --all-files
 
+.PHONY: test
+test:
+	export ENVIRONMENT_FILE=.env.test
+	poetry run coverage run -m pytest -v --disable-warnings --color=yes app/tests/
+	poetry run coverage report
+
 .PHONY: clean-dev
 clean-dev:
 	@echo -n "Are you sure? [yes/N] (this will delete volumes) " && read ans && [ $${ans:-N} = yes ]

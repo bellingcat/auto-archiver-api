@@ -124,6 +124,9 @@ git commit --no-verify
 
 # see the Makefile for more commands, but linting and formatting can be done with
 make lint
+
+# run all tests
+make test
 ```
 
 ### Testing
