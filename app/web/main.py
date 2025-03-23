@@ -9,13 +9,13 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.shared.settings import Settings, get_settings
 from app.shared.task_messaging import get_celery
 from app.web.config import API_DESCRIPTION, VERSION
-from app.web.endpoints.default import default_router
-from app.web.endpoints.interoperability import interoperability_router
-from app.web.endpoints.sheet import sheet_router
-from app.web.endpoints.task import task_router
-from app.web.endpoints.url import url_router
 from app.web.events import lifespan
 from app.web.middleware import logging_middleware
+from app.web.routers.default import default_router
+from app.web.routers.interoperability import interoperability_router
+from app.web.routers.sheet import sheet_router
+from app.web.routers.task import task_router
+from app.web.routers.url import url_router
 from app.web.security import token_api_key_auth
 
 
