@@ -82,3 +82,6 @@ def app_factory(settings: Settings = None):
             )
 
     return app
+
+
+app = app_factory()
