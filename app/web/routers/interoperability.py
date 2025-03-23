@@ -17,13 +17,11 @@ from app.web.security import token_api_key_auth
 from app.web.utils.misc import get_all_urls
 
 
-interoperability_router = APIRouter(
-    prefix="/interop", tags=["Interoperability endpoints."]
-)
+router = APIRouter(prefix="/interop", tags=["Interoperability endpoints."])
 
 
 # ----- endpoint to submit data archived elsewhere
-@interoperability_router.post(
+@router.post(
     "/submit-archive",
     status_code=HTTPStatus.CREATED,
     summary="Submit a manual archive entry, for data that was archived elsewhere.",

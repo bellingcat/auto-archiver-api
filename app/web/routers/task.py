@@ -10,12 +10,12 @@ from app.web.security import get_token_or_user_auth
 from app.web.utils.misc import custom_jsonable_encoder
 
 
-task_router = APIRouter(prefix="/task", tags=["Async task operations"])
+router = APIRouter(prefix="/task", tags=["Async task operations"])
 
 celery = get_celery()
 
 
-@task_router.get(
+@router.get(
     "/{task_id}",
     summary="Check the status of an async task by its id, works for URLs and Sheet tasks.",
 )

@@ -11,22 +11,22 @@ from app.web.db.user_state import UserState
 from app.web.security import get_user_state
 
 
-default_router = APIRouter()
+router = APIRouter()
 
 
-@default_router.get("/")
+@router.get("/")
 async def home() -> JSONResponse:
     return JSONResponse(
         {"version": VERSION, "breakingChanges": BREAKING_CHANGES}
     )
 
 
-@default_router.get("/health")
+@router.get("/health")
 async def health() -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
-@default_router.get(
+@router.get(
     "/user/active", summary="Check if the user is active and can use the tool."
 )
 async def active(
@@ -35,7 +35,7 @@ async def active(
     return ActiveUser(active=user.active)
 
 
-@default_router.get(
+@router.get(
     "/user/permissions",
     summary="Get the user's global 'all' permissions and the permissions for each group they belong to.",
 )
@@ -45,7 +45,7 @@ def get_user_permissions(
     return user.permissions
 
 
-@default_router.get(
+@router.get(
     "/user/usage",
     summary="Get the user's monthly URLs/MBs usage along with the total active sheets, breakdown by group.",
 )
@@ -59,6 +59,6 @@ def get_user_usage(
     return user.usage()
 
 
-@default_router.get("/favicon.ico", include_in_schema=False)
+@router.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> FileResponse:
     return FileResponse("app/web/static/favicon.ico")

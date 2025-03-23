@@ -11,11 +11,11 @@ from app.shared.task_messaging import get_celery
 from app.web.config import API_DESCRIPTION, VERSION
 from app.web.events import lifespan
 from app.web.middleware import logging_middleware
-from app.web.routers.default import default_router
-from app.web.routers.interoperability import interoperability_router
-from app.web.routers.sheet import sheet_router
-from app.web.routers.task import task_router
-from app.web.routers.url import url_router
+from app.web.routers.default import router as default_router
+from app.web.routers.interoperability import router as interoperability_router
+from app.web.routers.sheet import router as sheet_router
+from app.web.routers.task import router as task_router
+from app.web.routers.url import router as url_router
 from app.web.security import token_api_key_auth
 
 
