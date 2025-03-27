@@ -18,12 +18,12 @@ from app.web.security import get_token_or_user_auth, get_user_state
 from app.web.utils.misc import convert_priority_to_queue_dict
 
 
-url_router = APIRouter(prefix="/url", tags=["Single URL operations"])
+router = APIRouter(prefix="/url", tags=["Single URL operations"])
 
 celery = get_celery()
 
 
-@url_router.post(
+@router.post(
     "/archive",
     status_code=HTTPStatus.CREATED,
     summary="Submit a single URL archive request, starts an archiving task.",
@@ -77,7 +77,7 @@ def archive_url(
     )
 
 
-@url_router.get("/search", summary="Search for archive entries by URL.")
+@router.get("/search", summary="Search for archive entries by URL.")
 def search_by_url(
     url: str,
     skip: int = 0,
@@ -110,7 +110,7 @@ def search_by_url(
     )
 
 
-@url_router.delete(
+@router.delete(
     "/{archive_id}", summary="Delete a single URL archive by id."
 )
 def delete_archive(
