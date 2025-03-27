@@ -12,8 +12,8 @@ def test_archive_url_unauthenticated(client, test_no_auth):
     test_no_auth(client.post, "/url/archive")
 
 
-@patch("app.web.endpoints.url.UserState")
-@patch("app.web.endpoints.url.celery", return_value=MagicMock())
+@patch("app.web.routers.url.UserState")
+@patch("app.web.routers.url.celery", return_value=MagicMock())
 def test_archive_url(m_celery, m2, client_with_auth):
     m_signature = MagicMock()
     m_signature.apply_async.return_value = TaskResult(
@@ -123,7 +123,7 @@ def test_archive_url(m_celery, m2, client_with_auth):
     assert m_signature.apply_async.call_count == 2
 
 
-@patch("app.web.endpoints.url.UserState")
+@patch("app.web.routers.url.UserState")
 def test_archive_url_quotas(m1, client_with_auth):
     m_user_state = MagicMock()
     m1.return_value = m_user_state
@@ -152,7 +152,7 @@ def test_archive_url_quotas(m1, client_with_auth):
     m_user_state.has_quota_max_monthly_mbs.assert_called_once()
 
 
-@patch("app.web.endpoints.url.celery", return_value=MagicMock())
+@patch("app.web.routers.url.celery", return_value=MagicMock())
 def test_archive_url_with_api_token(m_celery, client_with_token):
     m_signature = MagicMock()
     m_signature.apply_async.return_value = TaskResult(
@@ -274,7 +274,7 @@ def test_search_by_url(client_with_auth, client_with_token, db_session):
     assert len(response.json()) == 10
 
 
-@patch("app.web.endpoints.url.UserState")
+@patch("app.web.routers.url.UserState")
 def test_search_no_read_access(mock_user_state, client_with_auth):
     mock_user_state.return_value.read = False
     mock_user_state.return_value.read_public = False

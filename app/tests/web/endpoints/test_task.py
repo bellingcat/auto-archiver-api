@@ -6,7 +6,7 @@ def test_endpoint_task_status_no_auth(client, test_no_auth):
     test_no_auth(client.get, "/task/test-task-id")
 
 
-@patch("app.web.endpoints.task.AsyncResult")
+@patch("app.web.routers.task.AsyncResult")
 def test_get_status_success(mock_async_result, client_with_auth):
     mock_async_result.return_value.status = "SUCCESS"
     mock_async_result.return_value.result = {"data": "some result"}
@@ -21,7 +21,7 @@ def test_get_status_success(mock_async_result, client_with_auth):
     }
 
 
-@patch("app.web.endpoints.task.AsyncResult")
+@patch("app.web.routers.task.AsyncResult")
 def test_get_status_failure(mock_async_result, client_with_auth):
     mock_async_result.return_value.status = "FAILURE"
     mock_async_result.return_value.result = Exception("Some error")
@@ -36,7 +36,7 @@ def test_get_status_failure(mock_async_result, client_with_auth):
     }
 
 
-@patch("app.web.endpoints.task.AsyncResult")
+@patch("app.web.routers.task.AsyncResult")
 def test_get_status_pending(mock_async_result, client_with_auth):
     mock_async_result.return_value.status = "PENDING"
     mock_async_result.return_value.result = None

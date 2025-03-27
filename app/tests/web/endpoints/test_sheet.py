@@ -184,7 +184,7 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
 
 
 class TestArchiveUserSheetEndpoint:
-    @patch("app.web.endpoints.sheet.celery", return_value=MagicMock())
+    @patch("app.web.routers.sheet.celery", return_value=MagicMock())
     def test_normal_flow(self, m_celery, client_with_auth, db_session):
         db_session.add(
             models.Sheet(
