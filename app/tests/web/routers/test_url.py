@@ -3,6 +3,7 @@ from http import HTTPStatus
 from unittest.mock import MagicMock, patch
 
 from app.shared import schemas
+from app.shared.constants import STATUS_PENDING
 from app.shared.db import worker_crud
 from app.shared.schemas import ArchiveCreate, TaskResult
 from app.web.config import ALLOW_ANY_EMAIL
@@ -17,7 +18,7 @@ def test_archive_url_unauthenticated(client, test_no_auth):
 def test_archive_url(m_celery, m2, client_with_auth):
     m_signature = MagicMock()
     m_signature.apply_async.return_value = TaskResult(
-        id="123-456-789", status="PENDING", result=""
+        id="123-456-789", status=STATUS_PENDING, result=""
     )
     m_celery.signature.return_value = m_signature
 
@@ -156,7 +157,7 @@ def test_archive_url_quotas(m1, client_with_auth):
 def test_archive_url_with_api_token(m_celery, client_with_token):
     m_signature = MagicMock()
     m_signature.apply_async.return_value = TaskResult(
-        id="123-456-789", status="PENDING", result=""
+        id="123-456-789", status=STATUS_PENDING, result=""
     )
     m_celery.signature.return_value = m_signature
     response = client_with_token.post(
