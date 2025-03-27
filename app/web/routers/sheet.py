@@ -18,9 +18,7 @@ from app.web.db.user_state import UserState
 from app.web.security import get_user_state
 
 
-router = APIRouter(
-    prefix="/sheet", tags=["Google Spreadsheet operations"]
-)
+router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"])
 
 celery = get_celery()
 

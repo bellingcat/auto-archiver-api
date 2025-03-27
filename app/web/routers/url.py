@@ -110,9 +110,7 @@ def search_by_url(
     )
 
 
-@router.delete(
-    "/{archive_id}", summary="Delete a single URL archive by id."
-)
+@router.delete("/{archive_id}", summary="Delete a single URL archive by id.")
 def delete_archive(
     archive_id: str,
     user: UserState = Depends(get_user_state),
