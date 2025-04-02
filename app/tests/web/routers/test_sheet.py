@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
+from app.shared.constants import STATUS_PENDING
 from app.shared.db import models
 from app.shared.schemas import TaskResult
 from app.web.db.user_state import UserState
@@ -184,7 +185,7 @@ def test_delete_sheet_endpoint(client_with_auth, db_session):
 
 
 class TestArchiveUserSheetEndpoint:
-    @patch("app.web.endpoints.sheet.celery", return_value=MagicMock())
+    @patch("app.web.routers.sheet.celery", return_value=MagicMock())
     def test_normal_flow(self, m_celery, client_with_auth, db_session):
         db_session.add(
             models.Sheet(
@@ -199,7 +200,7 @@ class TestArchiveUserSheetEndpoint:
 
         m_signature = MagicMock()
         m_signature.apply_async.return_value = TaskResult(
-            id="123-taskid", status="PENDING", result=""
+            id="123-taskid", status=STATUS_PENDING, result=""
         )
         m_celery.signature.return_value = m_signature
 

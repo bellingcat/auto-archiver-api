@@ -18,14 +18,12 @@ from app.web.db.user_state import UserState
 from app.web.security import get_user_state
 
 
-sheet_router = APIRouter(
-    prefix="/sheet", tags=["Google Spreadsheet operations"]
-)
+router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"])
 
 celery = get_celery()
 
 
-@sheet_router.post(
+@router.post(
     "/create",
     status_code=HTTPStatus.CREATED,
     summary="Store a new Google Sheet for regular archiving.",
@@ -69,7 +67,7 @@ def create_sheet(
         ) from e
 
 
-@sheet_router.get(
+@router.get(
     "/mine",
     status_code=HTTPStatus.OK,
     summary="Get the authenticated user's Google Sheets.",
@@ -81,7 +79,7 @@ def get_user_sheets(
     return crud.get_user_sheets(db, user.email)
 
 
-@sheet_router.delete("/{sheet_id}", summary="Delete a Google Sheet by ID.")
+@router.delete("/{sheet_id}", summary="Delete a Google Sheet by ID.")
 def delete_sheet(
     sheet_id: str,
     user: UserState = Depends(get_user_state),
@@ -92,7 +90,7 @@ def delete_sheet(
     )
 
 
-@sheet_router.post(
+@router.post(
     "/{sheet_id}/archive",
     status_code=HTTPStatus.CREATED,
     summary="Trigger an archiving task for a GSheet you own.",

@@ -40,7 +40,7 @@ def test_alembic(db_session):
 
 
 @patch(
-    "app.web.endpoints.url.crud.soft_delete_archive",
+    "app.web.routers.url.crud.soft_delete_archive",
     side_effect=Exception("mocked error"),
 )
 def test_logging_middleware(m1, client_with_auth):

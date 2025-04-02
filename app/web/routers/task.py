@@ -4,18 +4,19 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from app.shared import schemas
+from app.shared.constants import STATUS_FAILURE
 from app.shared.log import log_error
 from app.shared.task_messaging import get_celery
 from app.web.security import get_token_or_user_auth
 from app.web.utils.misc import custom_jsonable_encoder
 
 
-task_router = APIRouter(prefix="/task", tags=["Async task operations"])
+router = APIRouter(prefix="/task", tags=["Async task operations"])
 
 celery = get_celery()
 
 
-@task_router.get(
+@router.get(
     "/{task_id}",
     summary="Check the status of an async task by its id, works for URLs and Sheet tasks.",
 )
@@ -24,7 +25,7 @@ def get_status(
 ) -> schemas.TaskResult:
     task = AsyncResult(task_id, app=celery)
     try:
-        if task.status == "FAILURE":
+        if task.status == STATUS_FAILURE:
             # *FAILURE* The task raised an exception, or has exceeded the retry limit.
             # The :attr:`result` attribute then contains the exception raised by
             # the task.
@@ -43,5 +44,9 @@ def get_status(
     except Exception as e:
         log_error(e)
         return JSONResponse(
-            {"id": task_id, "status": "FAILURE", "result": {"error": str(e)}}
+            {
+                "id": task_id,
+                "status": STATUS_FAILURE,
+                "result": {"error": str(e)},
+            }
         )

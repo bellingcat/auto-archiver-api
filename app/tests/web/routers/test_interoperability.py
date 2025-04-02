@@ -15,7 +15,7 @@ def test_submit_manual_archive_not_user_auth(client_with_auth, test_no_auth):
 
 
 @patch(
-    "app.web.endpoints.interoperability.business_logic",
+    "app.web.routers.interoperability.business_logic",
     return_value=MagicMock(
         get_store_archive_until=MagicMock(return_value=datetime)
     ),
@@ -103,7 +103,7 @@ def test_submit_manual_archive_invalid_json(client_with_token):
 
 
 @patch(
-    "app.web.endpoints.interoperability.business_logic.get_store_archive_until",
+    "app.web.routers.interoperability.business_logic.get_store_archive_until",
     side_effect=AssertionError("AssertionError"),
 )
 def test_submit_manual_archive_no_store_until(
