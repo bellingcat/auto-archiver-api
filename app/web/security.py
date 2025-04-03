@@ -84,8 +84,9 @@ def authenticate_user(access_token) -> (bool, str):
     if FIREBASE_OAUTH_ENABLED:
         try:
             return firebase_login_attempt(access_token)
-        except exceptions.FirebaseError as e:
-            logger.warning(f"Error verifying ID token: {str(e)[:80]}...")
+        except exceptions.FirebaseError:
+            # used a non-Firebase token, fallback to Google OAuth
+            pass
 
     # https://cloud.google.com/docs/authentication/token-types#access
     if not isinstance(access_token, str) or len(access_token) < 10:
