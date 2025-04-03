@@ -5,9 +5,9 @@ volumes:
 name: "auto-archiver-api"
 services:
   web:
-    build: 
+    build:
       context: .
-      dockerfile: web.Dockerfile
+      dockerfile: docker/web/Dockerfile
     restart: always
     env_file: .env.prod
     environment:
@@ -29,9 +29,9 @@ services:
       retries: 3
 
   worker:
-    build: 
+    build:
       context: .
-      dockerfile: worker.Dockerfile
+      dockerfile: docker/worker/Dockerfile
     restart: always
     env_file: .env.prod
     command: celery --app=app.worker.main.celery worker -Q high_priority,low_priority --concurrency=${CONCURRENCY} --max-tasks-per-child=100 -O fair

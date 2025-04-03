@@ -22,7 +22,6 @@ requires-python = ">=3.10,<3.13"
 
 dependencies = [
     "auto-archiver (>=0.13.1)",
-    "oscrypto @ git+https://github.com/wbond/oscrypto.git@d5f3437ed24257895ae1edd9e503cfb352e635a8",
     "celery (>=5.0)",
     "redis (==3.5.3)",
     "loguru (>=0.7.3,<0.8.0)",
@@ -31,6 +30,16 @@ dependencies = [
     "requests (>=2.25.1)",
     "pyopenssl (>=23.3.0)",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+
+[tool.coverage.run]
+omit = ["app/migrations/*"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
 [tool.poetry.group.worker.dependencies]
 watchdog = ">=6.0.0,<7.0.0"
 setuptools = "^75.8.0"
@@ -53,4 +62,4 @@ pytest = ">=8.3.4,<9.0.0"
 httpx = ">=0.28.1,<0.29.0"
 coverage = ">=7.6.11,<8.0.0"
 pytest-asyncio = ">=0.25.3,<0.26.0"
-
+pre-commit = "^4.1.0"

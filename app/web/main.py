@@ -1,34 +1,42 @@
 import os
-from fastapi import FastAPI, Depends
-from fastapi.staticfiles import StaticFiles
+
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
+from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.web.middleware import logging_middleware
+from app.shared.settings import Settings, get_settings
 from app.shared.task_messaging import get_celery
-
-from app.web.security import token_api_key_auth
-from app.web.config import VERSION, API_DESCRIPTION
+from app.web.config import API_DESCRIPTION, VERSION
 from app.web.events import lifespan
-from app.shared.settings import get_settings
+from app.web.middleware import logging_middleware
+from app.web.routers.default import router as default_router
+from app.web.routers.interoperability import router as interoperability_router
+from app.web.routers.sheet import router as sheet_router
+from app.web.routers.task import router as task_router
+from app.web.routers.url import router as url_router
+from app.web.security import token_api_key_auth
 
-
-from app.web.endpoints.default import default_router
-from app.web.endpoints.url import url_router
-from app.web.endpoints.sheet import sheet_router
-from app.web.endpoints.task import task_router
-from app.web.endpoints.interoperability import interoperability_router
 
 celery = get_celery()
 
-def app_factory(settings = get_settings()):
+
+def app_factory(settings: Settings = None):
+    # TODO: Create dev, test, and prod versions of settings that do not have
+    # TODO: to be passed in as a parameter
+    if settings is None:
+        settings = get_settings()
+
     app = FastAPI(
         title="Auto-Archiver API",
         description=API_DESCRIPTION,
         version=VERSION,
-        contact={"name": "GitHub", "url": "https://github.com/bellingcat/auto-archiver-api"},
-        lifespan=lifespan
+        contact={
+            "name": "GitHub",
+            "url": "https://github.com/bellingcat/auto-archiver-api",
+        },
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -47,14 +55,30 @@ def app_factory(settings = get_settings()):
     app.include_router(interoperability_router)
 
     # prometheus exposed in /metrics with authentication
-    Instrumentator(should_group_status_codes=False, excluded_handlers=["/metrics", "/health", "/openapi.json", "/favicon.ico"]).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
+    Instrumentator(
+        should_group_status_codes=False,
+        excluded_handlers=[
+            "/metrics",
+            "/health",
+            "/openapi.json",
+            "/favicon.ico",
+        ],
+    ).instrument(app).expose(app, dependencies=[Depends(token_api_key_auth)])
 
     if settings.SERVE_LOCAL_ARCHIVE:
         local_dir = settings.SERVE_LOCAL_ARCHIVE
-        if not os.path.isdir(local_dir) and os.path.isdir(local_dir.replace("/app", ".")):
+        if not os.path.isdir(local_dir) and os.path.isdir(
+            local_dir.replace("/app", ".")
+        ):
             local_dir = local_dir.replace("/app", ".")
         if len(settings.SERVE_LOCAL_ARCHIVE) > 1 and os.path.isdir(local_dir):
-            logger.warning(f"MOUNTing local archive, use this in development only {settings.SERVE_LOCAL_ARCHIVE}")
-            app.mount(settings.SERVE_LOCAL_ARCHIVE, StaticFiles(directory=local_dir), name=settings.SERVE_LOCAL_ARCHIVE)
+            logger.warning(
+                f"MOUNTing local archive, use this in development only {settings.SERVE_LOCAL_ARCHIVE}"
+            )
+            app.mount(
+                settings.SERVE_LOCAL_ARCHIVE,
+                StaticFiles(directory=local_dir),
+                name=settings.SERVE_LOCAL_ARCHIVE,
+            )
 
     return app

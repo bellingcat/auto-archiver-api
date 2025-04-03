@@ -12,7 +12,7 @@ services:
       - ALLOWED_ORIGINS=["http://localhost:8000","http://localhost:8004","http://localhost:8081","chrome-extension://ojcimmjndnlmmlgnjaeojoebaceokpdp"]
       - USER_GROUPS_FILENAME=/aa-api/app/user-groups.dev.yaml
       - DATABASE_PATH=sqlite:////aa-api/database/auto-archiver.db
-    
+
 
   worker:
     # command: watchmedo auto-restart --patterns="*.py" --recursive --ignore-directories -- celery -- --app=app.worker.main.celery worker -Q high_priority,low_priority --concurrency=${CONCURRENCY} --max-tasks-per-child=100

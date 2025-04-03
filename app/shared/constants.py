@@ -1,0 +1,7 @@
+# Statuses
+STATUS_FAILURE = "FAILURE"
+STATUS_PENDING = "PENDING"
+STATUS_SUCCESS = "SUCCESS"
+
+# AA CLI CONFIGS
+SHEET_ID = "--gsheet_feeder_db.sheet_id"

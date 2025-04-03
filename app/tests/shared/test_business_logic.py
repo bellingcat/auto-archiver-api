@@ -1,10 +1,15 @@
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
+
 import pytest
-from app.shared.business_logic import get_store_archive_until, get_store_archive_until_or_never
+
+from app.shared.business_logic import (
+    get_store_archive_until,
+    get_store_archive_until_or_never,
+)
 
 
-class Test_get_store_archive_until:
+class TestGetStoreArchiveUntil:
     GROUP_ID = "test-group"
 
     def test_group_not_found(self, db_session):
@@ -12,7 +17,10 @@ class Test_get_store_archive_until:
             get_store_archive_until(db_session, self.GROUP_ID)
         assert str(exc.value) == f"Group {self.GROUP_ID} not found."
 
-    @patch("app.shared.db.worker_crud.get_group", return_value=MagicMock(permissions=None))
+    @patch(
+        "app.shared.db.worker_crud.get_group",
+        return_value=MagicMock(permissions=None),
+    )
     def test_group_no_permissions(self, db_session):
         with pytest.raises(AssertionError) as exc:
             get_store_archive_until(db_session, self.GROUP_ID)
@@ -43,14 +51,17 @@ class Test_get_store_archive_until:
         mock_get_group.assert_called_once_with(db_session, self.GROUP_ID)
 
 
-class Test_get_store_archive_until_or_never:
+class TestGetStoreArchiveUntilOrNever:
     GROUP_ID = "test-group"
 
     def test_group_not_found(self, db_session):
         result = get_store_archive_until_or_never(db_session, self.GROUP_ID)
         assert result is None
 
-    @patch("app.shared.db.worker_crud.get_group", return_value=MagicMock(permissions=None))
+    @patch(
+        "app.shared.db.worker_crud.get_group",
+        return_value=MagicMock(permissions=None),
+    )
     def test_group_no_permissions(self, db_session):
         result = get_store_archive_until_or_never(db_session, self.GROUP_ID)
         assert result is None
