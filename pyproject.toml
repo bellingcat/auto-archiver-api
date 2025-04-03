@@ -22,7 +22,6 @@ requires-python = ">=3.10,<3.13"
 
 dependencies = [
     "auto-archiver (>=0.13.1)",
-    "oscrypto @ git+https://github.com/wbond/oscrypto.git@d5f3437ed24257895ae1edd9e503cfb352e635a8",
     "celery (>=5.0)",
     "redis (==3.5.3)",
     "loguru (>=0.7.3,<0.8.0)",
