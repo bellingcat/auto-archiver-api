@@ -7,7 +7,7 @@ from celery.signals import task_failure
 from loguru import logger
 from sqlalchemy import exc
 
-from app.shared import business_logic, schemas
+from app.shared import business_logic, constants, schemas
 from app.shared.db import models, worker_crud
 from app.shared.db.database import get_db
 from app.shared.log import log_error
@@ -25,10 +25,7 @@ Redis = get_redis()
 USER_GROUPS_FILENAME = settings.USER_GROUPS_FILENAME
 
 setup_celery_logger(celery)
-
-# TODO: these are temporary PATCHES for new aa's functionality
-# logger.add("app/worker/worker_log.log", level="DEBUG")
-logger.remove = lambda x: print(f"logger.remove({x})")
+AA_LOGGER_ID = None
 
 
 # TODO: after release, as it requires updating past entries with sheet_id where tag
@@ -41,14 +38,19 @@ logger.remove = lambda x: print(f"logger.remove({x})")
     retry_kwargs={"max_retries": 1},
 )
 def create_archive_task(self, archive_json: str):
+    global AA_LOGGER_ID
     archive = schemas.ArchiveCreate.model_validate_json(archive_json)
 
     # call auto-archiver
     args = get_orchestrator_args(archive.group_id, False, [archive.url])
+    result = None
     try:
         orchestrator = ArchivingOrchestrator()
+        orchestrator.logger_id = AA_LOGGER_ID  # ensure single logger
         orchestrator.setup(args)
-        result = next(orchestrator.feed())
+        AA_LOGGER_ID = orchestrator.logger_id
+        for orch_res in orchestrator.feed():
+            result = orch_res
     except SystemExit as e:
         log_error(e, "create_archive_task: SystemExit from AA")
     except Exception as e:
@@ -68,6 +70,7 @@ def create_archive_task(self, archive_json: str):
 
 @celery.task(name="create_sheet_task", bind=True)
 def create_sheet_task(self, sheet_json: str):
+    global AA_LOGGER_ID
     sheet = schemas.SubmitSheet.model_validate_json(sheet_json)
     queue_name = (create_sheet_task.request.delivery_info or {}).get(
         "routing_key", "unknown"
@@ -75,10 +78,12 @@ def create_sheet_task(self, sheet_json: str):
     logger.info(f"[queue={queue_name}] SHEET START {sheet=}")
 
     args = get_orchestrator_args(
-        sheet.group_id, True, ["--gsheet_feeder.sheet_id", sheet.sheet_id]
+        sheet.group_id, True, [constants.SHEET_ID, sheet.sheet_id]
     )
     orchestrator = ArchivingOrchestrator()
+    orchestrator.logger_id = AA_LOGGER_ID  # ensure single logger
     orchestrator.setup(args)
+    AA_LOGGER_ID = orchestrator.logger_id
 
     stats = {"archived": 0, "failed": 0, "errors": []}
     try:
@@ -128,8 +133,7 @@ def create_sheet_task(self, sheet_json: str):
 def get_orchestrator_args(
     group_id: str, orchestrator_for_sheet: bool, cli_args: list = None
 ) -> list:
-    if cli_args is None:
-        cli_args = []
+    cli_args.append("--logging.enabled=false")
 
     aa_configs = []
     with get_db() as session:

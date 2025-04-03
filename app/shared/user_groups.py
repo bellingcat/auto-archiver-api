@@ -94,20 +94,31 @@ class GroupPermissions(BaseModel):
 
 class GroupModel(BaseModel):
     description: str
-    orchestrator: str
-    orchestrator_sheet: str
+    orchestrator: str | None = None
+    orchestrator_sheet: str | None = None
     permissions: GroupPermissions
 
     @classmethod
-    @field_validator("orchestrator", "orchestrator_sheet", mode="before")
+    @field_validator("orchestrator", mode="before")
     def validate_orchestrator(cls, v):
-        if not os.path.exists(v):
+        # orchestrator is only needed if the group has archive_url permission
+        if cls.permissions.archive_url and not os.path.exists(v):
+            raise ValueError(f"Orchestrator file not found with this path: {v}")
+        return v
+
+    @classmethod
+    @field_validator("orchestrator_sheet", mode="before")
+    def validate_orchestrator_sheet(cls, v):
+        # orchestrator_sheet is only needed if the group has archive_sheet permission
+        if cls.permissions.archive_sheet and not os.path.exists(v):
             raise ValueError(f"Orchestrator file not found with this path: {v}")
         return v
 
     @computed_field
     @property
     def service_account_email(self) -> str:
+        if self.orchestrator_sheet is None:
+            return ""
         if hasattr(self, "_service_account_email"):
             return self._service_account_email
         orch = yaml.safe_load(open(self.orchestrator_sheet))
