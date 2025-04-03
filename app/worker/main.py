@@ -7,7 +7,7 @@ from celery.signals import task_failure
 from loguru import logger
 from sqlalchemy import exc
 
-from app.shared import business_logic, schemas
+from app.shared import business_logic, constants, schemas
 from app.shared.db import models, worker_crud
 from app.shared.db.database import get_db
 from app.shared.log import log_error
@@ -78,7 +78,7 @@ def create_sheet_task(self, sheet_json: str):
     logger.info(f"[queue={queue_name}] SHEET START {sheet=}")
 
     args = get_orchestrator_args(
-        sheet.group_id, True, ["--gsheet_feeder_db.sheet_id", sheet.sheet_id]
+        sheet.group_id, True, [constants.SHEET_ID, sheet.sheet_id]
     )
     orchestrator = ArchivingOrchestrator()
     orchestrator.logger_id = AA_LOGGER_ID  # ensure single logger

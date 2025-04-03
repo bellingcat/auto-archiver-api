@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from auto_archiver.core import Media, Metadata
 
-from app.shared import schemas
+from app.shared import constants, schemas
 from app.shared.db import models
 from app.web.utils.misc import get_all_urls
 from app.worker.main import create_archive_task, create_sheet_task
@@ -119,7 +119,7 @@ class TestCreateSheetTask:
         res = create_sheet_task(self.sheet.model_dump_json())
 
         m_args.assert_called_once_with(
-            "interstellar", True, ["--gsheet_feeder_db.sheet_id", "123"]
+            "interstellar", True, [constants.SHEET_ID, "123"]
         )
         m_orchestrator.return_value.setup.assert_called_once()
         m_orchestrator.return_value.feed.assert_called_once()
