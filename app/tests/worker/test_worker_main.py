@@ -119,7 +119,7 @@ class TestCreateSheetTask:
         res = create_sheet_task(self.sheet.model_dump_json())
 
         m_args.assert_called_once_with(
-            "interstellar", True, ["--gsheet_feeder.sheet_id", "123"]
+            "interstellar", True, ["--gsheet_feeder_db.sheet_id", "123"]
         )
         m_orchestrator.return_value.setup.assert_called_once()
         m_orchestrator.return_value.feed.assert_called_once()
