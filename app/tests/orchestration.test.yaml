@@ -1,7 +1,8 @@
 steps:
-  feeder: cli_feeder
+  feeders:
+    - cli_feeder
   archivers: # order matters
-    - youtubedl_archiver
+    - generic_extractor
   enrichers:
     - hash_enricher
 
@@ -12,7 +13,7 @@ steps:
     - console_db
 
 configurations:
-  gsheet_feeder:
+  gsheet_feeder_db:
     service_account: "app/tests/fake_service_account.json"
   cli_feeder:
     urls:
