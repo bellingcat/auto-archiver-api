@@ -42,7 +42,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 
 [tool.poetry.group.worker.dependencies]
 watchdog = ">=6.0.0,<7.0.0"
-setuptools = "^75.8.0"
+setuptools = "^78.1.1"
 
 [tool.poetry.group.web.dependencies]
 fastapi = ">=0.115.8,<0.116.0"
