@@ -21,7 +21,7 @@ requires-python = ">=3.10,<3.13"
 
 
 dependencies = [
-    "auto-archiver (>=0.13.1)",
+    "auto-archiver (==1.1.0)",
     "celery (>=5.0)",
     "redis (==3.5.3)",
     "loguru (>=0.7.3,<0.8.0)",
@@ -42,7 +42,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 
 [tool.poetry.group.worker.dependencies]
 watchdog = ">=6.0.0,<7.0.0"
-setuptools = "^75.8.0"
+setuptools = ">=75.8.0"
 
 [tool.poetry.group.web.dependencies]
 fastapi = ">=0.115.8,<0.116.0"

@@ -16,7 +16,7 @@ ENV LANG=C.UTF-8 \
 
 # install dependencies
 RUN apt update -y && \
-	apt install -y python3-venv && \
+	apt install -y python3-venv python3-tk python3-dev && \
 	python3 -m venv ./poetry-venv && \
     ./poetry-venv/bin/python -m pip install --upgrade pip && \
     ./poetry-venv/bin/python -m pip install "poetry>=2.0.0,<3.0.0"

@@ -12,9 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir poetry
 
 COPY ../../pyproject.toml ../../poetry.lock ../../README.md ./
-# sed is unfortunately needed to fix a bug comming from vk-url-scraper that comes from brotli and the fact bk-ul-scraper can no longer be published to pypi
-RUN sed -i 's/platform_python_implementation >= \\"CPython\\"/platform_python_implementation == \\"CPython\\"/g' poetry.lock && \
-    poetry install --with web --no-interaction --no-ansi --no-cache
+RUN poetry install --with web --no-interaction --no-ansi --no-cache
 
 # Copy the application code and configurations
 COPY ../../app ./app/
