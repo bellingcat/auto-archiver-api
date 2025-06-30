@@ -4,8 +4,8 @@ lint:
 
 .PHONY: test
 test:
-	export ENVIRONMENT_FILE=.env.test
-	poetry run coverage run -m pytest -v --disable-warnings --color=yes app/tests/
+	export ENVIRONMENT_FILE=.env.test && \
+	poetry run coverage run -m pytest -v --disable-warnings --color=yes app/tests/ && \
 	poetry run coverage report
 
 .PHONY: clean-dev
@@ -31,7 +31,7 @@ stop-dev:
 prod:
 	docker compose --env-file .env.prod build
 	docker compose --env-file .env.prod up -d --remove-orphans
-	docker buildx prune --keep-storage 20gb -f
+	docker buildx prune --keep-storage 30gb -f
 	docker image prune -f
 	docker system df
 
