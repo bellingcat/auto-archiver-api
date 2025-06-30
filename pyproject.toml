@@ -21,7 +21,7 @@ requires-python = ">=3.10,<3.13"
 
 
 dependencies = [
-    "auto-archiver (==1.1.0)",
+    "auto-archiver (==1.1.1)",
     "celery (>=5.0)",
     "redis (==3.5.3)",
     "loguru (>=0.7.3,<0.8.0)",
