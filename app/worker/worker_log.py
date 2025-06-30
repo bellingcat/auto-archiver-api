@@ -1,7 +1,6 @@
 import sys
 
-from loguru import logger
-
+from app.shared.log import logger
 from app.shared.task_messaging import get_celery
 
 
@@ -14,16 +13,15 @@ def setup_celery_logger(c):
     for handler in celery_logger.handlers[:]:
         celery_logger.removeHandler(handler)
 
-    # Set up Loguru logging
-    logger.add("logs/celery_logs.log", retention="30 days", level="DEBUG")
-    logger.add("logs/celery_error_logs.log", retention="30 days", level="ERROR")
-
     # Redirect Celery logs to Loguru
     class InterceptHandler:
         @staticmethod
         def write(message):
             if message.strip():
-                logger.info(message.strip())
+                msg = message.strip()
+                # TODO: serialize to include extra information
+                with logger.contextualize(worker=True):
+                    logger.info(msg)
 
         # Required to prevent issues with buffered output
         @staticmethod

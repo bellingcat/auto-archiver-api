@@ -4,7 +4,6 @@ import traceback
 
 from auto_archiver.core.orchestrator import ArchivingOrchestrator
 from celery.signals import task_failure
-from loguru import logger
 from sqlalchemy import exc
 
 from app.shared import business_logic, constants, schemas
@@ -14,7 +13,7 @@ from app.shared.log import log_error
 from app.shared.settings import get_settings
 from app.shared.task_messaging import get_celery, get_redis
 from app.shared.utils.misc import get_all_urls
-from app.worker.worker_log import setup_celery_logger
+from app.worker.worker_log import logger, setup_celery_logger
 
 
 settings = get_settings()

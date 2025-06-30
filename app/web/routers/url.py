@@ -4,11 +4,11 @@ from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from loguru import logger
 from sqlalchemy.orm import Session
 
 from app.shared import schemas
 from app.shared.db.database import get_db_dependency
+from app.shared.log import logger
 from app.shared.schemas import DeleteResponse
 from app.shared.task_messaging import get_celery
 from app.web.config import ALLOW_ANY_EMAIL

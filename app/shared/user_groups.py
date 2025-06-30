@@ -3,7 +3,6 @@ import os
 from typing import Dict, List, Set
 
 import yaml
-from loguru import logger
 from pydantic import (
     BaseModel,
     Field,
@@ -12,6 +11,8 @@ from pydantic import (
     model_validator,
 )
 from typing_extensions import Self
+
+from app.shared.log import logger
 
 
 class UserGroups:

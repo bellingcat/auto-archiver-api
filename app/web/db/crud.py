@@ -4,7 +4,6 @@ from typing import Any, Type
 
 from cachetools import LRUCache, cached
 from cachetools.keys import hashkey
-from loguru import logger
 from sqlalchemy import (
     Column,
     ColumnElement,
@@ -21,6 +20,7 @@ from sqlalchemy.orm import Session, load_only
 
 from app.shared.db import models
 from app.shared.db.models import Archive, Group
+from app.shared.log import logger
 from app.shared.settings import get_settings
 from app.shared.user_groups import UserGroups
 from app.shared.utils.misc import fnv1a_hash_mod

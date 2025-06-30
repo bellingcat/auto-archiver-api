@@ -8,7 +8,6 @@ import alembic.config
 from fastapi import FastAPI
 from fastapi_mail import FastMail, MessageSchema, MessageType
 from fastapi_utils.tasks import repeat_every
-from loguru import logger
 
 from app.shared import schemas
 from app.shared.db import models
@@ -18,6 +17,7 @@ from app.shared.db.database import (
     make_engine,
     wal_checkpoint,
 )
+from app.shared.log import logger
 from app.shared.settings import get_settings
 from app.shared.task_messaging import get_celery
 from app.web.db import crud

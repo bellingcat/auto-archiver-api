@@ -1,9 +1,8 @@
 import traceback
 
 from fastapi import Request
-from loguru import logger
 
-from app.shared.log import log_error
+from app.shared.log import log_error, logger
 from app.web.utils.metrics import EXCEPTION_COUNTER
 
 
@@ -13,14 +12,14 @@ async def logging_middleware(request: Request, call_next):
         # TODO: use Origin to have summary prometheus metrics on where
         #  requests come from
         # origin = request.headers.get("origin")
-        logger.info(
+        logger.debug(
             f"{request.client.host}:{request.client.port} {request.method} {request.url._url} - HTTP {response.status_code}"
         )
         return response
     except Exception as e:
         location = f"{request.method} {request.url._url}"
         await increase_exceptions_counter(e, location)
-        logger.info(
+        logger.error(
             f"{request.client.host}:{request.client.port} {location} - {e.__class__.__name__} {e}"
         )
         raise e

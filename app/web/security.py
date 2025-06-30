@@ -6,10 +6,10 @@ import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from firebase_admin import auth, credentials, exceptions
-from loguru import logger
 from sqlalchemy.orm import Session
 
 from app.shared.db.database import get_db_dependency
+from app.shared.log import logger
 from app.shared.settings import get_settings
 from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db.user_state import UserState

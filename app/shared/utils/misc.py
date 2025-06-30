@@ -1,9 +1,9 @@
 from typing import List
 
 from auto_archiver.core import Media, Metadata
-from loguru import logger
 
 from app.shared.db import models
+from app.shared.log import logger
 
 
 def fnv1a_hash_mod(s: str, modulo: int) -> int:

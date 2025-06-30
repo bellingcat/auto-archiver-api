@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
-from loguru import logger
 
+from app.shared.log import logger
 from app.shared.schemas import Usage, UsageResponse
 from app.shared.user_groups import GroupInfo
 from app.web.config import VERSION

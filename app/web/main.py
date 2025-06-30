@@ -3,9 +3,9 @@ import os
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from loguru import logger
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from app.shared.log import logger
 from app.shared.settings import Settings, get_settings
 from app.shared.task_messaging import get_celery
 from app.web.config import API_DESCRIPTION, VERSION
