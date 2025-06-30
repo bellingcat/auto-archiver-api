@@ -6,7 +6,6 @@ from auto_archiver.core import Media, Metadata
 
 from app.shared import constants, schemas
 from app.shared.db import models
-from app.web.utils.misc import get_all_urls
 from app.worker.main import create_archive_task, create_sheet_task
 
 
@@ -147,30 +146,3 @@ class TestCreateSheetTask:
         assert inserted.group_id == "interstellar"
         assert inserted.author_id == "rick@example.com"
         assert inserted.public is False
-
-
-def test_get_all_urls(db_session):
-    meta = Metadata().set_url("https://example.com")
-    m1 = meta.add_media(Media("fn1.txt", urls=["outcome1.com"]))
-    m2 = meta.add_media(Media("fn2.txt", urls=["outcome2.com"]))
-    m3 = meta.add_media(Media("fn3.txt", urls=["outcome3.com"]))
-    m1.set("screenshot", Media("screenshot.png", urls=["screenshot.com"]))
-    m2.set(
-        "thumbnails",
-        [
-            Media("thumb1.png", urls=["thumb1.com"]),
-            Media("thumb2.png", urls=["thumb2.com"]),
-        ],
-    )
-    m3.set("ssl_data", Media("ssl_data.txt", urls=["ssl_data.com"]).to_dict())
-    m3.set("bad_data", {"bad": "dict is ignored"})
-
-    urls = [u.url for u in get_all_urls(meta)]
-    assert len(urls) == 7
-    assert "outcome1.com" in urls
-    assert "outcome2.com" in urls
-    assert "outcome3.com" in urls
-    assert "screenshot.com" in urls
-    assert "thumb1.com" in urls
-    assert "thumb2.com" in urls
-    assert "ssl_data.com" in urls

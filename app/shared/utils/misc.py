@@ -1,3 +1,11 @@
+from typing import List
+
+from auto_archiver.core import Media, Metadata
+from loguru import logger
+
+from app.shared.db import models
+
+
 def fnv1a_hash_mod(s: str, modulo: int) -> int:
     # receives a string and returns a number in [0:modulo-1], ensures an even
     # distribution over the modulo range
@@ -12,3 +20,44 @@ def fnv1a_hash_mod(s: str, modulo: int) -> int:
         if offset_basis_hash < 0x80000000
         else offset_basis_hash - 0x100000000
     ) % modulo
+
+
+def convert_if_media(media):
+    if isinstance(media, Media):
+        return media
+    elif isinstance(media, dict):
+        try:
+            return Media.from_dict(media)
+        except Exception as e:
+            logger.debug(f"error parsing {media} : {e}")
+    return False
+
+
+def get_all_urls(result: Metadata) -> List[models.ArchiveUrl]:
+    db_urls = []
+    for m in result.media:
+        for i, url in enumerate(m.urls):
+            db_urls.append(
+                models.ArchiveUrl(url=url, key=m.get("id", f"media_{i}"))
+            )
+        for k, prop in m.properties.items():
+            if prop_converted := convert_if_media(prop):
+                for i, url in enumerate(prop_converted.urls):
+                    db_urls.append(
+                        models.ArchiveUrl(
+                            url=url, key=prop_converted.get("id", f"{k}_{i}")
+                        )
+                    )
+            if isinstance(prop, list):
+                for i, prop_media in enumerate(prop):
+                    if prop_media := convert_if_media(prop_media):
+                        for j, url in enumerate(prop_media.urls):
+                            db_urls.append(
+                                models.ArchiveUrl(
+                                    url=url,
+                                    key=prop_media.get(
+                                        "id", f"{k}{prop_media.key}_{i}.{j}"
+                                    ),
+                                )
+                            )
+    return db_urls
