@@ -1,18 +1,20 @@
+import os
 import traceback
 
 from auto_archiver.utils.custom_logger import logger
 
 
 # logging configurations
-logger.add(
-    "logs/all_logs.log", retention="30 days", format="{extra[serialized]}"
-)
-logger.add(
-    "logs/all_error_logs.log",
-    retention="120 days",
-    level="ERROR",
-    format="{extra[serialized]}",
-)
+if not os.getenv("TESTING", "").lower() == "true":
+    logger.add(
+        "logs/all_logs.log", retention="60 days", format="{extra[serialized]}"
+    )
+    logger.add(
+        "logs/all_error_logs.log",
+        retention="120 days",
+        level="ERROR",
+        format="{extra[serialized]}",
+    )
 
 
 def log_error(e: Exception, traceback_str: str = None, extra: str = ""):

@@ -5,6 +5,7 @@ lint:
 .PHONY: test
 test:
 	export ENVIRONMENT_FILE=.env.test && \
+	export TESTING=true && \
 	poetry run coverage run -m pytest -v --disable-warnings --color=yes app/tests/ && \
 	poetry run coverage report
 
@@ -15,6 +16,7 @@ clean-dev:
 
 .PHONY: dev
 dev:
+	sysctl vm.overcommit_memory 2>/dev/null | grep -q 'vm.overcommit_memory = 1' || sudo sysctl vm.overcommit_memory=1
 	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml build
 	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans
 
@@ -29,6 +31,7 @@ stop-dev:
 
 .PHONY: prod
 prod:
+	sysctl vm.overcommit_memory 2>/dev/null | grep -q 'vm.overcommit_memory = 1' || sudo sysctl vm.overcommit_memory=1
 	docker compose --env-file .env.prod build
 	docker compose --env-file .env.prod up -d --remove-orphans
 	docker buildx prune --keep-storage 30gb -f
