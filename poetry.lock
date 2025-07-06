@@ -143,14 +143,14 @@ cryptography = "*"
 
 [[package]]
 name = "auto-archiver"
-version = "1.1.1"
+version = "1.1.2"
 description = "Automatically archive links to videos, images, and social media content from Google Sheets (and more)."
 optional = false
 python-versions = "<3.13,>=3.10"
 groups = ["main"]
 files = [
-    {file = "auto_archiver-1.1.1-py3-none-any.whl", hash = "sha256:3265340f26bd2c9cd9165c4cf728ae8b0340221a0178071ac45d3cba18f1c831"},
-    {file = "auto_archiver-1.1.1.tar.gz", hash = "sha256:cef13b8844a25b5b6756624f98d87292ca108e6c5b3ceb6536e9968ccee4c333"},
+    {file = "auto_archiver-1.1.2-py3-none-any.whl", hash = "sha256:f0a1ca5adf1c92bb2e6f60a4d81dca7537e47bed66d5b3c5ffa0d25f35afef53"},
+    {file = "auto_archiver-1.1.2.tar.gz", hash = "sha256:7573228f0cc86ad17547bcf9bfe633428a96fce40a732fe5fe956e9ceaa59ff3"},
 ]
 
 [package.dependencies]
@@ -176,6 +176,7 @@ opentimestamps = ">=0.4.5,<0.5.0"
 pdqhash = ">=0.0.0"
 pillow = ">=0.0.0"
 pyautogui = ">=0.9.54,<0.10.0"
+pyperclip = "1.8.2"
 pysubs2 = ">=0.0.0"
 python-slugify = ">=0.0.0"
 python-twitter-v2 = ">=0.0.0"
@@ -1360,7 +1361,7 @@ google-auth = ">=2.14.1,<3.0.0"
 googleapis-common-protos = ">=1.56.2,<2.0.0"
 grpcio = [
     {version = ">=1.49.1,<2.0.0", optional = true, markers = "python_version >= \"3.11\" and extra == \"grpc\""},
-    {version = ">=1.33.2,<2.0.0", optional = true, markers = "extra == \"grpc\""},
+    {version = ">=1.33.2,<2.0.0", optional = true, markers = "python_version < \"3.11\" and extra == \"grpc\""},
 ]
 grpcio-status = [
     {version = ">=1.49.1,<2.0.0", optional = true, markers = "python_version >= \"3.11\" and extra == \"grpc\""},
@@ -3324,13 +3325,13 @@ diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
 name = "pyperclip"
-version = "1.9.0"
+version = "1.8.2"
 description = "A cross-platform clipboard module for Python. (Only handles plain text for now.)"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "pyperclip-1.9.0.tar.gz", hash = "sha256:b7de0142ddc81bfc5c7507eea19da920b92252b548b96186caf94a5e2527d310"},
+    {file = "pyperclip-1.8.2.tar.gz", hash = "sha256:105254a8b04934f0bc84e9c24eb360a591aaf6535c9def5f29d92af107a9bf57"},
 ]
 
 [[package]]
@@ -4977,4 +4978,4 @@ test = ["pytest (>=8.1,<9.0)", "pytest-rerunfailures (>=14.0,<15.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "c955e9238705c89389aa07ccb8ca07d43d49412a03290f1a0488057b4d6608dc"
+content-hash = "d1ead17fb3d76b2e0ed072158f6b19b1ffc8a7b30704e29d29d4a47ab20905fa"
