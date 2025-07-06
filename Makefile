@@ -16,6 +16,7 @@ clean-dev:
 
 .PHONY: dev
 dev:
+	rm -rf secrets/telethon-202*.session
 	sysctl vm.overcommit_memory 2>/dev/null | grep -q 'vm.overcommit_memory = 1' || sudo sysctl vm.overcommit_memory=1
 	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml build
 	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans
@@ -31,6 +32,7 @@ stop-dev:
 
 .PHONY: prod
 prod:
+	rm -rf secrets/telethon-202*.session
 	sysctl vm.overcommit_memory 2>/dev/null | grep -q 'vm.overcommit_memory = 1' || sudo sysctl vm.overcommit_memory=1
 	docker compose --env-file .env.prod build
 	docker compose --env-file .env.prod up -d --remove-orphans
