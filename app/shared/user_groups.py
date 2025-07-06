@@ -44,12 +44,12 @@ class UserGroups:
 
 
 class GroupPermissions(BaseModel):
-    read: Set[str] | bool = Field(default_factory=list)
+    read: Set[str] | bool = Field(default_factory=set)
     read_public: bool = False
     archive_url: bool = False
     archive_sheet: bool = False
     manually_trigger_sheet: bool = False
-    sheet_frequency: Set[str] = Field(default_factory=list)
+    sheet_frequency: Set[str] = Field(default_factory=set)
     max_sheets: int = 0
     max_archive_lifespan_months: int = 12
     max_monthly_urls: int = 0
