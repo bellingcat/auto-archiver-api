@@ -14,9 +14,12 @@ clean-dev:
 	@echo -n "Are you sure? [yes/N] (this will delete volumes) " && read ans && [ $${ans:-N} = yes ]
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml down --volumes --remove-orphans
 
-.PHONY: dev
-dev:
+.PHONY: clean-session-data
+clean-session-data:
 	rm -rf secrets/telethon-202*.session
+
+.PHONY: dev
+dev: clean-session-data
 	sysctl vm.overcommit_memory 2>/dev/null | grep -q 'vm.overcommit_memory = 1' || sudo sysctl vm.overcommit_memory=1
 	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml build
 	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans
@@ -31,8 +34,7 @@ stop-dev:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml down --volumes
 
 .PHONY: prod
-prod:
-	rm -rf secrets/telethon-202*.session
+prod: clean-session-data
 	sysctl vm.overcommit_memory 2>/dev/null | grep -q 'vm.overcommit_memory = 1' || sudo sysctl vm.overcommit_memory=1
 	docker compose --env-file .env.prod build
 	docker compose --env-file .env.prod up -d --remove-orphans
