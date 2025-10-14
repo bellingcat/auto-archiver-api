@@ -76,7 +76,7 @@ def search_archives_by_url(
         if read_public:
             or_filters.append(models.Archive.public.is_(true()))
         if read_groups is True:
-            or_filters.append(models.Archive.group_id.isnot(None))
+            or_filters.append(true())
         else:
             or_filters.append(models.Archive.group_id.in_(read_groups))
         query = query.filter(or_(*or_filters))

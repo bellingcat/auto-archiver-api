@@ -109,6 +109,7 @@ def test_search_archives_by_url(test_data, db_session):
         )
         == 16
     )
+    # true READ will work for all groups or lack of groups
     assert (
         len(
             crud.search_archives_by_url(
@@ -119,7 +120,7 @@ def test_search_archives_by_url(test_data, db_session):
                 False,
             )
         )
-        == 16
+        == 33
     )
     assert (
         len(
@@ -131,7 +132,7 @@ def test_search_archives_by_url(test_data, db_session):
                 True,
             )
         )
-        == 16
+        == 33
     )
 
     # Jerry's archives are public
