@@ -21,7 +21,7 @@ requires-python = ">=3.10,<3.13"
 
 
 dependencies = [
-    "auto-archiver (==1.1.2)",
+    "auto-archiver (==1.1.5)",
     "celery (>=5.0)",
     "redis (==3.5.3)",
     "loguru (>=0.7.3,<0.8.0)",
@@ -61,5 +61,5 @@ firebase-admin = "^6.6.0"
 pytest = ">=8.3.4,<9.0.0"
 httpx = ">=0.28.1,<0.29.0"
 coverage = ">=7.6.11,<8.0.0"
-pytest-asyncio = ">=0.25.3,<0.26.0"
+pytest-asyncio = ">=1.2.0,<2.0.0"
 pre-commit = "^4.1.0"
