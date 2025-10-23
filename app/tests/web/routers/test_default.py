@@ -76,7 +76,7 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     r = client_with_token.get("/metrics")
     assert r.status_code == HTTPStatus.OK
     assert (
-        r.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
+        r.headers["content-type"] == "text/plain; version=1.0.0; charset=utf-8"
     )
     assert "disk_utilization" in r.text
     assert "database_metrics" in r.text
