@@ -1,5 +1,5 @@
 # From python:3.10
-FROM bellingcat/auto-archiver:v1.1.5
+FROM bellingcat/auto-archiver:v1.1.6
 
 # set work directory
 WORKDIR /aa-api

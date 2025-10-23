@@ -133,14 +133,14 @@ cryptography = "*"
 
 [[package]]
 name = "auto-archiver"
-version = "1.1.5"
+version = "1.1.6"
 description = "Automatically archive links to videos, images, and social media content from Google Sheets (and more)."
 optional = false
 python-versions = "<3.13,>=3.10"
 groups = ["main"]
 files = [
-    {file = "auto_archiver-1.1.5-py3-none-any.whl", hash = "sha256:7c787e221020a74f9ec6b6011ad667fc409d27d9fe65979136ba4b02dc91d513"},
-    {file = "auto_archiver-1.1.5.tar.gz", hash = "sha256:075b1cb1639d56872a12e36d387d658771b7ff59b0049bad8324d6ea6254f612"},
+    {file = "auto_archiver-1.1.6-py3-none-any.whl", hash = "sha256:56509ee0a8811fe0e6a7f3158c40ad40903423decb94e4588cc965ad6c3a3d79"},
+    {file = "auto_archiver-1.1.6.tar.gz", hash = "sha256:fa392e45e6f0978417696636ee410638b25682da1a04c97191c916cc570dd905"},
 ]
 
 [package.dependencies]
@@ -312,18 +312,18 @@ files = [
 
 [[package]]
 name = "boto3"
-version = "1.40.56"
+version = "1.40.57"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "boto3-1.40.56-py3-none-any.whl", hash = "sha256:8985a840d57671aa3c6124b0c178e79be97e3447de4b5819156071793f82ee5c"},
-    {file = "boto3-1.40.56.tar.gz", hash = "sha256:c1afdb04dd27418fc58400434ab8e05998bb452b69c428168d9ada344fe6b93e"},
+    {file = "boto3-1.40.57-py3-none-any.whl", hash = "sha256:4ceeac741b04cd5d9193c85d1707597a30f7482682733437454408ea755ee151"},
+    {file = "boto3-1.40.57.tar.gz", hash = "sha256:717605170cb167e07462b7f033b26bc9c0fee34b78b5eac52edcd6149915e23f"},
 ]
 
 [package.dependencies]
-botocore = ">=1.40.56,<1.41.0"
+botocore = ">=1.40.57,<1.41.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.14.0,<0.15.0"
 
@@ -332,14 +332,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.40.56"
+version = "1.40.57"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "botocore-1.40.56-py3-none-any.whl", hash = "sha256:0962dfc9bfb0afa1855042a88a72cc722cc7f9c08f51d2c5c88181d525a59a27"},
-    {file = "botocore-1.40.56.tar.gz", hash = "sha256:b29df3418a299609632cab240ee79275463b176ebeb3adc841ba367a3fa0c4db"},
+    {file = "botocore-1.40.57-py3-none-any.whl", hash = "sha256:95dfd35e0863c3e33d458b0e74eb5a82d73521347c25651e1a0e18cf921ee010"},
+    {file = "botocore-1.40.57.tar.gz", hash = "sha256:39bb0570e10eb7a5d518974865aeebafe275498c8f132b23e3021b957babaf8a"},
 ]
 
 [package.dependencies]
@@ -1504,14 +1504,14 @@ dev = ["flake8", "markdown", "twine", "wheel"]
 
 [[package]]
 name = "google-api-core"
-version = "2.26.0"
+version = "2.27.0"
 description = "Google API client core library"
 optional = false
 python-versions = ">=3.7"
 groups = ["main", "web"]
 files = [
-    {file = "google_api_core-2.26.0-py3-none-any.whl", hash = "sha256:2b204bd0da2c81f918e3582c48458e24c11771f987f6258e6e227212af78f3ed"},
-    {file = "google_api_core-2.26.0.tar.gz", hash = "sha256:e6e6d78bd6cf757f4aee41dcc85b07f485fbb069d5daa3afb126defba1e91a62"},
+    {file = "google_api_core-2.27.0-py3-none-any.whl", hash = "sha256:779a380db4e21a4ee3d717cf8efbf324e53900bf37e1ffb273e5348a9916dd42"},
+    {file = "google_api_core-2.27.0.tar.gz", hash = "sha256:d32e2f5dd0517e91037169e75bf0a9783b255aff1d11730517c0b2b29e9db06a"},
 ]
 
 [package.dependencies]
@@ -2901,14 +2901,14 @@ files = [
 
 [[package]]
 name = "pdbp"
-version = "1.7.1"
+version = "1.8.0"
 description = "pdbp (Pdb+): A drop-in replacement for pdb and pdbpp."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "pdbp-1.7.1-py3-none-any.whl", hash = "sha256:bed0541a34197b00b7ec37b64998eb8bbf4864fcb0b4bc6c439566aa1390e23b"},
-    {file = "pdbp-1.7.1.tar.gz", hash = "sha256:5ab06d86a60433fc8310f8cf8fc0519ec600768d6f4d5b867513ee1d48b0693b"},
+    {file = "pdbp-1.8.0-py3-none-any.whl", hash = "sha256:4a428f0ac41c711cbabefa26ef0eea2c63246bcbe05f8a99badff3bfefda5a5d"},
+    {file = "pdbp-1.8.0.tar.gz", hash = "sha256:7c6994625e120e3a11685b13b883079ea642718af474af0a66c582b6840b70b3"},
 ]
 
 [package.dependencies]
@@ -4488,14 +4488,14 @@ pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "ruamel-yaml"
-version = "0.18.15"
+version = "0.18.16"
 description = "ruamel.yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "ruamel.yaml-0.18.15-py3-none-any.whl", hash = "sha256:148f6488d698b7a5eded5ea793a025308b25eca97208181b6a026037f391f701"},
-    {file = "ruamel.yaml-0.18.15.tar.gz", hash = "sha256:dbfca74b018c4c3fba0b9cc9ee33e53c371194a9000e694995e620490fd40700"},
+    {file = "ruamel.yaml-0.18.16-py3-none-any.whl", hash = "sha256:048f26d64245bae57a4f9ef6feb5b552a386830ef7a826f235ffb804c59efbba"},
+    {file = "ruamel.yaml-0.18.16.tar.gz", hash = "sha256:a6e587512f3c998b2225d68aa1f35111c29fad14aed561a26e73fab729ec5e5a"},
 ]
 
 [package.dependencies]
@@ -4660,14 +4660,14 @@ websocket-client = ">=1.8.0,<2.0"
 
 [[package]]
 name = "seleniumbase"
-version = "4.43.1"
+version = "4.43.2"
 description = "A complete web automation framework for end-to-end testing."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "seleniumbase-4.43.1-py3-none-any.whl", hash = "sha256:b810d9a4f07524da349f447812de4ddbed7a166a1788f14259abbb32aa80542a"},
-    {file = "seleniumbase-4.43.1.tar.gz", hash = "sha256:fdddb3009d77ce0a4f65ba10f3f084d031737d92dae9cf77ebf1614b2dcebdbc"},
+    {file = "seleniumbase-4.43.2-py3-none-any.whl", hash = "sha256:5435c1d86335d84b61ff57822554fd4ff5e40a34c3a2fd9dde18d2cbebe3a308"},
+    {file = "seleniumbase-4.43.2.tar.gz", hash = "sha256:48a4930198b3ff0e5a30b973718db772221e0882ac7de87821dc3a4dfdc42b2f"},
 ]
 
 [package.dependencies]
@@ -4696,7 +4696,7 @@ packaging = ">=25.0"
 parameterized = "0.9.0"
 parse = ">=1.20.2"
 parse-type = ">=0.6.6"
-pdbp = ">=1.7.1"
+pdbp = ">=1.8.0"
 pip = {version = ">=25.2", markers = "python_version >= \"3.9\""}
 platformdirs = {version = ">=4.5.0", markers = "python_version >= \"3.10\""}
 pluggy = {version = "1.6.0", markers = "python_version >= \"3.9\""}
@@ -5468,14 +5468,14 @@ h11 = ">=0.9.0,<1"
 
 [[package]]
 name = "yt-dlp"
-version = "2025.10.14"
+version = "2025.10.22"
 description = "A feature-rich command-line audio/video downloader"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "yt_dlp-2025.10.14-py3-none-any.whl", hash = "sha256:0b9da17eda1bbf48e2315130043d7993fd4ca1c5a35571f8231da1a910c9c115"},
-    {file = "yt_dlp-2025.10.14.tar.gz", hash = "sha256:b18436aa9bb6f04354fd78d31ad9eeaae8c81b6a859f07072b25c18cd6c25844"},
+    {file = "yt_dlp-2025.10.22-py3-none-any.whl", hash = "sha256:9c803a9598859f91d0d5bd3337f1506ecb40bbe97f6efbe93bc4461fed344fb2"},
+    {file = "yt_dlp-2025.10.22.tar.gz", hash = "sha256:db2d48133222b1d9508c6de757859c24b5cefb9568cf68ccad85dac20b07f77b"},
 ]
 
 [package.dependencies]
@@ -5493,13 +5493,13 @@ websockets = {version = ">=13.0", optional = true, markers = "extra == \"default
 build = ["build", "hatchling (>=1.27.0)", "pip", "setuptools (>=71.0.2,<81)", "wheel"]
 curl-cffi = ["curl-cffi (>=0.5.10,<0.6.dev0 || >=0.10.dev0,<0.14) ; implementation_name == \"cpython\""]
 default = ["brotli ; implementation_name == \"cpython\"", "brotlicffi ; implementation_name != \"cpython\"", "certifi", "mutagen", "pycryptodomex", "requests (>=2.32.2,<3)", "urllib3 (>=2.0.2,<3)", "websockets (>=13.0)"]
-dev = ["autopep8 (>=2.0,<3.0)", "pre-commit", "pytest (>=8.1,<9.0)", "pytest-rerunfailures (>=14.0,<15.0)", "ruff (>=0.13.0,<0.14.0)"]
+dev = ["autopep8 (>=2.0,<3.0)", "pre-commit", "pytest (>=8.1,<9.0)", "pytest-rerunfailures (>=14.0,<15.0)", "ruff (>=0.14.0,<0.15.0)"]
 pyinstaller = ["pyinstaller (>=6.13.0)"]
 secretstorage = ["cffi", "secretstorage"]
-static-analysis = ["autopep8 (>=2.0,<3.0)", "ruff (>=0.13.0,<0.14.0)"]
+static-analysis = ["autopep8 (>=2.0,<3.0)", "ruff (>=0.14.0,<0.15.0)"]
 test = ["pytest (>=8.1,<9.0)", "pytest-rerunfailures (>=14.0,<15.0)"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "7eec1e65379029e99e0fb55b3519750bdb50c00a7b82409d7196c42657396807"
+content-hash = "a3de1ffd5b61d2e53984b1a0ecaa8a7d06cbf14e10beb4d3b5bf5b65aee4735a"
