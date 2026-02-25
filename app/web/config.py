@@ -1,4 +1,4 @@
-VERSION = "0.12.6"
+VERSION = "0.12.7"
 
 API_DESCRIPTION = """
 #### API for the Auto-Archiver project, a tool to archive web pages and Google Sheets.

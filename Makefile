@@ -29,14 +29,11 @@ dev-redis-only:
 	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml build redis
 	docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up --remove-orphans redis
 
-.PHONY: stop-dev
-stop-dev:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml down --volumes
-
 .PHONY: prod
 prod: clean-session-data
 	sysctl vm.overcommit_memory 2>/dev/null | grep -q 'vm.overcommit_memory = 1' || sudo sysctl vm.overcommit_memory=1
 	docker compose --env-file .env.prod build
+	make stop-prod
 	docker compose --env-file .env.prod up -d --remove-orphans
 	docker buildx prune --keep-storage 30gb -f
 	docker image prune -f
@@ -44,4 +41,4 @@ prod: clean-session-data
 
 .PHONY: stop-prod
 stop-prod:
-	docker compose down
+	docker compose --env-file .env.prod down
