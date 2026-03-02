@@ -1,11 +1,15 @@
 # From python:3.10
-FROM bellingcat/auto-archiver:v1.2.2
+FROM bellingcat/auto-archiver:v1.2.3
 
 # set work directory
 WORKDIR /aa-api
 
+# Switch to root for privileged operations (base image runs as UID 1000)
+USER root
+
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
-    sh get-docker.sh
+    sh get-docker.sh && \
+    usermod -aG docker ubuntu
 # set environment variables
 ENV LANG=C.UTF-8 \
 	PYTHONUNBUFFERED=1 \
@@ -28,5 +32,8 @@ RUN ./poetry-venv/bin/poetry install --without dev --no-root --no-cache
 # copy source code and .env files over
 COPY ../../app ./app/
 COPY ../../user-groups.* ./app/
+
+# Switch back to non-root user
+USER 1000
 
 ENTRYPOINT ["./poetry-venv/bin/poetry", "run"]
