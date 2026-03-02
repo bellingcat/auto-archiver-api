@@ -57,7 +57,9 @@ async def redis_subscribe_worker_exceptions(redis_exceptions_channel: str):
 
 
 async def measure_regular_metrics(sqlite_db_url: str, repeat_in_seconds: int):
-    _total, used, free = shutil.disk_usage("/")
+    # Use a bind-mounted path to measure the host filesystem,
+    # not the container's overlay filesystem
+    _total, used, free = shutil.disk_usage("/aa-api/database")
     DISK_UTILIZATION.labels(type="used").set(used / (2**30))
     DISK_UTILIZATION.labels(type="free").set(free / (2**30))
     try:
