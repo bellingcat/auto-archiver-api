@@ -1,6 +1,8 @@
 [tool.poetry]
 package-mode = false
 
+[tool.poetry.dependencies]
+auto-archiver = {allow-prereleases = true}
 [project]
 name = "auto-archiver-api"
 description = "API wrapper for Bellingcat's Auto Archiver, supports users, groups, sheet and url archives."
@@ -21,7 +23,7 @@ requires-python = ">=3.10,<3.13"
 
 
 dependencies = [
-    "auto-archiver (>=1.2.2,<2.0.0)",
+    "auto-archiver (>=1.2.4,<2.0.0)",
     "celery (>=5.0)",
     "redis (>=7.2.0,<8.0.0)",
     "loguru (>=0.7.3,<0.8.0)",
