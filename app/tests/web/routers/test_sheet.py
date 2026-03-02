@@ -191,7 +191,7 @@ class TestArchiveUserSheetEndpoint:
             models.Sheet(
                 id="123-sheet-id",
                 name="Test Sheet 1",
-                author_id="morty@example.com",
+                author_id="rick@example.com",
                 group_id="spaceship",
                 frequency="hourly",
             )
@@ -210,8 +210,82 @@ class TestArchiveUserSheetEndpoint:
         m_celery.signature.assert_called_once()
         m_signature.apply_async.assert_called_once()
 
-    def test_token_auth(self, client_with_token, test_no_auth):
-        test_no_auth(client_with_token.post, "/sheet/123-sheet-id/archive")
+    def test_token_auth(self, client_with_token):
+        # API token with nonexistent sheet returns 404
+        r = client_with_token.post("/sheet/123-sheet-id/archive")
+        assert r.status_code == HTTPStatus.NOT_FOUND
+        assert r.json() == {"detail": "Sheet not found."}
+
+    @patch("app.web.routers.sheet.celery", return_value=MagicMock())
+    def test_token_auth_triggers_any_sheet(
+        self, m_celery, client_with_token, db_session
+    ):
+        # Add a sheet owned by someone else
+        db_session.add(
+            models.Sheet(
+                id="rick-sheet-id",
+                name="Rick's Sheet",
+                author_id="rick@example.com",
+                group_id="spaceship",
+                frequency="hourly",
+            )
+        )
+        db_session.commit()
+
+        m_signature = MagicMock()
+        m_signature.apply_async.return_value = TaskResult(
+            id="token-taskid", status=STATUS_PENDING, result=""
+        )
+        m_celery.signature.return_value = m_signature
+
+        r = client_with_token.post("/sheet/rick-sheet-id/archive")
+        assert r.status_code == HTTPStatus.CREATED
+        assert r.json() == {"id": "token-taskid"}
+        m_celery.signature.assert_called_once()
+        # Verify it was queued as high priority
+        m_signature.apply_async.assert_called_once_with(
+            priority=0, queue="high_priority"
+        )
+
+    @patch("app.web.routers.sheet.celery", return_value=MagicMock())
+    def test_token_auth_uses_sheet_owner_as_author(
+        self, m_celery, client_with_token, db_session
+    ):
+        db_session.add(
+            models.Sheet(
+                id="jerry-sheet-id",
+                name="Jerry's Sheet",
+                author_id="jerry@example.com",
+                group_id="the-jerrys-club",
+                frequency="daily",
+            )
+        )
+        db_session.commit()
+
+        m_signature = MagicMock()
+        m_signature.apply_async.return_value = TaskResult(
+            id="token-taskid-2", status=STATUS_PENDING, result=""
+        )
+        m_celery.signature.return_value = m_signature
+
+        r = client_with_token.post("/sheet/jerry-sheet-id/archive")
+        assert r.status_code == HTTPStatus.CREATED
+        # Verify the sheet task uses the original sheet owner as author
+        call_args = m_celery.signature.call_args
+        import json
+
+        submitted = json.loads(
+            call_args[1]["args"][0]
+            if "args" in call_args[1]
+            else call_args[0][1][0]
+        )
+        assert submitted["author_id"] == "jerry@example.com"
+        assert submitted["sheet_id"] == "jerry-sheet-id"
+
+    def test_token_auth_sheet_not_found(self, client_with_token):
+        r = client_with_token.post("/sheet/nonexistent-sheet/archive")
+        assert r.status_code == HTTPStatus.NOT_FOUND
+        assert r.json() == {"detail": "Sheet not found."}
 
     def test_missing_data(self, client_with_auth):
         r = client_with_auth.post("/sheet/123-sheet-id/archive")
@@ -219,11 +293,12 @@ class TestArchiveUserSheetEndpoint:
         assert r.json() == {"detail": "No access to this sheet."}
 
     def test_no_access(self, client_with_auth, db_session):
+        # Sheet owned by morty, but auth user is rick — rick can't see morty's sheet
         db_session.add(
             models.Sheet(
                 id="123-sheet-id",
                 name="Test Sheet 1",
-                author_id="rick@example.com",
+                author_id="morty@example.com",
                 group_id="spaceship",
                 frequency="hourly",
             )
@@ -234,12 +309,13 @@ class TestArchiveUserSheetEndpoint:
         assert r.json() == {"detail": "No access to this sheet."}
 
     def test_user_not_in_group(self, client_with_auth, db_session):
+        # Rick owns the sheet but is not in this group
         db_session.add(
             models.Sheet(
                 id="123-sheet-id",
                 name="Test Sheet 1",
-                author_id="morty@example.com",
-                group_id="interdimensional",
+                author_id="rick@example.com",
+                group_id="the-jerrys-club",
                 frequency="hourly",
             )
         )
@@ -251,12 +327,14 @@ class TestArchiveUserSheetEndpoint:
         }
 
     def test_user_cannot_manually_trigger(self, client_with_auth, db_session):
+        # Rick is in 'animated-characters' (via domain) but that group
+        # does not have manually_trigger_sheet permission
         db_session.add(
             models.Sheet(
                 id="123-sheet-id",
                 name="Test Sheet 1",
-                author_id="morty@example.com",
-                group_id="default",
+                author_id="rick@example.com",
+                group_id="animated-characters",
                 frequency="hourly",
             )
         )

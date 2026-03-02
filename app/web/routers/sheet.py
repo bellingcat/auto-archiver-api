@@ -13,9 +13,11 @@ from app.shared.schemas import (
     SubmitSheet,
 )
 from app.shared.task_messaging import get_celery
+from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db import crud
 from app.web.db.user_state import UserState
-from app.web.security import get_user_state
+from app.web.security import get_token_or_user_auth, get_user_state
+from app.web.utils.misc import convert_priority_to_queue_dict
 
 
 router = APIRouter(prefix="/sheet", tags=["Google Spreadsheet operations"])
@@ -93,38 +95,54 @@ def delete_sheet(
 @router.post(
     "/{sheet_id}/archive",
     status_code=HTTPStatus.CREATED,
-    summary="Trigger an archiving task for a GSheet you own.",
+    summary="Trigger an archiving task for a GSheet you own, or any sheet with the API token.",
     response_description="task_id for the archiving task.",
 )
 def archive_user_sheet(
     sheet_id: str,
-    user: UserState = Depends(get_user_state),
+    email: str = Depends(get_token_or_user_auth),
     db: Session = Depends(get_db_dependency),
 ) -> JSONResponse:
-    sheet = crud.get_user_sheet(db, user.email, sheet_id=sheet_id)
-    if not sheet:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail="No access to this sheet."
-        )
+    is_api_token = email == ALLOW_ANY_EMAIL
 
-    if not user.in_group(sheet.group_id):
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail="User does not have access to this group.",
-        )
+    if is_api_token:
+        # API token can trigger any sheet
+        sheet = crud.get_sheet_by_id(db, sheet_id)
+        if not sheet:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="Sheet not found."
+            )
+        group_queue = convert_priority_to_queue_dict("high")
+        author_id = sheet.author_id
+    else:
+        user = UserState(db, email)
+        sheet = crud.get_user_sheet(db, user.email, sheet_id=sheet_id)
+        if not sheet:
+            raise HTTPException(
+                status_code=HTTPStatus.FORBIDDEN,
+                detail="No access to this sheet.",
+            )
 
-    if not user.can_manually_trigger(sheet.group_id):
-        raise HTTPException(
-            status_code=HTTPStatus.TOO_MANY_REQUESTS,
-            detail="User cannot manually trigger sheet archiving in this group.",
-        )
+        if not user.in_group(sheet.group_id):
+            raise HTTPException(
+                status_code=HTTPStatus.FORBIDDEN,
+                detail="User does not have access to this group.",
+            )
 
-    group_queue = user.priority_group(sheet.group_id)
+        if not user.can_manually_trigger(sheet.group_id):
+            raise HTTPException(
+                status_code=HTTPStatus.TOO_MANY_REQUESTS,
+                detail="User cannot manually trigger sheet archiving in this group.",
+            )
+
+        group_queue = user.priority_group(sheet.group_id)
+        author_id = user.email
+
     task = celery.signature(
         "create_sheet_task",
         args=[
             SubmitSheet(
-                sheet_id=sheet_id, author_id=user.email, group_id=sheet.group_id
+                sheet_id=sheet_id, author_id=author_id, group_id=sheet.group_id
             ).model_dump_json()
         ],
     ).apply_async(**group_queue)

@@ -370,6 +370,10 @@ def create_sheet(
     return db_sheet
 
 
+def get_sheet_by_id(db: Session, sheet_id: str) -> models.Sheet:
+    return db.query(models.Sheet).filter(models.Sheet.id == sheet_id).first()
+
+
 def get_user_sheet(db: Session, email: str, sheet_id: str) -> models.Sheet:
     return (
         db.query(models.Sheet)

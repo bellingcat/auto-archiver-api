@@ -626,6 +626,24 @@ def test_create_sheet(db_session):
         )
 
 
+def test_get_sheet_by_id(test_data, db_session):
+    # nonexistent sheet
+    assert crud.get_sheet_by_id(db_session, "nonexistent") is None
+
+    # find sheets regardless of owner
+    sheet = crud.get_sheet_by_id(db_session, "sheet-0")
+    assert sheet is not None
+    assert sheet.author_id == "rick@example.com"
+
+    sheet = crud.get_sheet_by_id(db_session, "sheet-1")
+    assert sheet is not None
+    assert sheet.author_id == "morty@example.com"
+
+    sheet = crud.get_sheet_by_id(db_session, "sheet-2")
+    assert sheet is not None
+    assert sheet.author_id == "jerry@example.com"
+
+
 def test_get_user_sheet(test_data, db_session):
     assert crud.get_user_sheet(db_session, "", "sheet-0") is None
     assert (
