@@ -44,11 +44,11 @@ def test_alembic(db_session):
     side_effect=Exception("mocked error"),
 )
 def test_logging_middleware(m1, client_with_auth):
-    assert len(EXCEPTION_COUNTER.collect()[0].samples) == 0
+    samples_before = len(EXCEPTION_COUNTER.collect()[0].samples)
     with pytest.raises(Exception, match="mocked error"):
         client_with_auth.delete("/url/123")
-    # creates one empty and one from above
-    assert len(EXCEPTION_COUNTER.collect()[0].samples) == 2
+    # the exception should have created new counter samples
+    assert len(EXCEPTION_COUNTER.collect()[0].samples) == samples_before + 2
 
 
 def test_serve_local_archive_logic(get_settings):

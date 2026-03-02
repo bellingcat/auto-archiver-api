@@ -1,5 +1,6 @@
+import shutil
 from http import HTTPStatus
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -85,9 +86,14 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     assert 'disk_utilization{type="used"}' not in r.text
 
     # after metrics calculation
-    await measure_regular_metrics(
-        get_settings.DATABASE_PATH, 60 * 60 * 24 * 31 * 12 * 100
-    )
+    # Mock shutil.disk_usage since /aa-api/database is a Docker-only path
+    mock_usage = shutil._ntuple_diskusage(2**40, 2**38, 2**39)
+    with patch(
+        "app.web.utils.metrics.shutil.disk_usage", return_value=mock_usage
+    ):
+        await measure_regular_metrics(
+            get_settings.DATABASE_PATH, 60 * 60 * 24 * 31 * 12 * 100
+        )
     r2 = client_with_token.get("/metrics")
     assert 'disk_utilization{type="used"}' in r2.text
     assert 'disk_utilization{type="free"}' in r2.text
@@ -109,7 +115,10 @@ async def test_prometheus_metrics(test_data, client_with_token, get_settings):
     )
 
     # 30s window, should not change the gauges nor the total in the counters
-    await measure_regular_metrics(get_settings.DATABASE_PATH, 30)
+    with patch(
+        "app.web.utils.metrics.shutil.disk_usage", return_value=mock_usage
+    ):
+        await measure_regular_metrics(get_settings.DATABASE_PATH, 30)
     r3 = client_with_token.get("/metrics")
     assert 'database_metrics{query="count_archives"} 100.0' in r3.text
     assert 'database_metrics{query="count_archive_urls"} 1000.0' in r3.text
