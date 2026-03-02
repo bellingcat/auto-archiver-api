@@ -36,7 +36,11 @@ services:
       dockerfile: docker/worker/Dockerfile
     restart: always
     env_file: .env.prod
-    command: celery --app=app.worker.main.celery worker -Q high_priority,low_priority --concurrency=${CONCURRENCY} --max-tasks-per-child=100 -O fair
+    command: celery --app=app.worker.main.celery worker -Q high_priority,low_priority --concurrency=${CONCURRENCY} --max-tasks-per-child=50 -O fair --without-heartbeat --without-mingle
+    deploy:
+      resources:
+        limits:
+          memory: ${WORKER_MEMORY_LIMIT:-4g}
     volumes:
       - ./logs:/aa-api/logs
       - ./database:/aa-api/database
@@ -57,6 +61,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
   redis:
     init: true
@@ -64,6 +69,10 @@ services:
     restart: always
     env_file: .env.prod
     command: redis-server /conf/redis.conf --requirepass ${REDIS_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: ${REDIS_MEMORY_LIMIT:-1g}
     volumes:
       - ./redis/data:/data
       - ./redis/config:/conf
@@ -72,3 +81,4 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s

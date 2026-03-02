@@ -16,6 +16,14 @@ from app.shared.utils.misc import get_all_urls
 from app.worker.worker_log import logger, setup_celery_logger
 
 
+# Time limits for tasks (in seconds)
+# soft_time_limit raises SoftTimeLimitExceeded inside the task so it can clean up
+# time_limit hard-kills the task if soft limit didn't work
+SINGLE_URL_SOFT_TIME_LIMIT = 30 * 60  # 30 minutes
+SINGLE_URL_HARD_TIME_LIMIT = 35 * 60  # 35 minutes
+SHEET_SOFT_TIME_LIMIT = 6 * 60 * 60  # 6 hours
+SHEET_HARD_TIME_LIMIT = 6.5 * 60 * 60  # 6.5 hours
+
 settings = get_settings()
 
 celery = get_celery("worker")
@@ -35,6 +43,10 @@ AA_LOGGER_ID = None
     autoretry_for=(Exception,),
     retry_backoff=True,
     retry_kwargs={"max_retries": 1},
+    soft_time_limit=SINGLE_URL_SOFT_TIME_LIMIT,
+    time_limit=SINGLE_URL_HARD_TIME_LIMIT,
+    acks_late=True,
+    reject_on_worker_lost=True,
 )
 def create_archive_task(self, archive_json: str):
     global AA_LOGGER_ID
@@ -43,6 +55,7 @@ def create_archive_task(self, archive_json: str):
     # call auto-archiver
     args = get_orchestrator_args(archive.group_id, False, [archive.url])
     result = None
+    orchestrator = None
     try:
         orchestrator = ArchivingOrchestrator()
         orchestrator.logger_id = AA_LOGGER_ID  # ensure single logger
@@ -55,6 +68,8 @@ def create_archive_task(self, archive_json: str):
     except Exception as e:
         log_error(e, "create_archive_task")
         raise e
+    finally:
+        cleanup_orchestrator(orchestrator)
     assert result, f"UNABLE TO archive: {archive.url}"
 
     # prepare and insert in DB
@@ -67,7 +82,14 @@ def create_archive_task(self, archive_json: str):
     return archive.result
 
 
-@celery.task(name="create_sheet_task", bind=True)
+@celery.task(
+    name="create_sheet_task",
+    bind=True,
+    soft_time_limit=SHEET_SOFT_TIME_LIMIT,
+    time_limit=SHEET_HARD_TIME_LIMIT,
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
 def create_sheet_task(self, sheet_json: str):
     global AA_LOGGER_ID
     sheet = schemas.SubmitSheet.model_validate_json(sheet_json)
@@ -112,6 +134,8 @@ def create_sheet_task(self, sheet_json: str):
 
     except SystemExit as e:
         log_error(e, "create_sheet_task: SystemExit from AA")
+    finally:
+        cleanup_orchestrator(orchestrator)
 
     if stats["archived"] > 0:
         with get_db() as session:
@@ -127,6 +151,19 @@ def create_sheet_task(self, sheet_json: str):
         time=datetime.datetime.now().isoformat(),
         stats=stats,
     ).model_dump()
+
+
+def cleanup_orchestrator(orchestrator):
+    """
+    Clean up orchestrator resources to prevent leaks between tasks.
+    """
+    if orchestrator is None:
+        return
+    try:
+        if hasattr(orchestrator, "extractors"):
+            orchestrator.cleanup()
+    except Exception as e:
+        logger.warning(f"Error cleaning up orchestrator: {e}")
 
 
 def get_orchestrator_args(

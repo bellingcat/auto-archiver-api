@@ -21,6 +21,8 @@ def make_engine(database_url: str):
         pool_size=15,  # Increase pool size
         max_overflow=20,  # Allow more temporary connections
         pool_recycle=1800,  # Recycle connections every 30 minutes
+        pool_pre_ping=True,  # Detect and replace stale connections
+        pool_timeout=30,  # Timeout waiting for a connection from pool
     )
 
     @event.listens_for(engine, "connect")
