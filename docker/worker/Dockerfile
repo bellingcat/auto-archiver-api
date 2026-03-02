@@ -33,6 +33,14 @@ RUN ./poetry-venv/bin/poetry install --without dev --no-root --no-cache
 COPY ../../app ./app/
 COPY ../../user-groups.* ./app/
 
+# Pre-create directories and fix ownership for non-root user (UID 1000)
+# - /crawls: named volume for Browsertrix WACZ crawl data
+# - /aa-api: WORKDIR, auto-archiver creates TemporaryDirectory(dir="./") here
+# - /aa-api/logs, /aa-api/database, /aa-api/secrets: bind-mounted at runtime
+# - /app/.venv: base image venv, seleniumbase downloads chromedriver here at runtime
+RUN mkdir -p /crawls /aa-api/logs /aa-api/database /aa-api/secrets && \
+    chown -R 1000:1000 /crawls /aa-api /app/.venv
+
 # Switch back to non-root user
 USER 1000
 
