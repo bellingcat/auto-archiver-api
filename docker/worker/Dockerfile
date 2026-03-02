@@ -38,9 +38,10 @@ COPY ../../user-groups.* ./app/
 # - /crawls: named volume for Browsertrix WACZ crawl data
 # - /aa-api: WORKDIR, auto-archiver creates TemporaryDirectory(dir="./") here
 # - /aa-api/logs, /aa-api/database, /aa-api/secrets: bind-mounted at runtime
-# - /app/.venv: base image venv, seleniumbase downloads chromedriver here at runtime
+# - seleniumbase drivers dir: chromedriver downloaded at runtime
 RUN mkdir -p /crawls /aa-api/logs /aa-api/database /aa-api/secrets && \
-    chown -R 1000:1000 /crawls /aa-api /app/.venv
+    chown -R 1000:1000 /crawls /aa-api && \
+    chown -R 1000:1000 /app/.venv/lib/python3.12/site-packages/seleniumbase/drivers
 
 # Switch back to non-root user
 USER 1000
