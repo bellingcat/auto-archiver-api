@@ -13,6 +13,7 @@ from app.shared.log import log_error
 from app.shared.settings import get_settings
 from app.shared.task_messaging import get_celery, get_redis
 from app.shared.utils.misc import get_all_urls
+from app.shared.utils.sheets import get_sheet_access_error
 from app.worker.worker_log import logger, setup_celery_logger
 
 
@@ -97,6 +98,30 @@ def create_sheet_task(self, sheet_json: str):
         "routing_key", "unknown"
     )
     logger.info(f"[queue={queue_name}] SHEET START {sheet=}")
+
+    # Early check: does the service account have write access to the sheet?
+    with get_db() as session:
+        group = worker_crud.get_group(session, sheet.group_id)
+        if group and group.orchestrator_sheet:
+            access_error = get_sheet_access_error(
+                group.orchestrator_sheet,
+                group.service_account_email,
+                sheet.sheet_id,
+            )
+            if access_error:
+                logger.warning(
+                    f"SHEET SKIPPED {sheet.sheet_id}: {access_error}"
+                )
+                return schemas.CelerySheetTask(
+                    success=False,
+                    sheet_id=sheet.sheet_id,
+                    time=datetime.datetime.now().isoformat(),
+                    stats={
+                        "archived": 0,
+                        "failed": 0,
+                        "errors": [access_error],
+                    },
+                ).model_dump()
 
     args = get_orchestrator_args(
         sheet.group_id, True, [constants.SHEET_ID, sheet.sheet_id]

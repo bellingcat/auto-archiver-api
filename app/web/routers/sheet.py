@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
+from app.shared.db import models
 from app.shared.db.database import get_db_dependency
 from app.shared.schemas import (
     DeleteResponse,
@@ -13,6 +14,7 @@ from app.shared.schemas import (
     SubmitSheet,
 )
 from app.shared.task_messaging import get_celery
+from app.shared.utils.sheets import get_sheet_access_error
 from app.web.config import ALLOW_ANY_EMAIL
 from app.web.db import crud
 from app.web.db.user_state import UserState
@@ -52,6 +54,22 @@ def create_sheet(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail="Invalid frequency selected for this group.",
         )
+
+    # Check if the service account has write access to the Google Sheet
+    group = (
+        db.query(models.Group).filter(models.Group.id == sheet.group_id).first()
+    )
+    if group:
+        access_error = get_sheet_access_error(
+            group.orchestrator_sheet,
+            group.service_account_email,
+            sheet.id,
+        )
+        if access_error:
+            raise HTTPException(
+                status_code=HTTPStatus.FORBIDDEN,
+                detail=access_error,
+            )
 
     try:
         return crud.create_sheet(
@@ -137,6 +155,22 @@ def archive_user_sheet(
 
         group_queue = user.priority_group(sheet.group_id)
         author_id = user.email
+
+    # Check if the service account has write access to the Google Sheet
+    group = (
+        db.query(models.Group).filter(models.Group.id == sheet.group_id).first()
+    )
+    if group:
+        access_error = get_sheet_access_error(
+            group.orchestrator_sheet,
+            group.service_account_email,
+            sheet_id,
+        )
+        if access_error:
+            raise HTTPException(
+                status_code=HTTPStatus.FORBIDDEN,
+                detail=access_error,
+            )
 
     task = celery.signature(
         "create_sheet_task",

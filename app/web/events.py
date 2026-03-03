@@ -20,6 +20,7 @@ from app.shared.db.database import (
 from app.shared.log import logger
 from app.shared.settings import get_settings
 from app.shared.task_messaging import get_celery
+from app.shared.utils.sheets import get_sheet_access_error
 from app.web.db import crud
 from app.web.middleware import increase_exceptions_counter
 from app.web.utils.metrics import (
@@ -29,6 +30,11 @@ from app.web.utils.metrics import (
 
 
 celery = get_celery()
+
+# Throttle cache: track when each sheet was last notified about missing
+# permissions so users are not spammed on every cron cycle.
+_sheet_no_access_notified: dict[str, datetime.datetime] = {}
+_NOTIFY_COOLDOWN = datetime.timedelta(hours=24)
 
 
 @asynccontextmanager
@@ -113,12 +119,31 @@ async def archive_sheets_cronjob(
     frequency: str, interval: int, current_time_unit: int
 ):
     triggered_jobs = []
+    no_access_sheets: dict[str, list[tuple]] = defaultdict(list)
 
     async with get_db_async() as db:
         sheets = await crud.get_sheets_by_id_hash(
             db, frequency, str(interval), current_time_unit
         )
         for s in sheets:
+            # Check if service account has write access to the sheet
+            group = await db.get(models.Group, s.group_id)
+            if group and group.orchestrator_sheet:
+                access_error = get_sheet_access_error(
+                    group.orchestrator_sheet,
+                    group.service_account_email,
+                    s.id,
+                )
+                if access_error:
+                    no_access_sheets[s.author_id].append(
+                        (s, group.service_account_email or "")
+                    )
+                    logger.warning(
+                        f"[CRON] Skipping sheet {s.id}: not shared with "
+                        f"service account {group.service_account_email}"
+                    )
+                    continue
+
             group_queue = await crud.get_group_priority_async(db, s.group_id)
             task = celery.signature(
                 "create_sheet_task",
@@ -132,9 +157,73 @@ async def archive_sheets_cronjob(
             ).apply_async(**group_queue)
 
             triggered_jobs.append({"sheet_id": s.id, "task_id": task.id})
+
+    if no_access_sheets:
+        await _notify_sheet_permission_issues(no_access_sheets)
+
     logger.debug(
         f"[CRON {frequency.upper()}:{current_time_unit}] Triggered {len(triggered_jobs)} sheet tasks: {triggered_jobs}"
     )
+
+
+async def _notify_sheet_permission_issues(
+    no_access_sheets: dict[str, list[tuple]],
+):
+    """
+    Send email notifications to users whose sheets are not shared with the
+    Auto Archiver service account. Throttled to at most one email per sheet
+    per 24 hours to avoid spamming.
+    """
+    now = datetime.datetime.now()
+    fastmail = FastMail(get_settings().mail_config)
+
+    for email, sheet_infos in no_access_sheets.items():
+        # Filter to sheets that haven't been notified recently
+        sheets_to_notify = []
+        for s, sa_email in sheet_infos:
+            last = _sheet_no_access_notified.get(s.id)
+            if not last or (now - last) >= _NOTIFY_COOLDOWN:
+                sheets_to_notify.append((s, sa_email))
+                _sheet_no_access_notified[s.id] = now
+
+        if not sheets_to_notify:
+            continue
+
+        list_of_sheets = "\n".join(
+            [
+                f'<li><a href="https://docs.google.com/spreadsheets/d/{s.id}">'
+                f"{s.name}</a> &mdash; share with <code>{sa_email}</code></li>"
+                for s, sa_email in sheets_to_notify
+            ]
+        )
+        message = MessageSchema(
+            subject="Auto Archiver: Sheet Permission Issue",
+            recipients=[email],
+            body=f"""
+            <html>
+            <body>
+                <p>Hi {email},</p>
+                <p>The following sheets could not be archived because they have
+                not been shared with the Auto Archiver service account with
+                <strong>Editor</strong> permissions:</p>
+                <ul>
+                {list_of_sheets}
+                </ul>
+                <p>Please open each sheet, click <em>Share</em>, and add the
+                service account email shown above as an <strong>Editor</strong>.
+                The sheets will be archived automatically on the next scheduled
+                run once access is granted.</p>
+                <p>Best,<br>The Auto Archiver team</p>
+            </body>
+            </html>
+            """,
+            subtype=MessageType.html,
+        )
+        await fastmail.send_message(message)
+        logger.debug(
+            f"[CRON] Email sent to {email} about {len(sheets_to_notify)} "
+            f"sheet(s) with permission issues."
+        )
 
 
 # TODO: on exception should logerror but also prometheus counter

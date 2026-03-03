@@ -344,3 +344,133 @@ class TestArchiveUserSheetEndpoint:
         assert r.json() == {
             "detail": "User cannot manually trigger sheet archiving in this group."
         }
+
+
+class TestSheetAccessPermissionCheck:
+    """Tests for the Google Sheet write access permission check."""
+
+    ERROR_MSG = (
+        "The Google Sheet has not been shared with the Auto Archiver "
+        "service account (sa@test.iam.gserviceaccount.com). Please "
+        "share the sheet with this email address and give it Editor "
+        "permissions."
+    )
+
+    @patch(
+        "app.web.routers.sheet.get_sheet_access_error",
+        return_value=ERROR_MSG,
+    )
+    def test_create_sheet_no_write_access(
+        self, m_access, app_with_auth, db_session
+    ):
+        """Sheet creation is blocked when the SA has no write access."""
+        client = TestClient(app_with_auth)
+        data = {
+            "id": "no-access-sheet",
+            "name": "Test Sheet",
+            "group_id": "spaceship",
+            "frequency": "daily",
+        }
+        r = client.post("/sheet/create", json=data)
+        assert r.status_code == HTTPStatus.FORBIDDEN
+        assert "service account" in r.json()["detail"]
+        m_access.assert_called_once()
+
+    @patch(
+        "app.web.routers.sheet.get_sheet_access_error",
+        return_value=None,
+    )
+    def test_create_sheet_access_indeterminate_proceeds(
+        self, m_access, app_with_auth, db_session
+    ):
+        """Sheet creation proceeds when access check is indeterminate."""
+        client = TestClient(app_with_auth)
+        data = {
+            "id": "maybe-access-sheet",
+            "name": "Test Sheet",
+            "group_id": "spaceship",
+            "frequency": "daily",
+        }
+        r = client.post("/sheet/create", json=data)
+        assert r.status_code == HTTPStatus.CREATED
+        m_access.assert_called_once()
+
+    @patch(
+        "app.web.routers.sheet.get_sheet_access_error",
+        return_value=ERROR_MSG,
+    )
+    def test_archive_sheet_no_write_access(
+        self, m_access, app_with_auth, db_session
+    ):
+        """Manual trigger is blocked when the SA has no write access."""
+        db_session.add(
+            models.Sheet(
+                id="123-sheet-id",
+                name="Test Sheet 1",
+                author_id="rick@example.com",
+                group_id="spaceship",
+                frequency="hourly",
+            )
+        )
+        db_session.commit()
+        client = TestClient(app_with_auth)
+        r = client.post("/sheet/123-sheet-id/archive")
+        assert r.status_code == HTTPStatus.FORBIDDEN
+        assert "service account" in r.json()["detail"]
+        assert "Editor" in r.json()["detail"]
+        m_access.assert_called_once()
+
+    @patch("app.web.routers.sheet.celery", return_value=MagicMock())
+    @patch(
+        "app.web.routers.sheet.get_sheet_access_error",
+        return_value=None,
+    )
+    def test_archive_sheet_access_ok_proceeds(
+        self, m_access, m_celery, app_with_auth, db_session
+    ):
+        """Manual trigger proceeds when access check passes."""
+        db_session.add(
+            models.Sheet(
+                id="123-sheet-id",
+                name="Test Sheet 1",
+                author_id="rick@example.com",
+                group_id="spaceship",
+                frequency="hourly",
+            )
+        )
+        db_session.commit()
+
+        m_signature = MagicMock()
+        m_signature.apply_async.return_value = TaskResult(
+            id="task-123", status=STATUS_PENDING, result=""
+        )
+        m_celery.signature.return_value = m_signature
+
+        client = TestClient(app_with_auth)
+        r = client.post("/sheet/123-sheet-id/archive")
+        assert r.status_code == HTTPStatus.CREATED
+        m_access.assert_called_once()
+        m_celery.signature.assert_called_once()
+
+    @patch(
+        "app.web.routers.sheet.get_sheet_access_error",
+        return_value=ERROR_MSG,
+    )
+    def test_token_archive_sheet_no_write_access(
+        self, m_access, app_with_token, db_session
+    ):
+        """API token trigger is also blocked when SA has no write access."""
+        db_session.add(
+            models.Sheet(
+                id="token-sheet-id",
+                name="Token Sheet",
+                author_id="rick@example.com",
+                group_id="spaceship",
+                frequency="hourly",
+            )
+        )
+        db_session.commit()
+        client = TestClient(app_with_token)
+        r = client.post("/sheet/token-sheet-id/archive")
+        assert r.status_code == HTTPStatus.FORBIDDEN
+        assert "service account" in r.json()["detail"]
