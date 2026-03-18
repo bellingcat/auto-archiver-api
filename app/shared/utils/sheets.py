@@ -80,6 +80,18 @@ def check_sheet_write_access(
         if resp.status_code == 404:
             return False
         if resp.status_code == 403:
+            # Distinguish "API not enabled" from "no access to sheet"
+            try:
+                error_details = resp.json().get("error", {})
+                for detail in error_details.get("details", []):
+                    if detail.get("reason") == "SERVICE_DISABLED":
+                        logger.warning(
+                            f"Google Drive API is not enabled for this project."
+                            f"Contact an admin to enable it at: {detail.get('metadata', {}).get('activationUrl', 'N/A')}"
+                        )
+                        return None
+            except Exception:
+                pass
             return False
         if resp.status_code == 200:
             return resp.json().get("capabilities", {}).get("canEdit", False)
