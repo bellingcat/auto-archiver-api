@@ -128,7 +128,21 @@ def create_sheet_task(self, sheet_json: str):
     )
     orchestrator = ArchivingOrchestrator()
     orchestrator.logger_id = AA_LOGGER_ID  # ensure single logger
-    orchestrator.setup(args)
+    try:
+        orchestrator.setup(args)
+    except SystemExit as e:
+        log_error(e, "create_sheet_task: SystemExit from AA during setup")
+        cleanup_orchestrator(orchestrator)
+        return schemas.CelerySheetTask(
+            success=False,
+            sheet_id=sheet.sheet_id,
+            time=datetime.datetime.now().isoformat(),
+            stats={"archived": 0, "failed": 0, "errors": [str(e)]},
+        ).model_dump()
+    except Exception as e:
+        log_error(e, "create_sheet_task: error during orchestrator setup")
+        cleanup_orchestrator(orchestrator)
+        raise
     AA_LOGGER_ID = orchestrator.logger_id
 
     stats = {"archived": 0, "failed": 0, "errors": []}
