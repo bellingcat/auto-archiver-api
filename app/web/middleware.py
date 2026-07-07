@@ -3,15 +3,17 @@ import traceback
 from fastapi import Request
 
 from app.shared.log import log_error, logger
-from app.web.utils.metrics import EXCEPTION_COUNTER
+from app.web.utils.metrics import (
+    EXCEPTION_COUNTER,
+    increment_referer_counter,
+)
 
 
 async def logging_middleware(request: Request, call_next):
+    # summary prometheus metric on where requests come from
+    increment_referer_counter(request.headers.get("referer"))
     try:
         response = await call_next(request)
-        # TODO: use Origin to have summary prometheus metrics on where
-        #  requests come from
-        # origin = request.headers.get("origin")
         logger.debug(
             f"{request.client.host}:{request.client.port} {request.method} {request.url._url} - HTTP {response.status_code}"
         )
