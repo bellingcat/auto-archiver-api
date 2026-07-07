@@ -37,6 +37,20 @@ def mock_logger_add():
         yield mock_add  # This makes the mock available to tests
 
 
+@pytest.fixture(autouse=True)
+def clear_endpoint_caches():
+    """Clear response caches so cached values never leak between tests."""
+    from app.web.routers import default
+
+    for cache in (
+        default.HOME_CACHE,
+        default.USER_PERMISSIONS_CACHE,
+        default.USER_USAGE_CACHE,
+    ):
+        cache.clear()
+    yield
+
+
 @pytest.fixture()
 def get_settings():
     return Settings(_env_file=".env.test")
