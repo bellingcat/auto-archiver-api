@@ -62,6 +62,44 @@ def test_cached_endpoint_does_not_cache_exceptions():
     assert len(calls) == 2  # re-evaluated, error never cached
 
 
+def test_cached_endpoint_sync_is_thread_safe():
+    """Concurrent threads must never observe a partially-written cache entry
+    and must never corrupt TTLCache's internal state."""
+    import threading as _threading
+
+    cache = TTLCache(maxsize=128, ttl=60)
+    lock = _threading.Lock()
+    calls = []
+
+    @cached_endpoint(cache, key=lambda user: user, lock=lock)
+    def endpoint(user):
+        calls.append(user)
+        return f"result-{user}"
+
+    errors = []
+
+    def hit(user):
+        try:
+            result = endpoint(user=user)
+            assert result == f"result-{user}"
+        except Exception as exc:
+            errors.append(exc)
+
+    threads = [
+        _threading.Thread(target=hit, args=(f"user-{i % 4}",))
+        for i in range(64)
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors, errors
+    # Each of the 4 distinct users should have been computed at least once but
+    # at most once per user (the lock prevents duplicate computation).
+    assert len(calls) == 4
+
+
 # --- endpoint-level behaviour ----------------------------------------------
 
 

@@ -1,3 +1,4 @@
+import threading
 from http import HTTPStatus
 from typing import Dict
 
@@ -21,6 +22,11 @@ router = APIRouter()
 HOME_CACHE = TTLCache(maxsize=1, ttl=300)
 USER_PERMISSIONS_CACHE = TTLCache(maxsize=1024, ttl=300)
 USER_USAGE_CACHE = TTLCache(maxsize=1024, ttl=60)
+
+# Locks for the sync endpoints that run in FastAPI's thread pool.
+# HOME_CACHE is used by an async endpoint and needs no lock.
+_USER_PERMISSIONS_LOCK = threading.Lock()
+_USER_USAGE_LOCK = threading.Lock()
 
 
 @router.get("/")
@@ -49,7 +55,11 @@ async def active(
     "/user/permissions",
     summary="Get the user's global 'all' permissions and the permissions for each group they belong to.",
 )
-@cached_endpoint(USER_PERMISSIONS_CACHE, key=lambda user: user.email)
+@cached_endpoint(
+    USER_PERMISSIONS_CACHE,
+    key=lambda user: user.email,
+    lock=_USER_PERMISSIONS_LOCK,
+)
 def get_user_permissions(
     user: UserState = Depends(get_user_state),
 ) -> Dict[str, GroupInfo]:
@@ -60,7 +70,9 @@ def get_user_permissions(
     "/user/usage",
     summary="Get the user's monthly URLs/MBs usage along with the total active sheets, breakdown by group.",
 )
-@cached_endpoint(USER_USAGE_CACHE, key=lambda user: user.email)
+@cached_endpoint(
+    USER_USAGE_CACHE, key=lambda user: user.email, lock=_USER_USAGE_LOCK
+)
 def get_user_usage(
     user: UserState = Depends(get_user_state),
 ) -> UsageResponse:

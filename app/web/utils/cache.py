@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 import functools
 import inspect
+import threading
 from typing import Callable
 
 from cachetools import TTLCache
 
 
-def cached_endpoint(cache: TTLCache, key: Callable[..., object]):
+def cached_endpoint(
+    cache: TTLCache,
+    key: Callable[..., object],
+    lock: threading.Lock | None = None,
+):
     """
     Cache a FastAPI endpoint's return value in a time-bounded ``TTLCache``.
 
@@ -22,6 +29,12 @@ def cached_endpoint(cache: TTLCache, key: Callable[..., object]):
     dependency injection, response models and auth all keep working; the wrapper
     matches the sync/async nature of the wrapped endpoint so its execution model
     (threadpool vs event loop) is preserved.
+
+    ``lock`` should be a ``threading.Lock`` for sync endpoints, which FastAPI
+    runs in a thread pool. Without it, concurrent requests can race on the
+    check-then-set sequence and corrupt TTLCache's internal state. Async
+    endpoints do not need a lock because the event loop is single-threaded and
+    there is no ``await`` between the cache check and the cache write.
     """
 
     def decorator(func):
@@ -41,10 +54,18 @@ def cached_endpoint(cache: TTLCache, key: Callable[..., object]):
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
             cache_key = key(*args, **kwargs)
-            if cache_key in cache:
-                return cache[cache_key]
-            result = func(*args, **kwargs)
-            cache[cache_key] = result
+            if lock is not None:
+                with lock:
+                    if cache_key in cache:
+                        return cache[cache_key]
+                result = func(*args, **kwargs)
+                with lock:
+                    cache[cache_key] = result
+            else:
+                if cache_key in cache:
+                    return cache[cache_key]
+                result = func(*args, **kwargs)
+                cache[cache_key] = result
             return result
 
         return sync_wrapper
