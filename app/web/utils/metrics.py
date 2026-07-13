@@ -42,6 +42,13 @@ REFERER_COUNTER = Counter(
     labelnames=["referer"],
 )
 
+# Maximum number of distinct referer origins tracked as individual Prometheus
+# labels. Once the cap is reached every new origin is recorded as "other" to
+# prevent a cardinality-explosion attack (an adversary sending requests with
+# many unique hostnames would otherwise grow Prometheus memory without bound).
+_REFERER_MAX_ORIGINS: int = 256
+_referer_seen: set[str] = set()
+
 
 def normalize_referer(referer: str | None) -> str:
     """
@@ -62,8 +69,19 @@ def normalize_referer(referer: str | None) -> str:
 
 
 def increment_referer_counter(referer: str | None) -> None:
-    """Record one request against its normalized referer origin."""
-    REFERER_COUNTER.labels(referer=normalize_referer(referer)).inc()
+    """Record one request against its normalized referer origin.
+
+    New origins are tracked individually up to *_REFERER_MAX_ORIGINS* distinct
+    values. Beyond that limit any unseen origin is collapsed to "other" so that
+    a cardinality-explosion attack cannot exhaust Prometheus memory.
+    """
+    origin = normalize_referer(referer)
+    if origin not in ("none", "other") and origin not in _referer_seen:
+        if len(_referer_seen) >= _REFERER_MAX_ORIGINS:
+            origin = "other"
+        else:
+            _referer_seen.add(origin)
+    REFERER_COUNTER.labels(referer=origin).inc()
 
 
 async def redis_subscribe_worker_exceptions(redis_exceptions_channel: str):
