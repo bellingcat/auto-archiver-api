@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import shutil
+from urllib.parse import urlparse
 
 from prometheus_client import Counter, Gauge
 
@@ -35,6 +36,52 @@ DATABASE_METRICS_COUNTER = Counter(
     "Database metrics that increase over time",
     labelnames=["query", "user"],
 )
+REFERER_COUNTER = Counter(
+    "referer",
+    "Number of requests received, grouped by their referer origin.",
+    labelnames=["referer"],
+)
+
+# Maximum number of distinct referer origins tracked as individual Prometheus
+# labels. Once the cap is reached every new origin is recorded as "other" to
+# prevent a cardinality-explosion attack (an adversary sending requests with
+# many unique hostnames would otherwise grow Prometheus memory without bound).
+_REFERER_MAX_ORIGINS: int = 256
+_referer_seen: set[str] = set()
+
+
+def normalize_referer(referer: str | None) -> str:
+    """
+    Reduce a raw Referer header to a low-cardinality "scheme://host" origin so
+    it is safe to use as a Prometheus label. The full header is not used
+    directly because it is client-controlled and would let the label set grow
+    without bound (path and query string vary per request).
+
+    Returns "none" when the header is absent and "other" when it cannot be
+    parsed into a scheme + host origin.
+    """
+    if not referer:
+        return "none"
+    parsed = urlparse(referer)
+    if parsed.scheme and parsed.netloc:
+        return f"{parsed.scheme}://{parsed.netloc}"
+    return "other"
+
+
+def increment_referer_counter(referer: str | None) -> None:
+    """Record one request against its normalized referer origin.
+
+    New origins are tracked individually up to *_REFERER_MAX_ORIGINS* distinct
+    values. Beyond that limit any unseen origin is collapsed to "other" so that
+    a cardinality-explosion attack cannot exhaust Prometheus memory.
+    """
+    origin = normalize_referer(referer)
+    if origin not in ("none", "other") and origin not in _referer_seen:
+        if len(_referer_seen) >= _REFERER_MAX_ORIGINS:
+            origin = "other"
+        else:
+            _referer_seen.add(origin)
+    REFERER_COUNTER.labels(referer=origin).inc()
 
 
 async def redis_subscribe_worker_exceptions(redis_exceptions_channel: str):
