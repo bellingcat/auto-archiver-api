@@ -1,5 +1,5 @@
 # From python:3.10
-FROM bellingcat/auto-archiver:v1.2.7
+FROM bellingcat/auto-archiver:v1.2.9
 # NOTE: remove dot from v.1, this release was badly named
 
 # set work directory
