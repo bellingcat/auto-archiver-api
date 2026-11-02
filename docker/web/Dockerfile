@@ -1,5 +1,5 @@
 # Stage 1: install dependencies
-FROM python:3.10-slim AS build
+FROM python:3.12-slim AS build
 
 WORKDIR /aa-api
 # TODO: multistage build
