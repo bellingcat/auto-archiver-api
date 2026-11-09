@@ -41,6 +41,9 @@ services:
       resources:
         limits:
           memory: ${WORKER_MEMORY_LIMIT:-4g}
+    # the worker runs as a non-root user, it needs the host's docker group to use docker.sock (WACZ/browsertrix)
+    group_add:
+      - "${DOCKER_GID:-999}"
     volumes:
       - ./logs:/aa-api/logs
       - ./database:/aa-api/database
