@@ -183,7 +183,7 @@ def test_no_auth():
     # reusable code to ensure a method/endpoint combination is unauthorized
     def no_auth(http_method, endpoint):
         response = http_method(endpoint)
-        assert response.status_code == HTTPStatus.FORBIDDEN
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
         assert response.json() == {"detail": "Not authenticated"}
 
     return no_auth
